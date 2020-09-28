@@ -107,9 +107,11 @@
     PANDAR128_SEQ_NUM_SIZE)
 #define PANDAR128_WITHOUT_CONF_UNIT_SIZE (DISTANCE_SIZE + \
     INTENSITY_SIZE)
-#define TASKFLOW_STEP_SIZE (20)
+#define TASKFLOW_STEP_SIZE (720)
 
 #define ETHERNET_MTU (1500)
+
+#define CIRCLE_ANGLE (360)
 
 typedef struct PandarPacket_s {
   double stamp;
@@ -198,7 +200,7 @@ typedef struct PacketsBuffer_s {
       if(m_buffers.end() == m_iterPush) {
         m_iterPush = m_buffers.begin();
       }      
-      if(m_iterPush == m_iterTaskBegin) {printf("buffer don't have space!\n");return 0;}
+      if(m_iterPush == m_iterTaskBegin) {ROS_WARN("buffer don't have space!,%d", m_iterTaskBegin - m_buffers.begin());return 0;}
       *(m_iterPush++) = pkt;
       return 1;
     }
@@ -210,6 +212,7 @@ typedef struct PacketsBuffer_s {
   inline PktArray::iterator getTaskEnd(){return m_iterTaskEnd;}
   inline void creatNewTask() {
     if(m_buffers.end() == m_iterTaskEnd) {
+      ROS_WARN("creat new task end to start");
       m_iterTaskBegin = m_buffers.begin();
       m_iterTaskEnd = m_iterTaskBegin + m_stepSize;
     }

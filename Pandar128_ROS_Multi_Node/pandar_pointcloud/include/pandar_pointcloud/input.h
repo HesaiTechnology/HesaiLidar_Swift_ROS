@@ -86,6 +86,7 @@ namespace pandar_pointcloud
   private:
     int sockfd_;
     in_addr devip_;
+    uint32_t m_u32Sequencenum;
     uint8_t seqnub1;
     uint8_t seqnub2;
     uint8_t seqnub3;

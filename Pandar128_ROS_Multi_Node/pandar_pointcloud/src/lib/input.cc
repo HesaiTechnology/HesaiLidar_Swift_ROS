@@ -34,6 +34,7 @@
 #include <fcntl.h>
 #include <sys/file.h>
 #include <pandar_pointcloud/input.h>
+#include <pandar_pointcloud/platUtil.h>
 
 namespace pandar_pointcloud
 {
@@ -72,7 +73,7 @@ namespace pandar_pointcloud
     Input(private_nh, port)
   {
     sockfd_ = -1;
-
+    m_u32Sequencenum = 0;
     seqnub1 = 0;
     seqnub2 = 0;
     seqnub3 = 0;
@@ -109,6 +110,11 @@ namespace pandar_pointcloud
         return;
       }
 
+    int getchecksum = 0;
+    socklen_t option_int = sizeof(int);
+    int get_error = getsockopt(sockfd_, SOL_SOCKET, SO_NO_CHECK, &getchecksum, &option_int );
+    int nochecksum=1;
+    int set_error = setsockopt(sockfd_, SOL_SOCKET, SO_NO_CHECK, &nochecksum, sizeof(nochecksum));
     ROS_DEBUG("Pandar socket fd is %d\n", sockfd_);
   }
 
@@ -129,6 +135,7 @@ namespace pandar_pointcloud
     uint64_t startTime = 0;
     uint64_t endTime = 0;
     uint64_t midTime = 0;
+    uint32_t seqnub;
     timespec time;
     memset(&time, 0, sizeof(time));
     
@@ -182,27 +189,35 @@ namespace pandar_pointcloud
                                   10000,  0,
                                   (sockaddr*) &sender_address,
                                   &sender_address_len);
-        if(812 != nbytes) {
-          ROS_WARN("nbytes:[%d]",nbytes);
-        }
 
-        if(seqnub1 == 0) {
-          seqnub1 = pkt->data[nbytes-1];
-          seqnub2 = pkt->data[nbytes-2];
-          seqnub3 = pkt->data[nbytes-3];
-          seqnub4 = pkt->data[nbytes-4];
+        static uint32_t dropped = 0, u32StartSeq = 0;
+        static uint32_t startTick = GetTickCount();
+
+        uint32_t* pSeq = (uint32_t*)&pkt->data[nbytes - 4];
+        seqnub = *pSeq;
+        //seqnub = pkt->data[nbytes-1]<<24 | pkt->data[nbytes-2]<<16 |pkt->data[nbytes-3]<<8 | pkt->data[nbytes-4];
+        if(m_u32Sequencenum == 0) {
+          m_u32Sequencenum = seqnub;
+          u32StartSeq = m_u32Sequencenum;
         }
         else
         {
-          if((pkt->data[nbytes-4]-seqnub4)>1){
-            ROS_WARN("per[%x %x %x %x]",seqnub1,seqnub2,seqnub3,seqnub4);
-            ROS_WARN("now[%x %x %x %x]",pkt->data[nbytes-1],pkt->data[nbytes-2],pkt->data[nbytes-3],pkt->data[nbytes-4]);
+          uint32_t diff = seqnub - m_u32Sequencenum;
+          if(diff > 1){
+            ROS_WARN("diff: %x ",diff);
+            dropped += diff - 1;
           }
         }
-        seqnub1 = pkt->data[nbytes-1];
-        seqnub2 = pkt->data[nbytes-2];
-        seqnub3 = pkt->data[nbytes-3];
-        seqnub4 = pkt->data[nbytes-4];
+        m_u32Sequencenum = seqnub;
+
+        uint32_t endTick = GetTickCount();
+
+        if(endTick - startTick >= 1000 && dropped > 0){
+          ROS_WARN("!!!!!!!!!! dropped: %d, %d, percent, %f", dropped, m_u32Sequencenum - u32StartSeq, float(dropped) / float(m_u32Sequencenum - u32StartSeq) * 100.0 );
+          dropped = 0;
+          u32StartSeq = m_u32Sequencenum;
+          startTick = endTick;
+        }
 
         uint64_t midTime4 = 0;
         clock_gettime(CLOCK_REALTIME, &time);

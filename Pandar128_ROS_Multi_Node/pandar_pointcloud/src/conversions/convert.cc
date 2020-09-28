@@ -27,6 +27,7 @@
 #include <fstream>
 #include <unistd.h>
 #include <sys/syscall.h>
+#include <pandar_pointcloud/platUtil.h>
 
 
 namespace pandar_pointcloud           
@@ -240,7 +241,7 @@ void Convert::DriverReadThread()
 void Convert::publishRawDataThread()
 {
   sched_param param;
-  param.sched_priority = 99;
+  param.sched_priority = 90;
   //SCHED_FIFO和SCHED_RR
   int rc = pthread_setschedparam(pthread_self(), SCHED_FIFO, &param);
   ROS_WARN("publishRawDataThread:set result [%d]",rc);
@@ -401,8 +402,9 @@ ROS_WARN(",min[%d]",minpolicy);
     }
     // ROS_WARN("Convert::processLiDARData pktCount[%d]",pktCount);
 
-    if((0 != pktCount) && (0 == pktCount % (360/(TASKFLOW_STEP_SIZE*2*m_iAngleSize/100/m_iReturnBlockSize)))) {
-      // ROS_WARN("pktCount[%d]", pktCount);
+    if((0 != pktCount) && (0 == pktCount % (CIRCLE_ANGLE/(TASKFLOW_STEP_SIZE*2*m_iAngleSize/100/m_iReturnBlockSize)))) {
+      ROS_WARN("#########angle[%u],", lidar_packets_.getTaskBegin()->blocks[0].fAzimuth);
+      ROS_WARN("pktCount[%d]", pktCount);
       ROS_WARN("ts %lf cld size %u", timestamp, outMsgArray[cursor]->points.size());
       pcl_conversions::toPCL(ros::Time(timestamp), outMsgArray[cursor]->header.stamp);
       sensor_msgs::PointCloud2 output;
@@ -411,18 +413,30 @@ ROS_WARN(",min[%d]",minpolicy);
       // pcl_callback_(outMsgArray[cursor], timestamp,scan);
       cursor = (cursor + 1) % 2;
       timestamp = 0;
-      outMsgArray[cursor].reset(new PPointCloud(36000/m_iAngleSize*128*m_iReturnBlockSize, 1));
+      uint32_t startTick = GetTickCount();
+      //outMsgArray[cursor]->clear();
+      //outMsgArray[cursor]->assign(CIRCLE_ANGLE*100/m_iAngleSize*128*m_iReturnBlockSize,p);
+      uint32_t endTick = GetTickCount();
+      if(endTick - startTick > 2) {
+        ROS_WARN("OutMagArray time:%d",endTick - startTick);
+      }
     }
 
     if(0 == checkLiadaMode()){
       ROS_WARN("checkLiadaMode now!!");
-      outMsgArray[cursor].reset(new PPointCloud(36000/m_iAngleSize*128*m_iReturnBlockSize, 1));
+      // outMsgArray[cursor]->clear();
+      //outMsgArray[cursor]->assign(CIRCLE_ANGLE*100/m_iAngleSize*128*m_iReturnBlockSize,PPoint());
       lidar_packets_.creatNewTask();
       pktCount = 0;
       continue;
     }
-
+    // ROS_WARN("angle[%u][%u],", lidar_packets_.getTaskBegin()->blocks[0].fAzimuth,lidar_packets_.getTaskBegin()->blocks[1].fAzimuth);
+    uint32_t startTick = GetTickCount();
     doTaskFlow(cursor);
+    uint32_t endTick = GetTickCount();
+    if(endTick - startTick > 2) {
+      ROS_WARN("taskflow time:%d",endTick - startTick);
+    }
     pktCount++;
 
     outMsgArray[cursor]->header.frame_id = frame_id_;
@@ -526,8 +540,8 @@ int Convert::checkLiadaMode() {
     }else{
       m_iReturnBlockSize = LIDAR_RETURN_BLOCK_SIZE_1; 
     }
-    boost::shared_ptr<PPointCloud> outMag0(new PPointCloud(36000/m_iAngleSize*128*m_iReturnBlockSize, 1));
-    boost::shared_ptr<PPointCloud> outMag1(new PPointCloud(36000/m_iAngleSize*128*m_iReturnBlockSize, 1));
+    boost::shared_ptr<PPointCloud> outMag0(new PPointCloud(CIRCLE_ANGLE*100/m_iAngleSize*128*m_iReturnBlockSize, 1));
+    boost::shared_ptr<PPointCloud> outMag1(new PPointCloud(CIRCLE_ANGLE*100/m_iAngleSize*128*m_iReturnBlockSize, 1));
     outMsgArray[0] = outMag0;
     outMsgArray[1] = outMag1;
     return 1;
@@ -558,6 +572,9 @@ int Convert::checkLiadaMode() {
 }
 
 void Convert::calcPointXYZIT(Pandar128Packet &pkt, boost::shared_ptr<PPointCloud> &cld) {
+  SetThreadPriority(SCHED_FIFO, 99);
+
+  // ROS_WARN("#####block.fAzimuth[%u][%u]",pkt.blocks[0].fAzimuth,pkt.blocks[1].fAzimuth);
   for (int blockid = 0; blockid < pkt.head.u8BlockNum; blockid++) {
     Pandar128Block &block = pkt.blocks[blockid];
     struct tm t;

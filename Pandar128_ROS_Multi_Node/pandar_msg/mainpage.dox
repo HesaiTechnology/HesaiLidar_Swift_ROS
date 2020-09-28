@@ -1,0 +1,10 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+The @b pandar_msg package collects ROS messages specific to the
+Pandar40 LIDAR
+
+No other programming interfaces or ROS nodes are provided.
+
+*/

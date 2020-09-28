@@ -1,0 +1,44 @@
+<!-- -*- mode: XML -*- -->
+
+<launch>
+  <arg name="calibration" default="$(find pandar_pointcloud)/params/correction.csv" />
+  <arg name="manager" default="pandar_nodelet_manager" />
+  <arg name="max_range" default="130.0" />
+  <arg name="min_range" default="0.9" />
+  <arg name="start_angle" default="0" />
+
+  <arg name="device_ip" default="" />
+  <arg name="frame_id" default="Pandar128" />
+  <arg name="publish_model" default="both_point_raw" />
+  <arg name="pcap" default="/home/fanglinwen/my_project/pcapFile/Pandar128_4.00_2.pcap" />
+  <arg name="port" default="2368" />
+  <arg name="read_fast" default="false" />
+  <arg name="read_once" default="false" />
+  <arg name="repeat_delay" default="0.0" />
+  <arg name="rpm" default="600.0" />
+  <arg name="firetime_file"  default="$(find pandar_pointcloud)/params/laser-ts.csv"/>
+
+  <node pkg="nodelet" type="nodelet" name="$(arg manager)_cloud"
+        args="load pandar_pointcloud/CloudNodelet $(arg manager)"
+		output="screen">
+    <param name="calibration" value="$(arg calibration)"/>
+    <param name="max_range" value="$(arg max_range)"/>
+    <param name="min_range" value="$(arg min_range)"/>
+    <param name="start_angle" value="$(arg start_angle)"/>
+
+    <param name="device_ip" value="$(arg device_ip)" />
+    <param name="frame_id" value="$(arg frame_id)"/>
+    <param name="publish_model" value="$(arg publish_model)"/>
+    <param name="pcap" value="$(arg pcap)"/>
+    <param name="port" value="$(arg port)" />
+    <param name="read_fast" value="$(arg read_fast)"/>
+    <param name="read_once" value="$(arg read_once)"/>
+    <param name="repeat_delay" value="$(arg repeat_delay)"/>
+    <param name="rpm" value="$(arg rpm)"/>
+    <param name="firetime_file"  value="$(arg firetime_file)"/>
+  </node>
+
+  <!--node pkg="nodelet" type="nodelet" name="$(arg manager)_color"
+        args="load pandar_pointcloud/RingColorsNodelet $(arg manager)"
+		output="screen"/-->
+</launch>

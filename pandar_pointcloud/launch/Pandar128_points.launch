@@ -22,7 +22,7 @@
   <arg name="publish_model" default="both_point_raw" />
 
   <!-- start nodelet manager -->
-  <node pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager" />
+  <node pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager" output="screen" />
 
   <!-- start cloud nodelet -->
   <include file="$(find pandar_pointcloud)/launch/cloud_nodelet.launch">

@@ -174,7 +174,7 @@ int InputSocket::getPacket(pandar_msgs::PandarPacket *pkt) {
   static uint32_t dropped = 0, u32StartSeq = 0;
   static uint32_t startTick = GetTickCount();
 
-  uint32_t *pSeq = (uint32_t *)&pkt->data[nbytes - 4];
+  uint32_t *pSeq = (uint32_t *)&pkt->data[nbytes - 62];
   seqnub = *pSeq;
 
   if (m_u32Sequencenum == 0) {

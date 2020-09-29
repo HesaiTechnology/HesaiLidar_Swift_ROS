@@ -332,16 +332,39 @@ void Convert::pushLiDARData(pandar_msgs::PandarPacket packet) {
 int Convert::parseData(Pandar128Packet &packet, const uint8_t *recvbuf,
                        const int len) {
   int index = 0;
-  int lidarType = -1;
 
-  if (recvbuf[0] != 0xEE && recvbuf[1] != 0xFF && recvbuf[2] != 1 &&
-      recvbuf[2] != 3) {
+  if (recvbuf[0] != 0xEE && recvbuf[1] != 0xFF && recvbuf[2] != 1 ) {    
     ROS_WARN("Lidar type is error\n");
     return -1;
   }
 
-  memcpy(&packet, recvbuf, sizeof(Pandar128Packet));
+  memcpy(&(packet.head), &recvbuf[index], PANDAR128_HEAD_SIZE);
+  
+  index += PANDAR128_HEAD_SIZE;
+  memcpy(&(packet.blocks), &recvbuf[index], PANDAR128_BLOCK_SIZE * PANDAR128_BLOCK_NUM);
+  
+  index += PANDAR128_BLOCK_SIZE * PANDAR128_BLOCK_NUM + PANDAR128_CRC_SIZE + PANDAR128_FUNCTION_SAFETY_SIZE;
+  memcpy(&(packet.tail.nReserved1[0]),  &recvbuf[index], 3);
 
+  index += 3;
+  memcpy(&(packet.tail.nReserved2[0]),  &recvbuf[index], 3);
+
+  index += 3 + 3 + 2;
+  packet.tail.nShutdownFlag = recvbuf[index];
+
+  index += 1;
+  packet.tail.nReturnMode = recvbuf[index];
+
+  index += 1 + 2;
+  memcpy(&(packet.tail.nUTCTime[0]),  &recvbuf[index], 6);
+
+  index += 6;
+  memcpy(&(packet.tail.nTimestamp),  &recvbuf[index], 4);
+
+  index += 4 + 1;
+  memcpy(&(packet.tail.nSeqNum),  &recvbuf[index], 4);
+
+  // ROS_WARN("timestamp[%u]",packet.tail.nTimestamp);
   return 0;
 }
 
@@ -368,7 +391,6 @@ int Convert::processLiDARData() {
       usleep(1000);
       continue;
     }
-
     if (0 == checkLiadaMode()) {
       ROS_WARN("checkLiadaMode now!!");
       outMsgArray[cursor]->clear();

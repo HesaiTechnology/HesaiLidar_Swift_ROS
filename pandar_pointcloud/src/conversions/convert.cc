@@ -168,9 +168,14 @@ ROS_WARN("Convert ,min[%d]",minpolicy);
     boost::thread processThr(boost::bind(&Convert::processLiDARData, this)); 
   }
 
+    m_iPublishPointsIndex = 0;
+    m_bPublishPointsFlag = false;
+    boost::thread publishPointsThr(boost::bind(&Convert::publishPointsThread, this));
+
   if ((publishmodel == "both_point_raw" || publishmodel == "raw") && LIDAR_NODE_TYPE == node_type) {
     boost::thread processThr(boost::bind(&Convert::publishRawDataThread, this)); 
   }
+
 }
 
 int Convert::loadCorrectionFile(std::string correction_content) {
@@ -320,25 +325,11 @@ void Convert::processGps(pandar_msgs::PandarGps &gpsMsg)
 void Convert::pushLiDARData(pandar_msgs::PandarPacket packet)
 {
   //  ROS_WARN("Convert::pushLiDARData");
-    pthread_mutex_lock(&piclock);
     Pandar128Packet pkt;
     if (0 != parseData(pkt, &packet.data[0], packet.size)) {
-      pthread_mutex_unlock(&piclock);
-      // ROS_WARN("Convert::pushLiDARData return");
       return;
     }
     lidar_packets_.push_back(pkt);
-    sem_post(&picsem);
-    pthread_mutex_unlock(&piclock);
-
-    // pthread_mutex_lock(&piclock);
-    // lidar_packets_.push_back(packet);
-    // // ROS_WARN("pushLiDARData [%d]",lidar_packets_.size());
-    // if(lidar_packets_.size() > 6)
-    // {
-    //     sem_post(&picsem);
-    // }
-    // pthread_mutex_unlock(&piclock);
 
 }
 
@@ -367,15 +358,8 @@ int Convert::processLiDARData()
   int pktCount = 0;
   int cursor = 0;
 
-int maxpolicy = sched_get_priority_max(SCHED_RR);
-ROS_WARN(",max[%d]",maxpolicy);
-
-int minpolicy = sched_get_priority_min(SCHED_RR);
-ROS_WARN(",min[%d]",minpolicy);
-
-
   sched_param param;
-  param.sched_priority = 99;
+  param.sched_priority = 91;
   //SCHED_FIFO和SCHED_RR
   int rc = pthread_setschedparam(pthread_self(), SCHED_FIFO, &param);
   ROS_WARN("processLiDARData:pthread_setschedparam result [%d]", rc);
@@ -383,44 +367,13 @@ ROS_WARN(",min[%d]",minpolicy);
   pthread_getschedparam(pthread_self(), &ret_policy, &param);
   ROS_WARN("processLiDARData:get thead %lu, policy %d and priority %d\n", pthread_self(), ret_policy, param.sched_priority);
 
-  while (1) {
-    // ROS_WARN("Convert::processLiDARData");
-    if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
-      std::cout << "get time error" << std::endl;
-    }
-
-    ts.tv_sec += 1;
-
-    if (sem_timedwait(&picsem, &ts) == -1) {
-      ROS_WARN("Convert::processLiDARData sem_timedwait");
-      continue;
-    }
-
+  while (1) { 
     if (!lidar_packets_.hasEnoughPackets()){
-      // ROS_WARN("Convert::processLiDARData don't has Enough Packets");
+      usleep(1000);
       continue;
     }
-    // ROS_WARN("Convert::processLiDARData pktCount[%d]",pktCount);
 
-    if((0 != pktCount) && (0 == pktCount % (CIRCLE_ANGLE/(TASKFLOW_STEP_SIZE*2*m_iAngleSize/100/m_iReturnBlockSize)))) {
-      ROS_WARN("#########angle[%u],", lidar_packets_.getTaskBegin()->blocks[0].fAzimuth);
-      ROS_WARN("pktCount[%d]", pktCount);
-      ROS_WARN("ts %lf cld size %u", timestamp, outMsgArray[cursor]->points.size());
-      pcl_conversions::toPCL(ros::Time(timestamp), outMsgArray[cursor]->header.stamp);
-      sensor_msgs::PointCloud2 output;
-      pcl::toROSMsg(*outMsgArray[cursor], output);
-      output_.publish(output);
-      // pcl_callback_(outMsgArray[cursor], timestamp,scan);
-      cursor = (cursor + 1) % 2;
-      timestamp = 0;
-      uint32_t startTick = GetTickCount();
-      //outMsgArray[cursor]->clear();
-      //outMsgArray[cursor]->assign(CIRCLE_ANGLE*100/m_iAngleSize*128*m_iReturnBlockSize,p);
-      uint32_t endTick = GetTickCount();
-      if(endTick - startTick > 2) {
-        ROS_WARN("OutMagArray time:%d",endTick - startTick);
-      }
-    }
+    
 
     if(0 == checkLiadaMode()){
       ROS_WARN("checkLiadaMode now!!");
@@ -434,80 +387,78 @@ ROS_WARN(",min[%d]",minpolicy);
     uint32_t startTick = GetTickCount();
     doTaskFlow(cursor);
     uint32_t endTick = GetTickCount();
-    if(endTick - startTick > 2) {
-      ROS_WARN("taskflow time:%d",endTick - startTick);
+
+    static uint32_t lastTick = endTick;
+    if(endTick - startTick > 0) {
+      ROS_WARN("taskflow time:%d, interval:%d",endTick - startTick, endTick - lastTick);
     }
+    lastTick = endTick;
     pktCount++;
 
-    outMsgArray[cursor]->header.frame_id = frame_id_;
-    outMsgArray[cursor]->height = 1;
+    
+    if((0 != pktCount) && (0 == pktCount % (CIRCLE_ANGLE/(TASKFLOW_STEP_SIZE*2*m_iAngleSize/100/m_iReturnBlockSize)))) {
+      ROS_WARN("#########angle[%u],", lidar_packets_.getTaskBegin()->blocks[0].fAzimuth);
+      ROS_WARN("pktCount[%d]", pktCount);
+      ROS_WARN("ts %lf cld size %u", timestamp, outMsgArray[cursor]->points.size());
+      
+      uint32_t startTick2 = GetTickCount();
+      if(m_bPublishPointsFlag == false) {
+        m_bPublishPointsFlag = true;
+        m_iPublishPointsIndex = cursor;
+      }
+      else
+        ROS_WARN("publishPoints not done yet, new publish is comming");
+      // pcl_callback_(outMsgArray[cursor], timestamp,scan);
+      cursor = (cursor + 1) % 2;
+      timestamp = 0;
+      
+      //outMsgArray[cursor]->clear();
+      //outMsgArray[cursor]->assign(CIRCLE_ANGLE*100/m_iAngleSize*128*m_iReturnBlockSize,p);
+      uint32_t endTick2 = GetTickCount();
+      if(endTick2 - startTick2 > 2) {
+        ROS_WARN("OutMagArray time:%d",endTick2 - startTick2);
+      }
 
-    // double lastTimestamp = 0.0f;
-    // pandar_rawdata::PPointCloud::Ptr outMsg(new pandar_rawdata::PPointCloud());
-    // int frame_id = 0;
-    // struct timespec ts;
-    // while(1)
-    // {ROS_WARN("processLiDARData");
-    //     if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
-    //     {
-    //         ROS_ERROR("get time error");
-    //     }
-
-    //     ts.tv_sec += 1;
-    //     if (sem_timedwait(&picsem, &ts) == -1)
-    //     {
-    //         ROS_WARN("No Pic");
-    //         continue;
-    //     }
-    //     pthread_mutex_lock(&piclock);
-    //     pandar_msgs::PandarPacket packet = lidar_packets_.front();
-    //     lidar_packets_.pop_front();
-    //     pthread_mutex_unlock(&piclock);
-
-    //     if (output_.getNumSubscribers() == 0) { // no one listening?
-    //         ROS_WARN("No NumSubscribers");
-    //         continue;
-    //     }    // avoid much work
-
-    //     // outMsg's header is a pcl::PCLHeader, convert it before stamp assignment
-    //     // pcl_conversions::toPCL(ros::Time::now(), outMsg->header.stamp);
-    //     // outMsg->is_dense = false;
-    //     outMsg->header.frame_id = "pandar";
-    //     outMsg->height = 1;
-
-
-
-    //     double firstStamp = 0.0f;
-    //     int ret = data_->unpack(packet, *outMsg , gps1 , gps2 , firstStamp, lidarRotationStartAngle);
-
-    //     if(ret == 1)
-    //     {
-    //         // ROS_ERROR("timestamp : %f " , firstStamp);
-    //         if(lastTimestamp != 0.0f)
-    //         {
-    //             if(lastTimestamp > firstStamp)
-    //             {
-    //                 ROS_ERROR("errrrrrrrrr");
-    //             }
-    //         }
-
-    //         lastTimestamp = firstStamp;
-    //         if(hasGps)
-    //         {
-    //           pcl_conversions::toPCL(ros::Time(firstStamp), outMsg->header.stamp);
-    //         }
-    //         else
-    //         {
-    //           pcl_conversions::toPCL(ros::Time::now(), outMsg->header.stamp);
-    //         }
-    //         output_.publish(outMsg);
-    //         outMsg->clear();
-
-
-    //     }
-    // }
+      outMsgArray[cursor]->header.frame_id = frame_id_;
+      outMsgArray[cursor]->height = 1;
+    }
   }
 }
+
+void Convert::publishPoints(){
+  uint32_t start = GetTickCount();
+
+  pcl_conversions::toPCL(ros::Time(timestamp), outMsgArray[m_iPublishPointsIndex]->header.stamp);
+  sensor_msgs::PointCloud2 output;
+  pcl::toROSMsg(*outMsgArray[m_iPublishPointsIndex], output);
+  output_.publish(output);
+  m_bPublishPointsFlag = false;
+
+  uint32_t end = GetTickCount();
+  if(end - start > 150)
+    ROS_WARN("publishPoints time:%d",end - start);
+}
+
+
+void Convert::publishPointsThread()
+{
+  sched_param param;
+  param.sched_priority = 90;
+  //SCHED_FIFO和SCHED_RR
+  int rc = pthread_setschedparam(pthread_self(), SCHED_FIFO, &param);
+  ROS_WARN("publishPointsThread:set result [%d]",rc);
+  int ret_policy;
+  pthread_getschedparam(pthread_self(), &ret_policy, &param);
+  ROS_WARN("publishPointsThread:get thead %lu, policy %d and priority %d\n", pthread_self(), ret_policy, param.sched_priority);
+
+  while(1)
+  {
+      usleep(1000);
+      if(m_bPublishPointsFlag)
+        publishPoints();
+  }
+}
+
 
 void Convert::doTaskFlow(int cursor) {
     tf::Taskflow taskFlow;

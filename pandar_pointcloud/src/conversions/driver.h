@@ -26,7 +26,7 @@
 #include <pandar_pointcloud/CloudNodeConfig.h>
 
 typedef struct PandarGPS_s PandarGPS; 
-#define READ_PACKET_SIZE (360)
+#define READ_PACKET_SIZE (720)
 
 namespace pandar_pointcloud
 {

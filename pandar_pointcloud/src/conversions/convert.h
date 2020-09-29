@@ -199,8 +199,23 @@ typedef struct PacketsBuffer_s {
     else {
       if(m_buffers.end() == m_iterPush) {
         m_iterPush = m_buffers.begin();
-      }      
-      if(m_iterPush == m_iterTaskBegin) {ROS_WARN("buffer don't have space!,%d", m_iterTaskBegin - m_buffers.begin());return 0;}
+      }
+      
+      static bool lastOverflowed = false;
+
+      if(m_iterPush == m_iterTaskBegin) {
+        static uint32_t tmp = m_iterTaskBegin - m_buffers.begin();
+        if(m_iterTaskBegin - m_buffers.begin() != tmp){
+          ROS_WARN("buffer don't have space!,%d", m_iterTaskBegin - m_buffers.begin());
+          tmp = m_iterTaskBegin - m_buffers.begin();
+        }
+        lastOverflowed = true;
+        return 0;
+      }
+      if(lastOverflowed){
+        lastOverflowed = false;
+        ROS_WARN("buffer recovered");
+      }
       *(m_iterPush++) = pkt;
       return 1;
     }
@@ -241,6 +256,8 @@ public:
     void processGps(pandar_msgs::PandarGps &gpsMsg);
     void pushLiDARData(pandar_msgs::PandarPacket packet);
     int processLiDARData();
+    void publishPointsThread();
+    void publishPoints();
 
 private:
 
@@ -304,6 +321,8 @@ private:
     int m_iReturnMode;
     int m_iAngleSize;//10->0.1degree,20->0.2degree
     int m_iReturnBlockSize;
+    bool m_bPublishPointsFlag;
+    int m_iPublishPointsIndex;
 
 };
 

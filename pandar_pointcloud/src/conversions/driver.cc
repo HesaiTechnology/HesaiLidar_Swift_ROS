@@ -20,6 +20,7 @@
 #include <tf/transform_listener.h>
 #include <pandar_msgs/PandarScan.h>
 #include <pandar_msgs/PandarGps.h>
+#include <pandar_pointcloud/platUtil.h>
 
 #include "driver.h"
 #include "convert.h"
@@ -251,6 +252,8 @@ bool PandarDriver::poll(void)
 }
 
 void PandarDriver::publishRawData() {
+  uint32_t start = GetTickCount();
+
   pthread_mutex_lock(&piclock);
   if (m_bNeedPublish) {
     //  ROS_WARN("PandarDriver::publishRawData()[%d]",m_iScanPopIndex);
@@ -261,6 +264,11 @@ void PandarDriver::publishRawData() {
   }
   m_bNeedPublish = false;
   pthread_mutex_unlock(&piclock);
+
+  uint32_t end = GetTickCount();
+  uint32_t delta = end - start;
+  if(delta > 2) ROS_WARN("publishRawData, time %dms", delta);
+
 }
 
 void PandarDriver::callback(pandar_pointcloud::CloudNodeConfig &config,

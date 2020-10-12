@@ -34,7 +34,6 @@ PandarDriver::PandarDriver(ros::NodeHandle node, ros::NodeHandle private_nh,
   // use private node handle to get parameters
   private_nh.getParam("frame_id", config_.frame_id);
   private_nh.getParam("publish_model", publishmodel);
-  ROS_WARN("frame_id [%s]", config_.frame_id.c_str());
   std::string tf_prefix = tf::getPrefixParam(private_nh);
   ROS_DEBUG_STREAM("tf_prefix: " << tf_prefix);
   config_.frame_id = tf::resolve(tf_prefix, config_.frame_id);
@@ -108,18 +107,18 @@ PandarDriver::PandarDriver(ros::NodeHandle node, ros::NodeHandle private_nh,
     // read data from live socket
     input_.reset(new pandar_pointcloud::InputSocket(private_nh, udp_port));
   }
-  ROS_WARN("drive nodeType[%s]", nodeType.c_str());
-  ROS_WARN("drive publishmodel[%s]", publishmodel.c_str());
+  // ROS_WARN("drive nodeType[%s]", nodeType.c_str());
+  // ROS_WARN("drive publishmodel[%s]", publishmodel.c_str());
   // raw packet output topic
   if ((publishmodel == "both_point_raw" || publishmodel == "raw") &&
       (nodeType == LIDAR_NODE_TYPE)) {
-    ROS_WARN("node.advertise pandar_packets");
+    // ROS_WARN("node.advertise pandar_packets");
     output_ = node.advertise<pandar_msgs::PandarScan>("pandar_packets", 10000);
   }
 
   // raw packet output topic
   if (nodeType == LIDAR_NODE_TYPE) {
-    ROS_WARN("node.advertise pandar_gps");
+    // ROS_WARN("node.advertise pandar_gps");
     gpsoutput_ = node.advertise<pandar_msgs::PandarGps>("pandar_gps", 10);
   }
 }
@@ -213,7 +212,7 @@ bool PandarDriver::poll(void) {
         // gpsoutput_.publish(gps);
       }
     }
-    if (rc < 0) return false;  // end of file reached?
+    if (rc > 0) return false;  // end of file reached?
     // }
 
     if (publishmodel == "both_point_raw" || publishmodel == "point") {

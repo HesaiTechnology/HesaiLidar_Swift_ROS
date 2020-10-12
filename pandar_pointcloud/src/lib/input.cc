@@ -253,6 +253,14 @@ InputPCAP::InputPCAP(ros::NodeHandle private_nh, uint16_t port,
   filter << "udp dst port " << port;
   pcap_compile(pcap_, &pcap_packet_filter_, filter.str().c_str(), 1,
                PCAP_NETMASK_UNKNOWN);
+  ts_index = 796;
+  utc_index = 802;
+  gap = 1000;
+  last_pkt_ts = 0;
+  count;
+  last_time = 0;
+  current_time = 0;
+  pkt_ts = 0;
 }
 
 /** destructor */
@@ -263,68 +271,77 @@ InputPCAP::~InputPCAP(void) { pcap_close(pcap_); }
 //          1 - error
 /** @brief Get one pandar packet. */
 int InputPCAP::getPacket(pandar_msgs::PandarPacket *pkt) {
-  struct pcap_pkthdr *header;
-  const u_char *pkt_data;
+  pcap_pkthdr *pktHeader;
+  const unsigned char *packetBuf;
+  struct tm t;
 
-  while (true) {  // ROS_WARN("InputPCAP::getPacket");
-    int res;
-    if ((res = pcap_next_ex(pcap_, &header, &pkt_data)) >= 0) {
-      // Skip packets not for the correct port and from the
-      // selected IP address.
-      // if (!devip_str_.empty() &&
-      //     (0 == pcap_offline_filter(&pcap_packet_filter_,
-      //                               header, pkt_data)))
-      //   {ROS_WARN("devip_str_ &&
-      //   pcap_offline_filter[%s]",devip_str_.c_str());
-      //     continue;
-      //   }
+  if(pcap_next_ex(pcap_, &pktHeader, &packetBuf) >= 0) {
+    const uint8_t *packet = packetBuf + 42;
+    memcpy(&pkt->data[0], packetBuf + 42, packet_size);
+    count++;
 
-      // Keep the reader from blowing through the file.
-      if (read_fast_ == false) packet_rate_.sleep();
+    if (count >= gap) {
+      count = 0;
 
-      memcpy(&pkt->data[0], pkt_data + 42, packet_size);
-      pkt->stamp = ros::Time::now();  // time_offset not considered here, as no
+      t.tm_year  = packet[utc_index];
+      t.tm_mon   = packet[utc_index+1] - 1;
+      t.tm_mday  = packet[utc_index+2];
+      t.tm_hour  = packet[utc_index+3];
+      t.tm_min   = packet[utc_index+4];
+      t.tm_sec   = packet[utc_index+5];
+      t.tm_isdst = 0;
+
+      pkt_ts = mktime(&t) * 1000000 + ((packet[ts_index]& 0xff) | \
+          (packet[ts_index+1]& 0xff) << 8 | \
+          ((packet[ts_index+2]& 0xff) << 16) | \
+          ((packet[ts_index+3]& 0xff) << 24));
+      struct timeval sys_time;
+      gettimeofday(&sys_time, NULL);
+      current_time = sys_time.tv_sec * 1000000 + sys_time.tv_usec;
+
+      if (0 == last_pkt_ts) {
+        last_pkt_ts = pkt_ts;
+        last_time = current_time;
+      } else {
+        int64_t sleep_time = (pkt_ts - last_pkt_ts) - \
+            (current_time - last_time);
+            ROS_WARN("pkt time: %u,use time: %u,sleep time: %u",pkt_ts - last_pkt_ts,current_time - last_time, sleep_time);
+
+        if (sleep_time > 0) {
+          struct timeval waitTime;
+          waitTime.tv_sec = sleep_time / 1000000;
+          waitTime.tv_usec = sleep_time % 1000000;
+
+          int err;
+
+          do {
+            err = select(0, NULL, NULL, NULL, &waitTime);
+          } while (err < 0 && errno != EINTR);
+        }
+
+        last_pkt_ts = pkt_ts;
+        last_time = current_time;
+        last_time += sleep_time;
+      }
+    }
+
+    pkt->stamp = ros::Time::now();  // time_offset not considered here, as no
                                       // synchronization required
-      empty_ = false;
-      if (header->caplen == (512 + 42)) {
+      if (pktHeader->caplen == (512 + 42)) {
         // ROS_ERROR("GPS");
         return 2;
       }
-
-      else if (header->caplen == (812 + 42)) {
+      else if (pktHeader->caplen == (812 + 42)) {
         return 0;  // success
       }
 
-      // Wrong data , It's not the packet of LiDAR I think.
-      continue;
-    }
+    // if (pcapFile != NULL) {
+    //   pcap_close(pcapFile);
+    //   pcapFile = NULL;
+    // }
 
-    if (empty_)  // no data in file?
-    {
-      // ROS_WARN("Error %d reading Pandar packet: %s",
-      //  res, pcap_geterr(pcap_));
-      return -1;
-    }
-
-    if (read_once_) {
-      ROS_WARN("end of file reached -- done reading.");
-      return -1;
-    }
-
-    if (repeat_delay_ > 0.0) {
-      ROS_WARN("end of file reached -- delaying %.3f seconds.", repeat_delay_);
-      usleep(rint(repeat_delay_ * 1000000.0));
-    }
-
-    ROS_DEBUG("replaying Pandar dump file");
-
-    // I can't figure out how to rewind the file, because it
-    // starts with some kind of header.  So, close the file
-    // and reopen it with pcap.
-    pcap_close(pcap_);
-    pcap_ = pcap_open_offline(filename_.c_str(), errbuf_);
-    empty_ = true;  // maybe the file disappeared?
-  }                 // loop back and try again
+  }
+  return 1;
 }
 
 }  // pandar namespace

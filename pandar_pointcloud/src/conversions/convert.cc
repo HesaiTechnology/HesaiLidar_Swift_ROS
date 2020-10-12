@@ -81,11 +81,10 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
                  std::string node_type)
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
-  int maxpolicy = sched_get_priority_max(SCHED_RR);
-  ROS_WARN("Convert ,max[%d]", maxpolicy);
+  
+  m_sRosVersion = "Pandar128_1.2.1";
+  ROS_WARN("--------Pandar128 ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
-  int minpolicy = sched_get_priority_min(SCHED_RR);
-  ROS_WARN("Convert ,min[%d]", minpolicy);
   publishmodel = "";
   if (LIDAR_NODE_TYPE == node_type) {
     private_nh.getParam("publish_model", publishmodel);
@@ -103,9 +102,12 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     srv_->setCallback(f);
   }
 
+  private_nh.getParam("device_ip", m_sDeviceIp);
   private_nh.getParam("frame_id", frame_id_);
   private_nh.getParam("firetime_file", lidarFiretimeFile);
   private_nh.getParam("calibration", lidarCorrectionFile);
+  private_nh.getParam("pcap", m_sPcapFile);
+
 
   ROS_WARN("frame_id [%s]", frame_id_.c_str());
   ROS_WARN("lidarFiretimeFile [%s]", lidarFiretimeFile.c_str());
@@ -145,18 +147,54 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
   sem_init(&picsem, 0, 0);
   pthread_mutex_init(&piclock, NULL);
 
-  std::ifstream fin(lidarCorrectionFile);
-  int length = 0;
-  std::string strlidarCalibration;
-  fin.seekg(0, std::ios::end);
-  length = fin.tellg();
-  fin.seekg(0, std::ios::beg);
-  char *buffer = new char[length];
-  fin.read(buffer, length);
-  fin.close();
-  strlidarCalibration = buffer;
+  bool loadCorrectionFileSuccess = false;
+  int ret;
+  if(m_sPcapFile.empty()) {
+    m_pTcpCommandClient =TcpCommandClientNew(m_sDeviceIp.c_str(), PANDARSDK_TCP_COMMAND_PORT);
+    if(NULL != m_pTcpCommandClient) {
+      char *buffer = NULL;
+      uint32_t len = 0;
+      std::string correntionString;
+      ret = TcpCommandGetLidarCalibration(m_pTcpCommandClient, &buffer, &len);
+      if (ret == 0 && buffer) {
+        ROS_WARN("Load correction file from lidar now!");
+        correntionString = std::string(buffer);
+        ret = loadCorrectionFile(correntionString);
+          if (ret != 0) {
+            ROS_WARN("Parse Lidar Correction Error");
+          } 
+          else {
+            loadCorrectionFileSuccess = true;
+            ROS_WARN("Parse Lidar Correction Success!!!");
+          }
+        free(buffer);
+      }
+      else{
+        ROS_WARN("Get lidar calibration filed");
+      }
+    }
+  }
+  if(!loadCorrectionFileSuccess) {
+    ROS_WARN("load correction file from local correction.csv now!");
+    std::ifstream fin(lidarCorrectionFile);
+    int length = 0;
+    std::string strlidarCalibration;
+    fin.seekg(0, std::ios::end);
+    length = fin.tellg();
+    fin.seekg(0, std::ios::beg);
+    char *buffer = new char[length];
+    fin.read(buffer, length);
+    fin.close();
+    strlidarCalibration = buffer;
+    ret = loadCorrectionFile(strlidarCalibration);
+    if (ret != 0) {
+      ROS_WARN("Parse local Correction file Error");
+    } 
+    else {
+      ROS_WARN("Parse local Correction file Success!!!");
+    }
+  }
 
-  loadCorrectionFile(strlidarCalibration);
   loadOffsetFile(
       lidarFiretimeFile);  // parameter is the path of lidarFiretimeFil
   ROS_WARN("node_type[%s]", node_type.c_str());
@@ -190,7 +228,7 @@ int Convert::loadCorrectionFile(std::string correction_content) {
 
   std::string line;
   if (std::getline(ifs, line)) {  // first line "Laser id,Elevation,Azimuth"
-    std::cout << "Parse Lidar Correction..." << std::endl;
+    ROS_WARN("Parse Lidar Correction...");
   }
 
   float pitchList[PANDAR128_LASER_NUM];
@@ -199,7 +237,7 @@ int Convert::loadCorrectionFile(std::string correction_content) {
   int lineCounter = 0;
   while (std::getline(ifs, line)) {
     if (line.length() < strlen("1,1,1")) {
-      break;
+      return -1;
     } else {
       lineCounter++;
     }
@@ -217,8 +255,8 @@ int Convert::loadCorrectionFile(std::string correction_content) {
     std::stringstream(subline) >> azimuth;
 
     if (lineId != lineCounter) {
-      printf("laser id error %d %d\n", lineId, lineCounter);
-      break;
+      ROS_WARN("laser id error %d %d", lineId, lineCounter);
+      return -1;
     }
 
     pitchList[lineId - 1] = elev;
@@ -396,8 +434,6 @@ int Convert::processLiDARData() {
         (0 ==
          pktCount % (CIRCLE_ANGLE / (TASKFLOW_STEP_SIZE * 2 * m_iAngleSize /
                                      100 / m_iReturnBlockSize)))) {
-      ROS_WARN("#########angle[%u],",
-               lidar_packets_.getTaskBegin()->blocks[0].fAzimuth);
       ROS_WARN("pktCount[%d]", pktCount);
       ROS_WARN("ts %lf cld size %u", timestamp,
                outMsgArray[cursor]->points.size());

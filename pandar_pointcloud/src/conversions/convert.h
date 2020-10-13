@@ -38,11 +38,13 @@
 #include <boost/lockfree/queue.hpp>
 #include "driver.h"
 #include "laser_ts.h"
+#include "tcp_command_client.h"
 
 #ifndef CIRCLE
 #define CIRCLE (36000)
 #endif
 
+#define PANDARSDK_TCP_COMMAND_PORT (9347)
 #define LIDAR_NODE_TYPE "lidar"
 #define LIDAR_ANGLE_SIZE_10 (10)
 #define LIDAR_ANGLE_SIZE_20 (20)
@@ -106,7 +108,7 @@
 #define PANDAR128_PACKET_SEQ_NUM_SIZE \
   (PANDAR128_PACKET_SIZE + PANDAR128_SEQ_NUM_SIZE)
 #define PANDAR128_WITHOUT_CONF_UNIT_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
-#define TASKFLOW_STEP_SIZE (360)
+#define TASKFLOW_STEP_SIZE (300)
 
 #define ETHERNET_MTU (1500)
 
@@ -318,6 +320,11 @@ class Convert {
   int m_iReturnBlockSize;
   bool m_bPublishPointsFlag;
   int m_iPublishPointsIndex;
+  void *m_pTcpCommandClient;
+  std::string m_sDeviceIp;
+  std::string m_sPcapFile;
+  std::string m_sRosVersion;
+
 };
 
 }  // namespace pandar_pointcloud

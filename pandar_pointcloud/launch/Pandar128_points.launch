@@ -11,7 +11,6 @@
   <arg name="max_range" default="130.0" />
   <arg name="firetime_file" default="$(find pandar_pointcloud)/params/laser-ts.csv"/>
   <arg name="min_range" default="0.5" />
-  <!-- <arg name="pcap" default="/home/fanglinwen/my_project/pcapFile/Pandar128_double_return_09_28.pcap" /> -->
   <arg name="pcap" default="" />
   <arg name="port" default="2368" />
   <arg name="read_fast" default="false" />

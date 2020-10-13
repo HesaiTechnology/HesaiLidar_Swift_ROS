@@ -125,6 +125,14 @@ namespace pandar_pointcloud
     bool read_once_;
     bool read_fast_;
     double repeat_delay_;
+    int ts_index;
+    int utc_index;
+    int gap;
+    int64_t last_pkt_ts;
+    int count;
+    int64_t last_time;
+    int64_t current_time;
+    int64_t pkt_ts;
   };
 
 } // pandar_driver namespace

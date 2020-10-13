@@ -1,6 +1,6 @@
 # ROS_Pandar128
 
-This repository includes the ROS Driver for Pandar128 LiDAR sensor manufactured by Hesai Technology.
+This repository includes the ROS Driver for Pandar128 LiDAR sensor manufactured by Hesai Technology.Support UDP protocol version number is 1.3.
 
 
 ## Build

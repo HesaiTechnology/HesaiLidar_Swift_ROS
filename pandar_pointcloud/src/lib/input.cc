@@ -305,8 +305,6 @@ int InputPCAP::getPacket(pandar_msgs::PandarPacket *pkt) {
       } else {
         int64_t sleep_time = (pkt_ts - last_pkt_ts) - \
             (current_time - last_time);
-            ROS_WARN("pkt time: %u,use time: %u,sleep time: %u",pkt_ts - last_pkt_ts,current_time - last_time, sleep_time);
-
         if (sleep_time > 0) {
           struct timeval waitTime;
           waitTime.tv_sec = sleep_time / 1000000;

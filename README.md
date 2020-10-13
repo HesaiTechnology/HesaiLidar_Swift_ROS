@@ -29,12 +29,7 @@ $ cd ..
 $ rosdep install -y --from-paths src --ignore-src --rosdistro $ROS_DISTRO
 ```
 
-4. Enter super user mode
-```
-$sudo -s
-```
-
-5. Compile
+4. Compile
 ```
 $ catkin_make -DCMAKE_BUILD_TYPE=Release
 ```
@@ -70,6 +65,10 @@ Data source will be read from pcap file instead of LiDAR once "pcap_file" not em
 Set UDP buffer default size
 ```
 $sudo sysctl -w net.core.rmem_default=26214400
+```
+Enter super user mode
+```
+$sudo -s
 ```
 
 ### View the point cloud from connected LiDAR

@@ -1,38 +1,35 @@
-# ROS_P128
+# ROS_Pandar128
 
 This repository includes the ROS Driver for Pandar128 LiDAR sensor manufactured by Hesai Technology.
 
 
 ## Build
 
-### Install dependency library
-
+### Install dependency libraries
 ```
 $ sudo apt-get update
 $ sudo apt install libpcl-dev libpcap-dev libyaml-cpp-dev python-catkin-tools
 ```
 
+### Install ROS
+http://wiki.ros.org/ROS/Installation
+
 ### Compile
 
-1. Create ROS Workspace. i.e. `rosworkspace`
+1. Create ROS Workspace. i.e. `rosworkspace`. Please note that "Workspace" is defined by your own, but subfolder "src" is required and cannot be renamed 
 ```
 $ mkdir -p rosworkspace/src
 $ cd rosworkspace/src
 ```
 
-2. Clone recursively this repository.
+2. Clone recursively this repository in the current path
 3. Install required dependencies with the help of `rosdep`
 ```
 $ cd ..
 $ rosdep install -y --from-paths src --ignore-src --rosdistro $ROS_DISTRO
 ```
 
-4. Set udp buffer default size
-```
-$sudo sysctl -w net.core.rmem_default=12582912
-enter password
-```
-5. Enter super user mode
+4. Enter super user mode
 ```
 $sudo -s
 ```
@@ -48,43 +45,58 @@ $ catkin_make -DCMAKE_BUILD_TYPE=Release
  $ cd src/ROS_P128/pandar_pointcloud/launch
 ```
 open Pandar128_points.launch to set configuration parameters
-### Reciving data from connected Lidar: config lidar ip&port, leave the pcap_file empty
+
+### Reciving data from connected LiDAR: config LiDAR IP address & UDP port, and leave the pcap_file empty
+
 |Parameter | Default Value|
 |---------|---------------|
 |device_ip |192.168.1.201|
 |port |2368|
 |pcap_file ||
 
-Data source will be from connected Lidar when "pcap_file" set to empty
+Data source will be read from connected LiDAR when "pcap_file" is set to empty
 
 ### Reciving data from pcap file: config pcap_file and correction file path
+
 |Parameter | Value|
 |---------|---------------|
 |pcap |pcap file path|
 
-Data source will be from pcap file once "pcap_file" not empty
+Data source will be read from pcap file instead of LiDAR once "pcap_file" not empty
 
 
 ## Run
-###View the point cloud from connected Lidar
+
+Set UDP buffer default size
+```
+$sudo sysctl -w net.core.rmem_default=26214400
+```
+
+### View the point cloud from connected LiDAR
+
 1. While in the `rosworkspace` directory.
 ```
 $ source devel/setup.bash
 $ roslaunch pandar_pointcloud Pandar128_points.launch
 ```
+
 2. The driver will publish a PointCloud2 message in the topic.
 ```
 /pandar_points
 ```
+
 3. Open Rviz and add display by topic.
+
 4. Change fixed frame to "Pandar128" to view published point clouds.
 
-###View the point cloud from rosbag
+### View the point cloud from rosbag file
+
 1. While in the `rosworkspace` directory.
 ```
 $ source devel/setup.bash
 $ roslaunch pandar_pointcloud Pandar128_points.launch
 ```
+
 2. The driver will publish a raw data packet message in the topic.
 ```
 /pandar_packets

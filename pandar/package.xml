@@ -1,0 +1,25 @@
+<package>
+
+  <name>pandar</name>
+  <version>1.0.0</version>
+  <description>
+    Basic ROS support for the Pandar128 LIDARs.
+  </description>
+  <maintainer email="fanglingwen@hesaitech.com">Lingwen Fang</maintainer>
+  <author>Lingwen Fang</author>
+  <license>BSD</license>
+  <!--
+  <review status="API reviewed" notes="2012-02-02"/>
+  -->
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <run_depend>pandar_driver</run_depend>
+  <run_depend>pandar_msgs</run_depend>
+  <run_depend>pandar_pointcloud</run_depend>
+
+  <export>
+    <metapackage/>
+  </export>
+
+</package>

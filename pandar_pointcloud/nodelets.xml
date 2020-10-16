@@ -1,0 +1,31 @@
+<library path="lib/libpandar_cloud_nodelet">
+  <class name="pandar_pointcloud/CloudNodelet"
+         type="pandar_pointcloud::CloudNodelet"
+         base_class_type="nodelet::Nodelet">
+    <description>
+      Aggregates points from multiple packets, publishing PointCloud2.
+    </description>
+  </class>
+</library>
+
+<library path="lib/libpandar_ringcolors_nodelet">
+  <class name="pandar_pointcloud/RingColorsNodelet"
+		 type="pandar_pointcloud::RingColorsNodelet"
+		 base_class_type="nodelet::Nodelet">
+	<description>
+	  Converts a Pandar128 PointCloud2 to PointXYZRGB, assigning colors
+	  for visualization of the laser rings.
+	</description>
+  </class>
+</library>
+
+<library path="lib/libpandar_transform_nodelet">
+  <class name="pandar_pointcloud/TransformNodelet"
+		 type="pandar_pointcloud::TransformNodelet"
+		 base_class_type="nodelet::Nodelet">
+	<description>
+	  Transforms packets into /odom frame, publishing multiple packets
+	  as PointCloud2.
+	</description>
+  </class>
+</library>

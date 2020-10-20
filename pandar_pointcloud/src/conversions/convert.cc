@@ -545,7 +545,7 @@ int Convert::checkLiadaMode() {
     } else {
       m_iAngleSize = LIDAR_ANGLE_SIZE_20;  // 10->0.1degree,20->0.2degree
     }
-    if (0x39 == m_iReturnMode) {
+    if (0x39 == m_iReturnMode || 0x3b == m_iReturnMode || 0x3c == m_iReturnMode) {
       m_iReturnBlockSize = LIDAR_RETURN_BLOCK_SIZE_2;
     } else {
       m_iReturnBlockSize = LIDAR_RETURN_BLOCK_SIZE_1;
@@ -577,7 +577,7 @@ int Convert::checkLiadaMode() {
           "lidarworkmode[%d],m_iReturnMode[%x],lidarreturnmode[%x],",
           m_iWorkMode, lidarworkmode, m_iReturnMode, lidarreturnmode);
       m_iReturnMode = lidarreturnmode;
-      if (0x39 == m_iReturnMode) {
+      if (0x39 == m_iReturnMode || 0x3b == m_iReturnMode || 0x3c == m_iReturnMode) {
         m_iReturnBlockSize = LIDAR_RETURN_BLOCK_SIZE_2;
       } else {
         m_iReturnBlockSize = LIDAR_RETURN_BLOCK_SIZE_1;

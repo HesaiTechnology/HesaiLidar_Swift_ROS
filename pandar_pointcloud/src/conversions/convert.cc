@@ -507,11 +507,8 @@ void Convert::doTaskFlow(int cursor) {
 
 int Convert::checkLiadaMode() {
   uint8_t lidarworkmode =
-      lidar_packets_.getTaskEnd()->tail.nShutdownFlag & 0x03;
-  uint8_t lidarreturnmode = lidar_packets_.getTaskEnd()->tail.nReturnMode;
-  if (lidarworkmode == 3 || lidarreturnmode == 59) {  // for some error value
-    return 1;
-  }
+      (lidar_packets_.getTaskEnd() - 1)->tail.nShutdownFlag & 0x03;
+  uint8_t lidarreturnmode = (lidar_packets_.getTaskEnd() - 1)->tail.nReturnMode;
   if (0 == m_iWorkMode && 0 == m_iReturnMode) {
     m_iWorkMode = lidarworkmode;
     m_iReturnMode = lidarreturnmode;

@@ -4,6 +4,7 @@
  *  Copyright (C) 2011 Jesse Vera
  *  Copyright (C) 2012 Austin Robot Technology, Jack O'Quin
  *  Copyright (c) 2017 Hesai Photonics Technology, Yang Sheng
+ *  Copyright (c) 2020 Hesai Photonics Technology, Lingwen Fang
  *  License: Modified BSD Software License Agreement
  *
  *  $Id$
@@ -11,7 +12,7 @@
 
 /** @file
 
-    This class converts raw Pandar40 3D LIDAR packets to PointCloud2.
+    This class converts raw Pandar128 3D LIDAR packets to PointCloud2.
 
 */
 
@@ -48,6 +49,7 @@
 #define LIDAR_NODE_TYPE "lidar"
 #define LIDAR_ANGLE_SIZE_10 (10)
 #define LIDAR_ANGLE_SIZE_20 (20)
+#define LIDAR_ANGLE_SIZE_40 (40)
 #define LIDAR_RETURN_BLOCK_SIZE_1 (1)
 #define LIDAR_RETURN_BLOCK_SIZE_2 (2)
 
@@ -109,7 +111,7 @@
   (PANDAR128_PACKET_SIZE + PANDAR128_SEQ_NUM_SIZE)
 #define PANDAR128_WITHOUT_CONF_UNIT_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
 
-#define TASKFLOW_STEP_SIZE (300)
+#define TASKFLOW_STEP_SIZE (225)
 #define PANDAR128_CRC_SIZE (4)
 #define PANDAR128_FUNCTION_SAFETY_SIZE (17)
 
@@ -117,6 +119,8 @@
 #define ETHERNET_MTU (1500)
 
 #define CIRCLE_ANGLE (360)
+#define MOTOR_SPEED_600 (600)
+#define MOTOR_SPEED_1200 (1200)
 
 typedef struct PandarPacket_s {
   double stamp;
@@ -273,6 +277,8 @@ class Convert {
   void loadOffsetFile(std::string file);
   int loadCorrectionFile(std::string correction_content);
   int checkLiadaMode();
+  void changeAngleSize();
+  void changeReturnBlockSize();
 
   /// Pointer to dynamic reconfigure service srv_
   boost::shared_ptr<
@@ -320,6 +326,7 @@ class Convert {
   std::string publishmodel;
   int m_iWorkMode;
   int m_iReturnMode;
+  int m_iMotorSpeed;
   int m_iAngleSize;  // 10->0.1degree,20->0.2degree
   int m_iReturnBlockSize;
   bool m_bPublishPointsFlag;

@@ -1,6 +1,7 @@
 /*
  *  Copyright (C) 2012 Austin Robot Technology, Jack O'Quin
  *  Copyright (c) 2017 Hesai Photonics Technology, Yang Sheng
+ *  Copyright (c) 2020 Hesai Photonics Technology, Lingwen Fang
  *  License: Modified BSD Software License Agreement
  *
  *  $Id$
@@ -8,7 +9,7 @@
 
 /** \file
 
-    This ROS node converts raw Pandar40 LIDAR packets to PointCloud2.
+    This ROS node converts raw Pandar128 LIDAR packets to PointCloud2.
 
 */
 #include <ros/ros.h>

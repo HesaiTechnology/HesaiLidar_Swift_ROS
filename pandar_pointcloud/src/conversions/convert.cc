@@ -3,6 +3,7 @@
  *  Copyright (C) 2011 Jesse Vera
  *  Copyright (C) 2012 Austin Robot Technology, Jack O'Quin
  *  Copyright (c) 2017 Hesai Photonics Technology, Yang Sheng
+ *  Copyright (c) 2020 Hesai Photonics Technology, Lingwen Fang
  *  License: Modified BSD Software License Agreement
  *
  *  $Id$
@@ -10,7 +11,7 @@
 
 /** @file
 
-    This class converts raw Pandar40 3D LIDAR packets to PointCloud2.
+    This class converts raw Pandar128 3D LIDAR packets to PointCloud2.
 
 */
 #include "convert.h"
@@ -82,7 +83,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "Pandar128_1.2.1";
+  m_sRosVersion = "Pandar128_1.0.1";
   ROS_WARN("--------Pandar128 ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -115,6 +116,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
 
   m_iWorkMode = 0;
   m_iReturnMode = 0;
+  m_iMotorSpeed = 0;
 
   hasGps = 0;
   // subscribe to PandarScan packets
@@ -331,7 +333,7 @@ void Convert::processScan(const pandar_msgs::PandarScan::ConstPtr &scanMsg) {
   // publish the accumulated cloud message
   ROS_DEBUG_STREAM("Publishing "
                    << outMsg->height * outMsg->width
-                   << " Pandar40 points, time: " << outMsg->header.stamp);
+                   << " Pandar128 points, time: " << outMsg->header.stamp);
 
   if (ret == 1) {
     pcl_conversions::toPCL(ros::Time(firstStamp), outMsg->header.stamp);
@@ -393,7 +395,10 @@ int Convert::parseData(Pandar128Packet &packet, const uint8_t *recvbuf,
   index += 1;
   packet.tail.nReturnMode = recvbuf[index];
 
-  index += 1 + 2;
+  index += 1;
+  packet.tail.nMotorSpeed = recvbuf[index];
+
+  index += 2;
   memcpy(&(packet.tail.nUTCTime[0]),  &recvbuf[index], 6);
 
   index += 6;
@@ -429,11 +434,11 @@ int Convert::processLiDARData() {
       usleep(1000);
       continue;
     }
+
     if (0 == checkLiadaMode()) {
-      ROS_WARN("checkLiadaMode now!!");
+      // ROS_WARN("checkLiadaMode now!!");
       outMsgArray[cursor]->clear();
-      outMsgArray[cursor]->resize(CIRCLE_ANGLE * 100 / m_iAngleSize * 128 *
-                                  m_iReturnBlockSize);
+      outMsgArray[cursor]->resize(CIRCLE_ANGLE * 100 / m_iAngleSize * PANDAR128_LASER_NUM * m_iReturnBlockSize);
       lidar_packets_.creatNewTask();
       pktCount = 0;
       continue;
@@ -456,7 +461,7 @@ int Convert::processLiDARData() {
         (0 ==
          pktCount % (CIRCLE_ANGLE / (TASKFLOW_STEP_SIZE * 2 * m_iAngleSize /
                                      100 / m_iReturnBlockSize)))) {
-      ROS_WARN("pktCount[%d]", pktCount);
+      // ROS_WARN("pktCount[%d]", pktCount);
       ROS_WARN("ts %lf cld size %u", timestamp,
                outMsgArray[cursor]->points.size());
 
@@ -471,8 +476,7 @@ int Convert::processLiDARData() {
       timestamp = 0;
 
       outMsgArray[cursor]->clear();
-      outMsgArray[cursor]->resize(CIRCLE_ANGLE * 100 / m_iAngleSize * 128 *
-                                  m_iReturnBlockSize);
+      outMsgArray[cursor]->resize(CIRCLE_ANGLE * 100 / m_iAngleSize * PANDAR128_LASER_NUM * m_iReturnBlockSize );
       uint32_t endTick2 = GetTickCount();
       if (endTick2 - startTick2 > 2) {
         // ROS_WARN("OutMsgArray time:%d", endTick2 - startTick2);
@@ -527,64 +531,77 @@ void Convert::doTaskFlow(int cursor) {
 }
 
 int Convert::checkLiadaMode() {
-  uint8_t lidarworkmode =
-      lidar_packets_.getTaskEnd()->tail.nShutdownFlag & 0x03;
-  uint8_t lidarreturnmode = lidar_packets_.getTaskEnd()->tail.nReturnMode;
-  if (lidarworkmode == 3 || lidarreturnmode == 59) {  // for some error value
-    return 1;
+  uint8_t lidarworkmode = (lidar_packets_.getTaskEnd() - 1)->tail.nShutdownFlag & 0x03;
+  uint8_t lidarreturnmode = (lidar_packets_.getTaskEnd() - 1)->tail.nReturnMode;
+  uint16_t lidarmotorspeed = (lidar_packets_.getTaskEnd() -1 )->tail.nMotorSpeed;
+  if(abs(lidarmotorspeed - MOTOR_SPEED_600) < 100) { //ignore the speed gap of 6000 rpm
+    lidarmotorspeed = MOTOR_SPEED_600;
   }
-  if (0 == m_iWorkMode && 0 == m_iReturnMode) {
+  else if(abs(lidarmotorspeed - MOTOR_SPEED_1200) < 100) { //ignore the speed gap of 1200 rpm
+    lidarmotorspeed = MOTOR_SPEED_1200;
+  }
+  else {
+      lidarmotorspeed = MOTOR_SPEED_600; //changing the speed,give enough size
+  }
+
+  if (0 == m_iWorkMode && 0 == m_iReturnMode && 0 == m_iMotorSpeed) { //init lidar mode 
     m_iWorkMode = lidarworkmode;
     m_iReturnMode = lidarreturnmode;
-    ROS_WARN(
-        "init m_iWorkMode[%d], "
-        "lidarworkmode[%d],m_iReturnMode[%x],lidarreturnmode[%x],",
-        m_iWorkMode, lidarworkmode, m_iReturnMode, lidarreturnmode);
-    if (0 == m_iWorkMode) {
-      m_iAngleSize = LIDAR_ANGLE_SIZE_10;  // 10->0.1degree,20->0.2degree
-    } else {
-      m_iAngleSize = LIDAR_ANGLE_SIZE_20;  // 10->0.1degree,20->0.2degree
-    }
-    if (0x39 == m_iReturnMode) {
-      m_iReturnBlockSize = LIDAR_RETURN_BLOCK_SIZE_2;
-    } else {
-      m_iReturnBlockSize = LIDAR_RETURN_BLOCK_SIZE_1;
-    }
+    m_iMotorSpeed = lidarmotorspeed;
+    ROS_WARN("init mode: workermode: %x,return mode: %x,speed: %d",m_iWorkMode, m_iReturnMode, m_iMotorSpeed);
+    changeAngleSize();
+    changeReturnBlockSize();
     boost::shared_ptr<PPointCloud> outMag0(new PPointCloud(
-        CIRCLE_ANGLE * 100 / m_iAngleSize * 128 * m_iReturnBlockSize, 1));
+        CIRCLE_ANGLE * 100 / m_iAngleSize * PANDAR128_LASER_NUM * m_iReturnBlockSize, 1));
     boost::shared_ptr<PPointCloud> outMag1(new PPointCloud(
-        CIRCLE_ANGLE * 100 / m_iAngleSize * 128 * m_iReturnBlockSize, 1));
+        CIRCLE_ANGLE * 100 / m_iAngleSize * PANDAR128_LASER_NUM * m_iReturnBlockSize, 1));
     outMsgArray[0] = outMag0;
     outMsgArray[1] = outMag1;
     return 1;
-  } else {
-    if (m_iWorkMode != lidarworkmode) {
-      ROS_WARN(
-          "modify m_iWorkMode m_iWorkMode[%d], "
-          "lidarworkmode[%d],m_iReturnMode[%x],lidarreturnmode[%x],",
-          m_iWorkMode, lidarworkmode, m_iReturnMode, lidarreturnmode);
+  } 
+  else { //mode change 
+    if (m_iWorkMode != lidarworkmode) { //work mode change
+      ROS_WARN("change work mode:  %x to %x ",m_iWorkMode, lidarworkmode);
       m_iWorkMode = lidarworkmode;
-      if (0 == m_iWorkMode) {
-        m_iAngleSize = LIDAR_ANGLE_SIZE_10;  // 10->0.1degree,20->0.2degree
-      } else {
-        m_iAngleSize = LIDAR_ANGLE_SIZE_20;  // 10->0.1degree,20->0.2degree
-      }
+      changeAngleSize();
       return 0;
     }
-    if (m_iReturnMode != lidarreturnmode) {
-      ROS_WARN(
-          "modify m_iReturnMode m_iWorkMode[%d], "
-          "lidarworkmode[%d],m_iReturnMode[%x],lidarreturnmode[%x],",
-          m_iWorkMode, lidarworkmode, m_iReturnMode, lidarreturnmode);
+    if (m_iReturnMode != lidarreturnmode) { //return mode change
+      ROS_WARN("change return mode:  %x to %x ",m_iReturnMode, lidarreturnmode);
       m_iReturnMode = lidarreturnmode;
-      if (0x39 == m_iReturnMode) {
-        m_iReturnBlockSize = LIDAR_RETURN_BLOCK_SIZE_2;
-      } else {
-        m_iReturnBlockSize = LIDAR_RETURN_BLOCK_SIZE_1;
-      }
+      changeReturnBlockSize();
+      return 0;
+    }
+    if (m_iMotorSpeed != lidarmotorspeed) { //motor speed change
+      // ROS_WARN("change motor speed:  %d to %d ",m_iMotorSpeed, lidarmotorspeed);
+      m_iMotorSpeed = lidarmotorspeed;
+      changeAngleSize();
       return 0;
     }
     return 1;
+  }
+}
+
+void Convert::changeAngleSize() {
+  if (0 == m_iWorkMode && MOTOR_SPEED_600 == m_iMotorSpeed) {
+    m_iAngleSize = LIDAR_ANGLE_SIZE_10;  // 10->0.1degree
+  }
+  if (0 == m_iWorkMode && MOTOR_SPEED_1200 == m_iMotorSpeed) {
+    m_iAngleSize = LIDAR_ANGLE_SIZE_20;  // 20->0.2degreepktCount[2]
+  }
+  if (0 != m_iWorkMode && MOTOR_SPEED_600 == m_iMotorSpeed) {
+    m_iAngleSize = LIDAR_ANGLE_SIZE_20;  // 20->0.2degree
+  }
+  if (0 != m_iWorkMode && MOTOR_SPEED_1200 == m_iMotorSpeed) {
+    m_iAngleSize = LIDAR_ANGLE_SIZE_40;  // 40->0.4degree
+  }  
+}
+
+void Convert::changeReturnBlockSize() {
+  if (0x39 == m_iReturnMode || 0x3b == m_iReturnMode || 0x3c == m_iReturnMode) {
+    m_iReturnBlockSize = LIDAR_RETURN_BLOCK_SIZE_2;
+  } else {
+    m_iReturnBlockSize = LIDAR_RETURN_BLOCK_SIZE_1;
   }
 }
 
@@ -672,12 +689,12 @@ void Convert::calcPointXYZIT(Pandar128Packet &pkt,
 
       int index;
       if (LIDAR_RETURN_BLOCK_SIZE_2 == m_iReturnBlockSize) {
-        index = (block.fAzimuth - start_angle_) / m_iAngleSize * 128 *
+        index = (block.fAzimuth - start_angle_) / m_iAngleSize * PANDAR128_LASER_NUM *
                     m_iReturnBlockSize +
-                128 * (m_iReturnBlockSize - 1) + i;
+                PANDAR128_LASER_NUM * (m_iReturnBlockSize - 1) + i;
         // ROS_WARN("block 2 index:[%d]",index);
       } else {
-        index = (block.fAzimuth - start_angle_) / m_iAngleSize * 128 + i;
+        index = (block.fAzimuth - start_angle_) / m_iAngleSize * PANDAR128_LASER_NUM + i;
       }
       cld->points[index] = point;
     }

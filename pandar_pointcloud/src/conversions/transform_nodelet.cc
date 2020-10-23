@@ -1,6 +1,7 @@
 /*
  *  Copyright (C) 2012 Austin Robot Technology, Jack O'Quin
  *  Copyright (c) 2017 Hesai Photonics Technology, Yang Sheng
+ *  Copyright (c) 2020 Hesai Photonics Technology, Lingwen Fang
  *  License: Modified BSD Software License Agreement
  *
  *  $Id$
@@ -8,7 +9,7 @@
 
 /** @file
 
-    This ROS nodelet transforms raw Pandar40 3D LIDAR packets to a
+    This ROS nodelet transforms raw Pandar128 3D LIDAR packets to a
     PointCloud2 in the /odom frame.
 
 */

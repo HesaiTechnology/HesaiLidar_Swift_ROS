@@ -3,6 +3,7 @@
  *  Copyright (C) 2009, 2010 Austin Robot Technology, Jack O'Quin
  *  Copyright (C) 2015, Jack O'Quin
  *  Copyright (c) 2017 Hesai Photonics Technology, Yang Sheng
+ *  Copyright (c) 2020 Hesai Photonics Technology, Lingwen Fang
  *
  *  License: Modified BSD Software License Agreement
  *
@@ -11,7 +12,7 @@
 
 /** \file
  *
- *  Input classes for the Pandar40 3D LIDAR:
+ *  Input classes for the Pandar128 3D LIDAR:
  *
  *     Input -- base class used to access the data independently of
  *              its source

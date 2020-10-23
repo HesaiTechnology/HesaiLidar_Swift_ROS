@@ -2,6 +2,7 @@
  *  Copyright (C) 2007 Austin Robot Technology, Patrick Beeson
  *  Copyright (C) 2009, 2010, 2012 Austin Robot Technology, Jack O'Quin
  *  Copyright (c) 2017 Hesai Photonics Technology, Yang Sheng
+ *  Copyright (c) 2020 Hesai Photonics Technology, Lingwen Fang
  *
  *  License: Modified BSD Software License Agreement
  *
@@ -11,12 +12,12 @@
 /**
  *  @file
  *
- *  Pandar40 3D LIDAR data accessor class implementation.
+ *  Pandar128 3D LIDAR data accessor class implementation.
  *
- *  Class for unpacking raw Pandar40 LIDAR packets into useful
+ *  Class for unpacking raw Pandar128 LIDAR packets into useful
  *  formats.
  *
- *  Derived classes accept raw Pandar40 data for either single packets
+ *  Derived classes accept raw Pandar128 data for either single packets
  *  or entire rotations, and provide it in various formats for either
  *  on-line or off-line processing.
  *

@@ -2,6 +2,7 @@
  *
  *  Copyright (C) 2011, 2012 Austin Robot Technology
  *  Copyright (c) 2017 Hesai Photonics Technology, Yang Sheng
+ *  Copyright (c) 2020 Hesai Photonics Technology, Lingwen Fang
  *
  *  License: Modified BSD Software License Agreement
  *
@@ -25,7 +26,7 @@
 
 namespace pandar_pointcloud
 {
-  /** Euclidean Pandar40 coordinate, including intensity and ring number. */
+  /** Euclidean Pandar128 coordinate, including intensity and ring number. */
   struct PointXYZIR
   {
     PCL_ADD_POINT4D;                    // quad-word XYZ

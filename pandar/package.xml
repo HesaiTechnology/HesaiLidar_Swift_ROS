@@ -3,7 +3,7 @@
   <name>pandar</name>
   <version>1.0.0</version>
   <description>
-    Basic ROS support for the Pandar40 LIDARs.
+    Basic ROS support for the Pandar128 LIDARs.
   </description>
   <maintainer email="fanglingwen@hesaitech.com">Lingwen Fang</maintainer>
   <author>Lingwen Fang</author>

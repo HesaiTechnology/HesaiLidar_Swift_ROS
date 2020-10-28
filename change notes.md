@@ -1,8 +1,8 @@
-# ROS_P128
+# HesaiLidar_Pandar128_ROS
 
-星期二, 13. 十月 2020 01:25下午 
+星期五, 16. 十月 2020 23:25下午 
 ##version
-Pandar128_1.2.1 
+Pandar128_1.0.0
 
 ##modify
 1. add version

@@ -4,6 +4,7 @@
  *  Copyright (C) 2009, 2010 Austin Robot Technology, Jack O'Quin
  *  Copyright (C) 2015, Jack O'Quin
  *  Copyright (c) 2017 Hesai Photonics Technology, Yang Sheng
+ *  Copyright (c) 2020 Hesai Photonics Technology, Lingwen Fang
  *
  *  License: Modified BSD Software License Agreement
  *
@@ -12,9 +13,9 @@
 
 /** @file
  *
- *  pandar40 3D LIDAR data input classes
+ *  Pandar128 3D LIDAR data input classes
  *
- *    These classes provide raw pandar40 LIDAR input packets from
+ *    These classes provide raw Pandar128 LIDAR input packets from
  *    either a live socket interface or a previously-saved PCAP dump
  *    file.
  *

@@ -3,6 +3,7 @@
  *  Copyright (C) 2007 Austin Robot Technology, Yaxin Liu, Patrick Beeson
  *  Copyright (C) 2009, 2010, 2012 Austin Robot Technology, Jack O'Quin
  *  Copyright (c) 2017 Hesai Photonics Technology, Yang Sheng
+ *  Copyright (c) 2020 Hesai Photonics Technology, Lingwen Fang
  *
  *  License: Modified BSD Software License Agreement
  *
@@ -11,7 +12,7 @@
 
 /** @file
  *
- *  @brief Interfaces for interpreting raw packets from the Pandar40 3D LIDAR.
+ *  @brief Interfaces for interpreting raw packets from the Pandar128 3D LIDAR.
  *
  *  @author Yaxin Liu
  *  @author Patrick Beeson
@@ -61,7 +62,7 @@ typedef struct raw_measure {
     uint16_t reflectivity;
 } raw_measure_t;
 
-/** \brief Raw Pandar40 data block.
+/** \brief Raw Pandar128 data block.
  */
 typedef struct raw_block
 {
@@ -71,7 +72,7 @@ typedef struct raw_block
 } raw_block_t;
 
 
-/** \brief Raw Pandar40 packet.
+/** \brief Raw Pandar128 packet.
  */
 typedef struct raw_packet
 {
@@ -88,7 +89,7 @@ typedef struct gps_struct{
     time_t gps;
 }gps_struct_t;
 
-/** \brief Pandar40 data conversion class */
+/** \brief Pandar128 data conversion class */
 class RawData
 {
 public:

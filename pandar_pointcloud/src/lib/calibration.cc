@@ -7,6 +7,7 @@
  * Copyright (C) 2012, Austin Robot Technology,
  *                     The University of Texas at Austin
  *  Copyright (c) 2017 Hesai Photonics Technology, Yang Sheng
+ *  Copyright (c) 2020 Hesai Photonics Technology, Lingwen Fang
  *
  * License: Modified BSD License
  *
@@ -78,7 +79,7 @@ void Calibration::read(const std::string& calibration_file)
 
     boost::filesystem::path file_path(calibration_file);
     if (!boost::filesystem::is_regular(file_path)) {
-        file_path = boost::filesystem::path("pandar40.csv");
+        file_path = boost::filesystem::path("Pandar128.csv");
         if (!boost::filesystem::is_regular(file_path))
             return;
     }

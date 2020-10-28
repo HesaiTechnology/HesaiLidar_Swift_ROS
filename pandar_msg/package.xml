@@ -3,7 +3,7 @@
   <name>pandar_msgs</name>
   <version>1.0.0</version>
   <description>
-    ROS message definitions for Pandar40 3D LIDARs.
+    ROS message definitions for Pandar128 3D LIDARs.
   </description>
   <maintainer email="fanglingwen@hesaitech.com">Lingwen Fang</maintainer>
   <author>Lingwen Fang</author>

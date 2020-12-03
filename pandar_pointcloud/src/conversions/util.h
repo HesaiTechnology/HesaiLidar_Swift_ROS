@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *****************************************************************************/
-
+#include "openssl/ssl.h"
 #ifndef SRC_UTIL_H_
 #define SRC_UTIL_H_
 
@@ -22,6 +22,7 @@ extern "C" {
 #endif
 
 int sys_readn(int fd, void* vptr, int n);
+int sys_readn_by_ssl(SSL *ssl, void *vptr, int n);
 int sys_writen(int fd, const void* vptr, int n);
 int tcp_open(const char* ipaddr, int port);
 int select_fd(int fd, int timeout, int wait_for);

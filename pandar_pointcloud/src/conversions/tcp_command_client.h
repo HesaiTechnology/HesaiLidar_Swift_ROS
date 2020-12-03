@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *****************************************************************************/
+#include "openssl/ssl.h"
+#include "openssl/err.h"
 
 #ifndef SRC_TCP_COMMAND_CLIENT_H_
 #define SRC_TCP_COMMAND_CLIENT_H_
@@ -61,6 +63,8 @@ PTC_ErrCode TcpCommandGetLidarCalibration(const void* handle, char** buffer,
                                           unsigned int* len);
 PTC_ErrCode TcpCommandResetCalibration(const void* handle);
 void TcpCommandClientDestroy(const void* handle);
+SSL_CTX* initial_client_ssl(const char* cert, const char* private_key, const char* ca);
+void TcpCommandSetSsl(const char* cert, const char* private_key, const char* ca);
 
 #ifdef __cplusplus
 }

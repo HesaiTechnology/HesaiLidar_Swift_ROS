@@ -49,6 +49,7 @@ namespace pandar_pointcloud
   static uint16_t DATA_PORT_NUMBER = 8080;     // default data port
   static uint16_t POSITION_PORT_NUMBER = 8308; // default position port
 
+  #define PANDAR128_SEQUENCE_NUMBER_OFFSET (831) 
   /** @brief pandar input base class */
   class Input
   {

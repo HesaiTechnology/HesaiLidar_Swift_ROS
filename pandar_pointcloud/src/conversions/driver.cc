@@ -47,14 +47,14 @@ PandarDriver::PandarDriver(ros::NodeHandle node, ros::NodeHandle private_nh,
   std::string deviceName(model_full_name);
 
   private_nh.param("rpm", config_.rpm, 600.0);
-  ROS_INFO_STREAM(deviceName << " rotating at " << config_.rpm << " RPM");
+  // ROS_INFO_STREAM(deviceName << " rotating at " << config_.rpm << " RPM");
   double frequency = (config_.rpm / 60.0);  // expected Hz rate
 
   // default number of packets for each scan is a single revolution
   // (fractions rounded up)
   config_.npackets = (int)ceil(packet_rate / frequency);
   private_nh.getParam("npackets", config_.npackets);
-  ROS_INFO_STREAM("publishing " << config_.npackets << " packets per scan");
+  // ROS_INFO_STREAM("publishing " << config_.npackets << " packets per scan");
 
   std::string dump_file;
   private_nh.param("pcap", dump_file, std::string(""));
@@ -89,7 +89,7 @@ PandarDriver::PandarDriver(ros::NodeHandle node, ros::NodeHandle private_nh,
   const double diag_freq = packet_rate / config_.npackets;
   diag_max_freq_ = diag_freq;
   diag_min_freq_ = diag_freq;
-  ROS_INFO("expected frequency: %.3f (Hz)", diag_freq);
+  // ROS_INFO("expected frequency: %.3f (Hz)", diag_freq);
 
   // using namespace diagnostic_updater;
   // diag_topic_.reset(new TopicDiagnostic("pandar_packets", diagnostics_,

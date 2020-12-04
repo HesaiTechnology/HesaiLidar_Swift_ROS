@@ -63,6 +63,30 @@ int sys_readn(int fd, void* vptr, int n) {
   return n - nleft;
 }
 
+int sys_readn_by_ssl(SSL *ssl, void *vptr, int n)
+{
+    int nleft, nread;
+    char *ptr;
+
+    ptr = vptr;
+    nleft = n;
+    while (nleft > 0) {
+        if ((nread = SSL_read(ssl, ptr, nleft)) < 0) {
+            if (errno == EINTR)
+                nread = 0;
+            else
+                return -1;
+        }
+        else if (nread == 0)
+            break;
+
+        nleft -= nread;
+        ptr += nread;
+    }
+    
+    return n - nleft;
+}
+
 int sys_writen(int fd, const void* vptr, int n) {
   int nleft;
   int nwritten;
@@ -88,18 +112,24 @@ int sys_writen(int fd, const void* vptr, int n) {
 int tcp_open(const char* ipaddr, int port) {
   int sockfd;
   struct sockaddr_in servaddr;
+  printf("ip:%s port:%d\n",ipaddr,port);
 
-  if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) return -1;
+  if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1){
+    printf("socket errno:%d, %s\n",errno,strerror(errno));
+    return -1;
+  }
 
   bzero(&servaddr, sizeof(servaddr));
   servaddr.sin_family = AF_INET;
   servaddr.sin_port = htons(port);
   if (inet_pton(AF_INET, ipaddr, &servaddr.sin_addr) <= 0) {
+    printf("inet_pton errno:%d, %s\n",errno,strerror(errno));
     close(sockfd);
     return -1;
   }
 
   if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) == -1) {
+    printf("connect errno:%d, %s\n",errno,strerror(errno));
     close(sockfd);
     return -1;
   }

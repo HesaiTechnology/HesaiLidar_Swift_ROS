@@ -156,7 +156,7 @@ int RawData::setup(ros::NodeHandle private_nh)
         return -1;
     }
 
-    ROS_INFO_STREAM("Number of lasers: " << calibration_.num_lasers << ".");
+    // ROS_INFO_STREAM("Number of lasers: " << calibration_.num_lasers << ".");
 
     // Set up cached values for sin and cos of all the possible headings
     for (uint16_t rot_index = 0; rot_index < ROTATION_MAX_UNITS; ++rot_index) {

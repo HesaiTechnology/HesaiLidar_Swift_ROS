@@ -83,7 +83,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "Pandar128_1.0.1";
+  m_sRosVersion = "Pandar128_1.0.2";
   ROS_WARN("--------Pandar128 ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -109,7 +109,14 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
   private_nh.getParam("calibration", lidarCorrectionFile);
   private_nh.getParam("pcap", m_sPcapFile);
 
-
+  std::string cert;
+  std::string privateKey;
+  std::string ca;
+  private_nh.getParam("cert_file", cert);
+  private_nh.getParam("private_key_file", privateKey);
+  private_nh.getParam("ca_file", ca);
+  TcpCommandSetSsl(cert.c_str(), privateKey.c_str(), ca.c_str());
+  
   ROS_WARN("frame_id [%s]", frame_id_.c_str());
   ROS_WARN("lidarFiretimeFile [%s]", lidarFiretimeFile.c_str());
   ROS_WARN("lidarCorrectionFile [%s]", lidarCorrectionFile.c_str());

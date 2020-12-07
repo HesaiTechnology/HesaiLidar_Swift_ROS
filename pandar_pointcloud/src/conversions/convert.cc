@@ -480,7 +480,6 @@ int Convert::processLiDARData() {
         ROS_WARN("publishPoints not done yet, new publish is comming");
       // pcl_callback_(outMsgArray[cursor], timestamp,scan);
       cursor = (cursor + 1) % 2;
-      timestamp = 0;
 
       outMsgArray[cursor]->clear();
       outMsgArray[cursor]->resize(CIRCLE_ANGLE * 100 / m_iAngleSize * PANDAR128_LASER_NUM * m_iReturnBlockSize );
@@ -504,6 +503,7 @@ void Convert::publishPoints() {
   pcl::toROSMsg(*outMsgArray[m_iPublishPointsIndex], output);
   output_.publish(output);
   m_bPublishPointsFlag = false;
+  timestamp = 0;
 
   uint32_t end = GetTickCount();
   if (end - start > 150) ROS_WARN("publishPoints time:%d", end - start);

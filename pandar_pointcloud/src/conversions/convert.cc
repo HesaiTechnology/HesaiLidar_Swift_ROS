@@ -83,7 +83,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "Pandar128_1.0.1";
+  m_sRosVersion = "Pandar128_1.0.2";
   ROS_WARN("--------Pandar128 ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -447,7 +447,6 @@ int Convert::processLiDARData() {
         ROS_WARN("publishPoints not done yet, new publish is comming");
       // pcl_callback_(outMsgArray[cursor], timestamp,scan);
       cursor = (cursor + 1) % 2;
-      timestamp = 0;
 
       outMsgArray[cursor]->clear();
       outMsgArray[cursor]->resize(CIRCLE_ANGLE * 100 / m_iAngleSize * PANDAR128_LASER_NUM * m_iReturnBlockSize );
@@ -471,6 +470,7 @@ void Convert::publishPoints() {
   pcl::toROSMsg(*outMsgArray[m_iPublishPointsIndex], output);
   output_.publish(output);
   m_bPublishPointsFlag = false;
+  timestamp = 0;
 
   uint32_t end = GetTickCount();
   if (end - start > 150) ROS_WARN("publishPoints time:%d", end - start);

@@ -10,3 +10,10 @@ Pandar128_1.0.0
 3. revise correction.csv file 
 4. modify judgment of PandarDriver::poll 
 5. fix points clould blink when lidar's mode is last return/standard
+
+星期一, 07. 十二月 2020 18:25下午 
+##version
+Pandar128_1.0.2
+
+##modify
+1. fix timestamp is zero

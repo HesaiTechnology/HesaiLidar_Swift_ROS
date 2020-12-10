@@ -332,7 +332,7 @@ int InputPCAP::getPacket(pandar_msgs::PandarPacket *pkt) {
         // ROS_ERROR("GPS");
         return 2;
       }
-      else if (pktHeader->caplen == (893 + 42)) {
+      else {
         return 0;  // success
       }
 

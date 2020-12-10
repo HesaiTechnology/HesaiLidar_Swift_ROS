@@ -10,7 +10,7 @@
   <arg name="device_ip" default="" />
   <arg name="frame_id" default="Pandar128" />
   <arg name="publish_model" default="both_point_raw" />
-  <arg name="pcap" default="/home/fanglinwen/my_project/pcapFile/Pandar128_4.00_2.pcap" />
+  <arg name="pcap" default="" />
   <arg name="port" default="2368" />
   <arg name="read_fast" default="false" />
   <arg name="read_once" default="false" />

@@ -357,7 +357,7 @@ static PTC_ErrCode tcpCommandClient_SendCmd(TcpCommandClient *client, TC_Command
     return tcpCommandClientSendCmdWithSecurity(client, cmd);
   }
   if(CERTIFY_MODE_ERROR == sslFlag) {
-    printf("The certification file is wrong, please check!\n");
+    printf("There are not ca file, please check ca file path!\n");
     return PTC_ERROR_BAD_PARAMETER;
   }
 }
@@ -544,7 +544,7 @@ SSL_CTX* initial_client_ssl(const char* cert, const char* private_key, const cha
     printf("ca path: %s\n",ca);
 		if(	SSL_CTX_load_verify_locations(ctx, ca, NULL) == 0) {
 			// ERR_print_errors_fp(stderr);
-			printf("%s:%d, load ca failed,please check ca file\n", __func__, __LINE__);
+			printf("%s:%d, load ca failed,please check ca file path\n", __func__, __LINE__);
 			return NULL;
 		}
 	}
@@ -553,11 +553,11 @@ SSL_CTX* initial_client_ssl(const char* cert, const char* private_key, const cha
     printf("cert path: %s,\nprivate_key path: %s\n",cert, private_key);
 		SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
 		if(SSL_CTX_use_certificate_file(ctx, cert, SSL_FILETYPE_PEM) == 0) {
-      printf("%s:%d, load cert file failed,please check cert file\n", __func__, __LINE__);
+      printf("%s:%d, load cert file failed,please check cert file path\n", __func__, __LINE__);
 			return NULL;
     }
     if(SSL_CTX_use_PrivateKey_file(ctx, private_key, SSL_FILETYPE_PEM) == 0) {
-      printf("%s:%d, load private key file failed,please check private key file\n", __func__, __LINE__);
+      printf("%s:%d, load private key file failed,please check private key file path\n", __func__, __LINE__);
 			return NULL;
     }
     if(SSL_CTX_check_private_key(ctx) == 0) {

@@ -17,3 +17,14 @@ Pandar128_1.0.2
 
 ##modify
 1. fix timestamp is zero
+
+星期四, 10. 十二月 2020 19:25下午 
+##version
+Pandar128_1.0.3
+
+##modify
+1. Delete unnecessary msg files
+2. Modify the launch file
+3. Fixed lidar speed reading problem
+4. Increase the output log of certificate authentication results
+5. Fix pcap file reading

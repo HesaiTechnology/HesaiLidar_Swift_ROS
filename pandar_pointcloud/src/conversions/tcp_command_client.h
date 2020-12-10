@@ -40,6 +40,13 @@ typedef enum {
   PTC_ERROR_NO_MEMORY,
 } PTC_ErrCode;
 
+typedef enum {
+  CERTIFY_MODE_NONE = 0,
+  CERTIFY_MODE_SINGLE,
+  CERTIFY_MODE_DUAL,
+  CERTIFY_MODE_ERROR,
+} CERTIFY_MODE;
+
 typedef struct TcpCommandHeader_s {
   unsigned char cmd;
   unsigned char ret_code;

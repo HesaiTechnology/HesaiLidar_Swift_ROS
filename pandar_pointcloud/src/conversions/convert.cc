@@ -83,7 +83,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "Pandar128_1.0.2";
+  m_sRosVersion = "Pandar128_1.0.3";
   ROS_WARN("--------Pandar128 ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -403,7 +403,7 @@ int Convert::parseData(Pandar128Packet &packet, const uint8_t *recvbuf,
   packet.tail.nReturnMode = recvbuf[index];
 
   index += 1;
-  packet.tail.nMotorSpeed = recvbuf[index];
+  packet.tail.nMotorSpeed = (recvbuf[index] & 0xff) | ((recvbuf[index + 1] & 0xff) << 8);
 
   index += 2;
   memcpy(&(packet.tail.nUTCTime[0]),  &recvbuf[index], 6);

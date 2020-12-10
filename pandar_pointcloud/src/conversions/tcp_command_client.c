@@ -357,7 +357,7 @@ static PTC_ErrCode tcpCommandClient_SendCmd(TcpCommandClient *client, TC_Command
     return tcpCommandClientSendCmdWithSecurity(client, cmd);
   }
   if(CERTIFY_MODE_ERROR == sslFlag) {
-    printf("There are not ca file, please check ca file path!\n");
+    printf("No CA file found, please check CA file path!\n");
     return PTC_ERROR_BAD_PARAMETER;
   }
 }

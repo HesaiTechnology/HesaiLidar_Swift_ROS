@@ -28,3 +28,10 @@ Pandar128_1.0.3
 3. Fixed lidar speed reading problem
 4. Increase the output log of certificate authentication results
 5. Fix pcap file reading
+
+星期五, 11. 十二月 2020 19:25下午 
+##version
+Pandar128_1.0.4
+
+##modify
+1. use static library

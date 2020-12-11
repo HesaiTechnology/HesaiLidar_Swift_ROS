@@ -20,8 +20,8 @@ target_link_libraries(pandar_cloud_node pandar_rawdata
 					  pcap
 					  ${PCL_INCLUDE_DIRS}
 					  #${OPENSSL_LIBRARIES}
-					  libssl.so
-					  libcrypto.so
+					  libssl.a
+					  libcrypto.a
                       ${catkin_LIBRARIES} ${YAML_CPP_LIBRARIES})
 					  
 
@@ -33,8 +33,8 @@ target_link_libraries(pandar_cloud_nodelet
 					  pcap
 					  ${PCL_INCLUDE_DIRS}
 					  #${OPENSSL_LIBRARIES}
-					  libssl.so
-					  libcrypto.so
+					  libssl.a
+					  libcrypto.a
                       ${catkin_LIBRARIES} ${YAML_CPP_LIBRARIES})
 
 add_executable(pandar_transform_node transform_node.cc transform.cc convert.cc driver.cc laser_ts.cpp tcp_command_client.c util.c)
@@ -44,8 +44,8 @@ target_link_libraries(pandar_transform_node pandar_rawdata
 						pcap
 						${PCL_INCLUDE_DIRS}
 						#${OPENSSL_LIBRARIES}
-						libssl.so
-					    libcrypto.so
+						libssl.a
+					    libcrypto.a
 					  	${catkin_LIBRARIES} ${YAML_CPP_LIBRARIES})
 
 add_library(pandar_transform_nodelet transform_nodelet.cc transform.cc convert.cc driver.cc laser_ts.cpp tcp_command_client.c util.c)
@@ -55,8 +55,8 @@ target_link_libraries(pandar_transform_nodelet pandar_rawdata
 						pcap
 						${PCL_INCLUDE_DIRS}
 						#${OPENSSL_LIBRARIES}
-						libssl.so
-					    libcrypto.so
+						libssl.a
+					    libcrypto.a
 					  ${catkin_LIBRARIES} ${YAML_CPP_LIBRARIES})
 install(TARGETS 
             pandar_cloud_node

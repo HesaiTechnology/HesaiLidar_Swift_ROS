@@ -118,11 +118,6 @@
 #define MOTOR_SPEED_600 (600)
 #define MOTOR_SPEED_1200 (1200)
 
-typedef struct PandarPacket_s {
-  double stamp;
-  uint8_t data[ETHERNET_MTU];
-  uint32_t size;
-} PandarPacket;
 
 typedef struct __attribute__((__packed__)) Pandar128Unit_s {
   uint16_t u16Distance;

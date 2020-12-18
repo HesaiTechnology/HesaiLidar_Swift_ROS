@@ -119,7 +119,7 @@ InputSocket::~InputSocket(void) { (void)close(sockfd_); }
 //          2 - gps
 //          1 - error
 /** @brief Get one pandar packet. */
-int InputSocket::getPacket(pandar_msgs::PandarPacket *pkt) {
+int InputSocket::getPacket(PandarPacket *pkt) {
   // double time1 = ros::Time::now().toSec();
 
   uint64_t startTime = 0;
@@ -171,6 +171,7 @@ int InputSocket::getPacket(pandar_msgs::PandarPacket *pkt) {
 
   ssize_t nbytes = recvfrom(sockfd_, &pkt->data[0], 10000, 0,
                             (sockaddr *)&sender_address, &sender_address_len);
+  pkt->size = nbytes;
 
   static uint32_t dropped = 0, u32StartSeq = 0;
   static uint32_t startTick = GetTickCount();
@@ -271,14 +272,15 @@ InputPCAP::~InputPCAP(void) { pcap_close(pcap_); }
 //          2 - gps
 //          1 - error
 /** @brief Get one pandar packet. */
-int InputPCAP::getPacket(pandar_msgs::PandarPacket *pkt) {
+int InputPCAP::getPacket(PandarPacket *pkt) {
   pcap_pkthdr *pktHeader;
   const unsigned char *packetBuf;
   struct tm t;
 
   if(pcap_next_ex(pcap_, &pktHeader, &packetBuf) >= 0) {
     const uint8_t *packet = packetBuf + 42;
-    memcpy(&pkt->data[0], packetBuf + 42, packet_size);
+    memcpy(&pkt->data[0], packetBuf + 42, pktHeader->caplen -42);
+    pkt->size = pktHeader->caplen -42;
     count++;
 
     if (count >= gap) {

@@ -665,7 +665,7 @@ void Convert::calcPointXYZIT(Pandar128Packet &pkt,
       if (LIDAR_RETURN_BLOCK_SIZE_2 == m_iReturnBlockSize) {
         index = (block.fAzimuth - start_angle_) / m_iAngleSize * PANDAR128_LASER_NUM *
                     m_iReturnBlockSize +
-                PANDAR128_LASER_NUM * (m_iReturnBlockSize - 1) + i;
+                PANDAR128_LASER_NUM * blockid + i;
         // ROS_WARN("block 2 index:[%d]",index);
       } else {
         index = (block.fAzimuth - start_angle_) / m_iAngleSize * PANDAR128_LASER_NUM + i;

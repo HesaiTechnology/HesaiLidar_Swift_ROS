@@ -43,6 +43,12 @@
 #include <pandar_msgs/PandarPacket.h>
 
 
+typedef struct PandarPacket_s {
+  ros::Time stamp;
+  uint8_t data[1500];
+  uint32_t size;
+} PandarPacket;
+
 
 namespace pandar_pointcloud
 {
@@ -64,7 +70,7 @@ namespace pandar_pointcloud
      *          -1 if end of file
      *          > 0 if incomplete packet (is this possible?)
      */
-    virtual int getPacket(pandar_msgs::PandarPacket *pkt) = 0;
+    virtual int getPacket(PandarPacket *pkt) = 0;
 
   protected:
     ros::NodeHandle private_nh_;
@@ -80,7 +86,7 @@ namespace pandar_pointcloud
                 uint16_t port = DATA_PORT_NUMBER);
     virtual ~InputSocket();
 
-    virtual int getPacket(pandar_msgs::PandarPacket *pkt);
+    virtual int getPacket(PandarPacket *pkt);
     void setDeviceIP( const std::string& ip );
   private:
 
@@ -113,7 +119,7 @@ namespace pandar_pointcloud
               double repeat_delay=0.0);
     virtual ~InputPCAP();
 
-    virtual int getPacket(pandar_msgs::PandarPacket *pkt);
+    virtual int getPacket(PandarPacket *pkt);
     void setDeviceIP( const std::string& ip );
 
   private:

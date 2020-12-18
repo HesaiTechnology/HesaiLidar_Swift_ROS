@@ -184,7 +184,12 @@ bool PandarDriver::poll(void) {
     // while (true)
     // {
     // keep reading until full packet received
-    int rc = input_->getPacket(&pandarScanArray[m_iScanPushIndex]->packets[i]);
+    PandarPacket packet;
+    int rc = input_->getPacket(&packet);
+    pandarScanArray[m_iScanPushIndex]->packets[i].stamp = packet.stamp;
+    pandarScanArray[m_iScanPushIndex]->packets[i].size = packet.size;
+    pandarScanArray[m_iScanPushIndex]->packets[i].data.resize(packet.size);
+    memcpy(&pandarScanArray[m_iScanPushIndex]->packets[i].data[0], &packet.data[0], packet.size);
     // ROS_WARN("PandarDriver::poll(void),rc[%d]",rc);
     // if (rc == 0) break;       // got a full packet?
     if (rc == 2) {

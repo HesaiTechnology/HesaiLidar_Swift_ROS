@@ -35,3 +35,11 @@ Pandar128_1.0.4
 
 ##modify
 1. use static library
+
+星期五, 18. 十二月 2020 17:05下午 
+##version
+Pandar128_1.0.5
+
+##modify
+1. Fix the problem that the cloud points data  is put in wrong place in dual model
+2. Change the size of rosbag

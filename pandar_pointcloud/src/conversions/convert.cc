@@ -186,13 +186,13 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
   if(!loadCorrectionFileSuccess) {
     ROS_WARN("load correction file from local correction.csv now!");
     std::ifstream fin(lidarCorrectionFile);
-		if (fin.is_open()) {
-			ROS_WARN("Open correction file success\n");
+    if (fin.is_open()) {
+      ROS_WARN("Open correction file success\n");
     }
 		else{
-			ROS_WARN("Open correction file failed\n");
-			return;
-		}
+      ROS_WARN("Open correction file failed\n");
+      return;
+    }
     int length = 0;
     std::string strlidarCalibration;
     fin.seekg(0, std::ios::end);

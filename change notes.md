@@ -25,3 +25,10 @@ Pandar128_1.0.3
 ##modify
 1. Fix the problem that the cloud points data  is put in wrong place in dual model
 2. Change the size of rosbag
+
+星期三, 23. 十二月 2020 19:30下午 
+##version
+Pandar128_1.0.4
+
+##modify
+1. Fix that all point cloud values have timestamp and ring

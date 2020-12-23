@@ -188,7 +188,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     std::ifstream fin(lidarCorrectionFile);
 		if (fin.is_open()) {
 			ROS_WARN("Open correction file success\n");
-        }
+    }
 		else{
 			ROS_WARN("Open correction file failed\n");
 			return;

@@ -50,4 +50,4 @@ Pandar128_1.0.6
 
 ##modify
 1. Fix that all point cloud values have timestamp and ring
-
+2.Fix that sdk will core dumped when input wrong correction file path 

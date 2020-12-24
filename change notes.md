@@ -28,7 +28,7 @@ Pandar128_1.0.3
 
 星期三, 23. 十二月 2020 19:30下午 
 ##version
-Pandar128_1.0.4
+Pandar128_1.0.6
 
 ##modify
 1. Fix that all point cloud values have timestamp and ring

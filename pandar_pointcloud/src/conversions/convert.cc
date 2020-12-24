@@ -83,7 +83,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "Pandar128_1.0.4";
+  m_sRosVersion = "Pandar128_1.0.6";
   ROS_WARN("--------Pandar128 ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -186,6 +186,13 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
   if(!loadCorrectionFileSuccess) {
     ROS_WARN("load correction file from local correction.csv now!");
     std::ifstream fin(lidarCorrectionFile);
+    if (fin.is_open()) {
+      ROS_WARN("Open correction file success\n");
+    }
+    else{
+      ROS_WARN("Open correction file failed\n");
+      return;
+    }
     int length = 0;
     std::string strlidarCalibration;
     fin.seekg(0, std::ios::end);
@@ -639,10 +646,6 @@ void Convert::calcPointXYZIT(Pandar128Packet &pkt,
 
       float distance =
           static_cast<float>(unit.u16Distance) * PANDAR128_DISTANCE_UNIT;
-      /* filter distance */
-      if (distance < 0.1) {
-        continue;
-      }
 
       float azimuth = horizatal_azimuth_[i] + (block.fAzimuth / 100.0f);
       float originAzimuth = azimuth;

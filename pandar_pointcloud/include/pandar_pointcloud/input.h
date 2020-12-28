@@ -71,6 +71,7 @@ namespace pandar_pointcloud
      *          > 0 if incomplete packet (is this possible?)
      */
     virtual int getPacket(PandarPacket *pkt) = 0;
+    bool checkPacketSize(PandarPacket *pkt);
 
   protected:
     ros::NodeHandle private_nh_;

@@ -86,9 +86,10 @@
 #define DISTANCE_SIZE (2)
 #define INTENSITY_SIZE (1)
 #define CONFIDENCE_SIZE (1)
-#define PANDAR128_UNIT_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
+#define PANDAR128_UNIT_WITHOUT_CONFIDENCE_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
+#define PANDAR128_UNIT_WITH_CONFIDENCE_SIZE (DISTANCE_SIZE + INTENSITY_SIZE + CONFIDENCE_SIZE)
 #define PANDAR128_BLOCK_SIZE \
-  (PANDAR128_UNIT_SIZE * PANDAR128_LASER_NUM + PANDAR128_AZIMUTH_SIZE)
+  (PANDAR128_UNIT_WITHOUT_CONFIDENCE_SIZE * PANDAR128_LASER_NUM + PANDAR128_AZIMUTH_SIZE)
 #define PANDAR128_TAIL_RESERVED1_SIZE (3)
 #define PANDAR128_TAIL_RESERVED2_SIZE (3)
 #define PANDAR128_SHUTDOWN_FLAG_SIZE (1)
@@ -137,25 +138,32 @@ typedef struct Pandar128Head_s {
   uint16_t u16Sob;
   uint8_t u8VersionMajor;
   uint8_t u8VersionMinor;
-  uint8_t u8DistUnit;
-  uint8_t u8Flags;
+  uint16_t u16Reserve1;
   uint8_t u8LaserNum;
   uint8_t u8BlockNum;
   uint8_t u8EchoCount;
+  uint8_t u8DistUnit;
   uint8_t u8EchoNum;
-  uint16_t u16Reserve1;
+  uint8_t u8Flags;
+  inline bool hasSeqNum() const { return u8Flags & 1; }
+  inline bool hasImu() const { return u8Flags & 2; }
+  inline bool hasFunctionSafety() const { return u8Flags & 4; }
+  inline bool hasSignature() const { return u8Flags & 8; }
+  inline bool hasConfidence() const { return u8Flags & 0x10; }
+
 } Pandar128Head;
 
 typedef struct Pandar128Tail_s {
   uint8_t nReserved1[3];
   uint8_t nReserved2[3];
-  uint8_t nShutdownFlag;
   uint8_t nReserved3[3];
-  uint16_t nMotorSpeed;
-  uint32_t nTimestamp;
+  uint16_t nAzimuthFlag;
+  uint8_t nShutdownFlag;
   uint8_t nReturnMode;
-  uint8_t nFactoryInfo;
+  uint16_t nMotorSpeed;
   uint8_t nUTCTime[6];
+  uint32_t nTimestamp;
+  uint8_t nFactoryInfo;
   uint32_t nSeqNum;
 } Pandar128Tail;
 
@@ -176,7 +184,7 @@ struct PandarGPS_s {
   uint32_t fineTime;
 };
 
-typedef std::array<Pandar128Packet, 36000> PktArray;
+typedef std::array<pandar_msgs::PandarPacket, 36000> PktArray;
 
 typedef struct PacketsBuffer_s {
   PktArray m_buffers{};
@@ -192,7 +200,7 @@ typedef struct PacketsBuffer_s {
     m_iterTaskEnd = m_iterTaskBegin + m_stepSize;
     m_startFlag = false;
   }
-  inline int push_back(Pandar128Packet pkt) {
+  inline int push_back(pandar_msgs::PandarPacket pkt) {
     if (!m_startFlag) {
       *(m_iterPush++) = pkt;
       m_startFlag = true;
@@ -265,7 +273,7 @@ class Convert {
   void processGps(const pandar_msgs::PandarGps::ConstPtr &gpsMsg);
 
   int parseData(Pandar128Packet &pkt, const uint8_t *buf, const int len);
-  void calcPointXYZIT(Pandar128Packet &pkt,
+  void calcPointXYZIT(pandar_msgs::PandarPacket &pkt,
                       boost::shared_ptr<PPointCloud> &cld);
   void doTaskFlow(int cursor);
   void loadOffsetFile(std::string file);

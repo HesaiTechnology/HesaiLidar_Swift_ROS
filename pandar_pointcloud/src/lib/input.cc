@@ -54,11 +54,22 @@ Input::Input(ros::NodeHandle private_nh, uint16_t port)
   private_nh.param("device_ip", devip_str_, std::string(""));
   if (!devip_str_.empty())
     ROS_INFO_STREAM("Only accepting packets from IP address: " << devip_str_);
+  ts_index = 0;
+  utc_index = 0;
+  seq_index = 0;
 }
 
-bool Input::checkPacketSize(PandarPacket *pkt) {
+bool Input::checkPacket(PandarPacket *pkt) {
   if(pkt->size < 100)
   return false;
+  if (pkt->data[0] != 0xEE && pkt->data[1] != 0xFF && pkt->data[2] != 1 ) {    
+    ROS_WARN("Packet with invaild delimiter\n");
+    return false;
+  }
+  if (pkt->data[2] != 1 && pkt->data[3] != 4) {    
+    ROS_WARN("Packet with invaild lidar type\n");
+    return false;
+  }
   uint8_t laserNum = pkt->data[6];
   uint8_t blockNum = pkt->data[7];
   uint8_t flags = pkt->data[11];
@@ -69,22 +80,21 @@ bool Input::checkPacketSize(PandarPacket *pkt) {
   bool hasSignature = (flags & 8);
   bool hasConfidence = (flags & 0x10);
 
-  uint32_t size = 12 + 
+  utc_index = 12 +
             (hasConfidence ? 4 * laserNum * blockNum : 3 * laserNum * blockNum) + 
             2 * blockNum + 4 +
             (hasFunctionSafety ? 17 : 0) + 
-            26 + 
-            (hasImu ? 22 : 0) + 
-            (hasSeqNum ? 4 : 0) + 4 +
+            15;
+  ts_index = utc_index + 6;
+  seq_index = ts_index +
+              5 +
+              (hasImu ? 22 : 0) + 
+              (hasSeqNum ? 4 : 0);
+
+  uint32_t size = seq_index + 4 +
             (hasSignature ? 32 : 0);
   if(pkt->size == size){
-    if(size == 893 || size == 861){
-      return true;
-    }
-    else{
-      ROS_WARN("Don't support to parse packet with size %d", size);
-      return false;
-    }
+    return true;
   }
   else{
     ROS_WARN("Packet size mismatch.caculated size:%d, packet size:%d", size, pkt->size);
@@ -212,7 +222,7 @@ int InputSocket::getPacket(PandarPacket *pkt) {
     // ROS_ERROR("GPS");
     return 2;
   }
-  else if(!checkPacketSize(pkt)){
+  else if(!checkPacket(pkt)){
     return 1;  // Packet size not match
   }
 
@@ -295,8 +305,6 @@ InputPCAP::InputPCAP(ros::NodeHandle private_nh, uint16_t port,
   filter << "udp dst port " << port;
   pcap_compile(pcap_, &pcap_packet_filter_, filter.str().c_str(), 1,
                PCAP_NETMASK_UNKNOWN);
-  ts_index = 826;
-  utc_index = 820;
   gap = 1000;
   last_pkt_ts = 0;
   count;
@@ -326,7 +334,7 @@ int InputPCAP::getPacket(PandarPacket *pkt) {
       // ROS_ERROR("GPS");
       return 2;
     }
-    else if(!checkPacketSize(pkt)){
+    else if(!checkPacket(pkt)){
       return 1;  // Packet size not match
     }
     if (count >= gap) {

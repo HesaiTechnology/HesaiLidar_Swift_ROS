@@ -71,12 +71,15 @@ namespace pandar_pointcloud
      *          > 0 if incomplete packet (is this possible?)
      */
     virtual int getPacket(PandarPacket *pkt) = 0;
-    bool checkPacketSize(PandarPacket *pkt);
+    bool checkPacket(PandarPacket *pkt);
 
   protected:
     ros::NodeHandle private_nh_;
     uint16_t port_;
     std::string devip_str_;
+    int ts_index;
+    int utc_index;
+    int seq_index;
   };
 
   /** @brief Live pandar input from socket. */
@@ -133,8 +136,6 @@ namespace pandar_pointcloud
     bool read_once_;
     bool read_fast_;
     double repeat_delay_;
-    int ts_index;
-    int utc_index;
     int gap;
     int64_t last_pkt_ts;
     int count;

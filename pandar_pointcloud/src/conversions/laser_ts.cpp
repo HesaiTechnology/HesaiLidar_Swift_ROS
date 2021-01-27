@@ -71,7 +71,6 @@ void LasersTSOffset::setFilePath(std::string file) {
     printf("Parse Lidar firetime now...\n");
   }
   if (line == "sequence,chn id,firetime/us"){
-    printf("lalallalalal\n");
     while (std::getline(fin, line)) {
       int sequence = 0;
       int chnId = 0;

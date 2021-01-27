@@ -449,7 +449,7 @@ int Convert::processLiDARData() {
     if (0 == checkLiadaMode()) {
       // ROS_WARN("checkLiadaMode now!!");
       outMsgArray[cursor]->clear();
-      outMsgArray[cursor]->resize(CIRCLE_ANGLE * 100 / m_iAngleSize * PANDAR128_LASER_NUM * m_iReturnBlockSize);
+      outMsgArray[cursor]->resize(CIRCLE_ANGLE * 100 / m_iAngleSize * m_iLaserNum * m_iReturnBlockSize);
       lidar_packets_.creatNewTask();
       pktCount = 0;
       continue;

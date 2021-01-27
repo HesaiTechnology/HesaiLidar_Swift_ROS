@@ -48,6 +48,7 @@
 #define PANDARSDK_TCP_COMMAND_PORT (9347)
 #define LIDAR_NODE_TYPE "lidar"
 #define LIDAR_ANGLE_SIZE_10 (10)
+#define LIDAR_ANGLE_SIZE_18 (18)
 #define LIDAR_ANGLE_SIZE_20 (20)
 #define LIDAR_ANGLE_SIZE_40 (40)
 #define LIDAR_RETURN_BLOCK_SIZE_1 (1)
@@ -121,6 +122,7 @@
 
 #define CIRCLE_ANGLE (360)
 #define MOTOR_SPEED_600 (600)
+#define MOTOR_SPEED_900 (900)
 #define MOTOR_SPEED_1200 (1200)
 
 typedef struct __attribute__((__packed__)) Pandar128Unit_s {
@@ -329,6 +331,7 @@ class Convert {
   int m_iWorkMode;
   int m_iReturnMode;
   int m_iMotorSpeed;
+  int m_iLaserNum;
   int m_iAngleSize;  // 10->0.1degree,20->0.2degree
   int m_iReturnBlockSize;
   bool m_bPublishPointsFlag;

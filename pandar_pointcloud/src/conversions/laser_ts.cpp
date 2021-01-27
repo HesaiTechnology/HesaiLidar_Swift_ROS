@@ -19,6 +19,8 @@
 #include <string.h>
 #include <vector>
 #include "laser_ts.h"
+#include <fstream>
+#include <sstream> 
 
 #define OFFSET1   (3148)
 #define OFFSET2   (-27778)
@@ -27,6 +29,11 @@
 #define SPEED     (3600.0 / SEC_TO_NS)
 #define A_TO_R    (PAI / 180.0)
 #define R_TO_A    (180.0 / PAI)
+
+#define PANDAR80_BLOCK_TIMESTAMP (33.33)
+#define BLOCK_ID_MAX (3)
+#define SEC_TO_US (1000000.0)
+#define SPEED_US  (3600.0 / SEC_TO_US)
 
 LasersTSOffset::LasersTSOffset() {
   mBInitFlag = false;
@@ -57,67 +64,95 @@ LasersTSOffset::~LasersTSOffset() {
 }
 
 void LasersTSOffset::setFilePath(std::string file) {
-  FILE             *pFile       = fopen(file.c_str(), "r");
-  char             content[512] = {0};
-  char             subStr[255]  = {0};
-  std::vector<int> mode;
-  std::vector<int> state;
 
-  if (NULL == pFile) {
-    return;
+  std::ifstream fin(file);
+  std::string line;
+  if (std::getline(fin, line)) { //first line sequence,chn id,firetime/us
+    printf("Parse Lidar firetime now...\n");
   }
-
-  fgets(content, 512, pFile);
-  strncpy(subStr, content, strchr(content, ',') - content);
-  sscanf(subStr, "%f", &mFDist);
-  memset(subStr, 0, 255);
-  memset(content, 0, 512);
-
-  fgets(content, 512, pFile);
-  fillVector(strchr(content, ','), strlen(strchr(content, ',')), mode);
-  memset(content, 0, 512);
-
-  fgets(content, 512, pFile);
-  fillVector(strchr(content, ','), strlen(strchr(content, ',')), state);
-  memset(content, 0, 512);
-
-  if (mode.size() != state.size()) {
-    printf("file format error\n");
-    return;
-  }
-
-  for (int i = 0; i < mode.size(); i++) {
-    std::pair<int, int> key(mode[i], state[i]);
-
-    if (i % 2 == 0) {
-      mLongOffsetIndex[key] = i;
-    } else {
-      mShortOffsetIndex[key] = i;
+  if (line == "sequence,chn id,firetime/us"){
+    printf("lalallalalal\n");
+    while (std::getline(fin, line)) {
+      int sequence = 0;
+      int chnId = 0;
+      float firetime;
+      std::stringstream ss(line);
+      std::string subline;
+      std::getline(ss, subline, ',');
+      std::stringstream(subline) >> sequence;
+      std::getline(ss, subline, ',');
+      std::stringstream(subline) >> chnId;
+      std::getline(ss, subline, ',');
+      std::stringstream(subline) >> firetime;
+      // printf("seq, chnId, firetime:[%d][%d][%f]\n",sequence, chnId, firetime);
+      m_fAzimuthOffset[chnId - 1] = firetime;
     }
   }
+  else{
+    fin.close();
+    FILE             *pFile       = fopen(file.c_str(), "r");
+    char             content[512] = {0};
+    char             subStr[255]  = {0};
+    std::vector<int> mode;
+    std::vector<int> state;
 
-  while (!feof(pFile)) {
+    if (NULL == pFile) {
+      return;
+    }
+
     fgets(content, 512, pFile);
+    strncpy(subStr, content, strchr(content, ',') - content);
+    sscanf(subStr, "%f", &mFDist);
+    memset(subStr, 0, 255);
+    memset(content, 0, 512);
 
-    std::vector<int> values;
-    char             *pValues = strchr(content, ',');
+    fgets(content, 512, pFile);
+    fillVector(strchr(content, ','), strlen(strchr(content, ',')), mode);
+    memset(content, 0, 512);
 
-    if (NULL == pValues) {
-      break;
+    fgets(content, 512, pFile);
+    fillVector(strchr(content, ','), strlen(strchr(content, ',')), state);
+    memset(content, 0, 512);
+
+    if (mode.size() != state.size()) {
+      printf("file format error\n");
+      return;
     }
 
-    strncpy(subStr, content, pValues - content);
-    sscanf(subStr, "%d", &mNLaserNum);
-    fillVector(pValues, strlen(pValues), values);
+    for (int i = 0; i < mode.size(); i++) {
+      std::pair<int, int> key(mode[i], state[i]);
 
-    if (values.size() != mode.size()) {
-      continue;
+      if (i % 2 == 0) {
+        mLongOffsetIndex[key] = i;
+      } else {
+        mShortOffsetIndex[key] = i;
+      }
     }
 
-    mVLasers.push_back(values);
+    while (!feof(pFile)) {
+      fgets(content, 512, pFile);
+
+      std::vector<int> values;
+      char             *pValues = strchr(content, ',');
+
+      if (NULL == pValues) {
+        break;
+      }
+
+      strncpy(subStr, content, pValues - content);
+      sscanf(subStr, "%d", &mNLaserNum);
+      fillVector(pValues, strlen(pValues), values);
+
+      if (values.size() != mode.size()) {
+        continue;
+      }
+
+      mVLasers.push_back(values);
+    }
+
+    mBInitFlag = true;
+
   }
-
-  mBInitFlag = true;
 }
 
 void LasersTSOffset::fillVector(char *pContent, int nLen, std::vector<int> &vec) {
@@ -132,37 +167,55 @@ void LasersTSOffset::fillVector(char *pContent, int nLen, std::vector<int> &vec)
   }
 }
 
-int LasersTSOffset::getTSOffset(int nLaser, int nMode, int nState, float fDistance) {
-  if (nLaser >= mNLaserNum || !mBInitFlag) {
-    return 0;
-  }
-
-  if (fDistance >= mFDist) {
-    return mVLasers[nLaser][mLongOffsetIndex[std::pair<int, int>(nMode, nState)]];
-  } else {
-    return mVLasers[nLaser][mShortOffsetIndex[std::pair<int, int>(nMode, nState)]];
+int LasersTSOffset::getTSOffset(int nLaser, int nMode, int nState, float fDistance, int nLaserNum) {
+  switch (nLaserNum){
+    case 80:
+      return m_fAzimuthOffset[nLaser];
+    default:
+      if (nLaser >= mNLaserNum || !mBInitFlag) {
+        return 0;
+      }
+      if (fDistance >= mFDist) {
+        return mVLasers[nLaser][mLongOffsetIndex[std::pair<int, int>(nMode, nState)]];
+      } 
+      else {
+        return mVLasers[nLaser][mShortOffsetIndex[std::pair<int, int>(nMode, nState)]];
+      }
   }
 }
 
-int LasersTSOffset::getBlockTS(int nBlock, int nRetMode, int nMode) {
-  int ret = OFFSET1;
-
-  if (nRetMode != 0x39) {
-    if (nBlock % 2 == 0) {
-      ret += OFFSET2;
-    }
-
-    if (nMode != 0) {
-      ret += OFFSET2;
-    }
+int LasersTSOffset::getBlockTS(int nBlock, int nRetMode, int nMode, int nLaserNum) {
+  switch (nLaserNum){
+    case 80:
+      if (0x39 == nRetMode || 0x3b == nRetMode || 0x3c == nRetMode) {
+        return (((BLOCK_ID_MAX - nBlock)/2) * PANDAR80_BLOCK_TIMESTAMP);
+      } 
+      else {
+        return ((BLOCK_ID_MAX - nBlock) * PANDAR80_BLOCK_TIMESTAMP);
+      }
+    default:
+      int ret = OFFSET1;
+      if (nRetMode != 0x39) {
+        if (nBlock % 2 == 0) {
+          ret += OFFSET2;
+        }
+        if (nMode != 0) {
+          ret += OFFSET2;
+        }
+      }
+      return ret;
   }
-
-  return ret;
 }
 
-float LasersTSOffset::getAngleOffset(int nTSOffset) {
-  return static_cast<float>(nTSOffset) * SPEED;
+float LasersTSOffset::getAngleOffset(int nTSOffset, int nLaserId, int nLaserNum) {
+  switch (nLaserNum){
+    case 80:
+      return m_fAzimuthOffset[nLaserId] * SPEED_US;
+    default:
+      return static_cast<float>(nTSOffset) * SPEED;
+  }
 }
+
 
 float LasersTSOffset::getAzimuthOffset(std::string type, float azimuth, \
     float originAzimuth, float distance) {

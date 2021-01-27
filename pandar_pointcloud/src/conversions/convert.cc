@@ -124,6 +124,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
   m_iWorkMode = 0;
   m_iReturnMode = 0;
   m_iMotorSpeed = 0;
+  m_iLaserNum = 0;
 
   hasGps = 0;
   // subscribe to PandarScan packets
@@ -448,7 +449,7 @@ int Convert::processLiDARData() {
     if (0 == checkLiadaMode()) {
       // ROS_WARN("checkLiadaMode now!!");
       outMsgArray[cursor]->clear();
-      outMsgArray[cursor]->resize(CIRCLE_ANGLE * 100 / m_iAngleSize * PANDAR128_LASER_NUM * m_iReturnBlockSize);
+      outMsgArray[cursor]->resize(CIRCLE_ANGLE * 100 / m_iAngleSize * m_iLaserNum * m_iReturnBlockSize);
       lidar_packets_.creatNewTask();
       pktCount = 0;
       continue;
@@ -485,7 +486,7 @@ int Convert::processLiDARData() {
       cursor = (cursor + 1) % 2;
 
       outMsgArray[cursor]->clear();
-      outMsgArray[cursor]->resize(CIRCLE_ANGLE * 100 / m_iAngleSize * PANDAR128_LASER_NUM * m_iReturnBlockSize );
+      outMsgArray[cursor]->resize(CIRCLE_ANGLE * 100 / m_iAngleSize * m_iLaserNum * m_iReturnBlockSize );
       uint32_t endTick2 = GetTickCount();
       if (endTick2 - startTick2 > 2) {
         // ROS_WARN("OutMsgArray time:%d", endTick2 - startTick2);
@@ -550,6 +551,7 @@ int Convert::checkLiadaMode() {
   uint8_t lidarworkmode = tail->nShutdownFlag & 0x03;
   uint8_t lidarreturnmode = tail->nReturnMode;
   uint16_t lidarmotorspeed = tail->nMotorSpeed;
+  uint8_t laserNum = header->u8LaserNum;
   if(abs(lidarmotorspeed - MOTOR_SPEED_600) < 100) { //ignore the speed gap of 6000 rpm
     lidarmotorspeed = MOTOR_SPEED_600;
   }
@@ -560,17 +562,18 @@ int Convert::checkLiadaMode() {
       lidarmotorspeed = MOTOR_SPEED_600; //changing the speed,give enough size
   }
 
-  if (0 == m_iWorkMode && 0 == m_iReturnMode && 0 == m_iMotorSpeed) { //init lidar mode 
+  if (0 == m_iWorkMode && 0 == m_iReturnMode && 0 == m_iMotorSpeed && 0 == m_iLaserNum) { //init lidar mode 
     m_iWorkMode = lidarworkmode;
     m_iReturnMode = lidarreturnmode;
     m_iMotorSpeed = lidarmotorspeed;
-    ROS_WARN("init mode: workermode: %x,return mode: %x,speed: %d",m_iWorkMode, m_iReturnMode, m_iMotorSpeed);
+    m_iLaserNum = laserNum;
+    ROS_WARN("init mode: workermode: %x,return mode: %x,speed: %d,laser number: %d",m_iWorkMode, m_iReturnMode, m_iMotorSpeed, m_iLaserNum);
     changeAngleSize();
     changeReturnBlockSize();
     boost::shared_ptr<PPointCloud> outMag0(new PPointCloud(
-        CIRCLE_ANGLE * 100 / m_iAngleSize * PANDAR128_LASER_NUM * m_iReturnBlockSize, 1));
+        CIRCLE_ANGLE * 100 / m_iAngleSize * m_iLaserNum * m_iReturnBlockSize, 1));
     boost::shared_ptr<PPointCloud> outMag1(new PPointCloud(
-        CIRCLE_ANGLE * 100 / m_iAngleSize * PANDAR128_LASER_NUM * m_iReturnBlockSize, 1));
+        CIRCLE_ANGLE * 100 / m_iAngleSize * m_iLaserNum * m_iReturnBlockSize, 1));
     outMsgArray[0] = outMag0;
     outMsgArray[1] = outMag1;
     return 1;
@@ -594,11 +597,19 @@ int Convert::checkLiadaMode() {
       changeAngleSize();
       return 0;
     }
+    if (m_iLaserNum != laserNum) { //laser number change
+      m_iLaserNum = laserNum;
+      return 0;
+    }
     return 1;
   }
 }
 
 void Convert::changeAngleSize() {
+  if (m_iLaserNum == 80) {
+    m_iAngleSize = LIDAR_ANGLE_SIZE_18;  // 18->0.18degree
+    return;
+  }  
   if (0 == m_iWorkMode && MOTOR_SPEED_600 == m_iMotorSpeed) {
     m_iAngleSize = LIDAR_ANGLE_SIZE_10;  // 10->0.1degree
   }
@@ -610,7 +621,7 @@ void Convert::changeAngleSize() {
   }
   if (0 != m_iWorkMode && MOTOR_SPEED_1200 == m_iMotorSpeed) {
     m_iAngleSize = LIDAR_ANGLE_SIZE_40;  // 40->0.4degree
-  }  
+  }
 }
 
 void Convert::changeReturnBlockSize() {
@@ -667,9 +678,9 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet,
       float originAzimuth = azimuth;
       float pitch = elev_angle_[i];
       float originPitch = pitch;
-      int offset = laserOffset.getTSOffset(i, mode, state, distance);
+      int offset = laserOffset.getTSOffset(i, mode, state, distance, header->u8LaserNum);
 
-      azimuth += laserOffset.getAngleOffset(offset);
+      azimuth += laserOffset.getAngleOffset(offset, i, header->u8LaserNum);
 
       pitch += laserOffset.getPitchOffset(frame_id_, pitch, distance);
 
@@ -702,7 +713,7 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet,
 
       point.timestamp =
           point.timestamp +
-          laserOffset.getBlockTS(blockid, tail->nReturnMode, mode) /
+          laserOffset.getBlockTS(blockid, tail->nReturnMode, mode, header->u8LaserNum) /
               1000000000.0 +
           offset / 1000000000.0;
 
@@ -716,12 +727,12 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet,
 
       int index;
       if (LIDAR_RETURN_BLOCK_SIZE_2 == m_iReturnBlockSize) {
-        index = (u16Azimuth - start_angle_) / m_iAngleSize * PANDAR128_LASER_NUM *
+        index = (u16Azimuth - start_angle_) / m_iAngleSize * header->u8LaserNum *
                     m_iReturnBlockSize +
-                PANDAR128_LASER_NUM * blockid + i;
+                m_iLaserNum * (blockid % 2) + i;
         // ROS_WARN("block 2 index:[%d]",index);
       } else {
-        index = (u16Azimuth - start_angle_) / m_iAngleSize * PANDAR128_LASER_NUM + i;
+        index = (u16Azimuth - start_angle_) / m_iAngleSize * m_iLaserNum + i;
       }
       cld->points[index] = point;
     }

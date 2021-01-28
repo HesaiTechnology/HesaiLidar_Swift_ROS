@@ -125,6 +125,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
   m_iReturnMode = 0;
   m_iMotorSpeed = 0;
   m_iLaserNum = 0;
+  m_iBlockNum = 0;
 
   hasGps = 0;
   // subscribe to PandarScan packets
@@ -470,7 +471,7 @@ int Convert::processLiDARData() {
 
     if ((0 != pktCount) &&
         (0 ==
-         pktCount % (CIRCLE_ANGLE / (TASKFLOW_STEP_SIZE * 2 * m_iAngleSize /
+         pktCount % (CIRCLE_ANGLE / (lidar_packets_.m_stepSize * m_iBlockNum * m_iAngleSize /
                                      100 / m_iReturnBlockSize)))) {
       // ROS_WARN("pktCount[%d]", pktCount);
       ROS_WARN("ts %lf cld size %u", timestamp,
@@ -552,6 +553,7 @@ int Convert::checkLiadaMode() {
   uint8_t lidarreturnmode = tail->nReturnMode;
   uint16_t lidarmotorspeed = tail->nMotorSpeed;
   uint8_t laserNum = header->u8LaserNum;
+  uint8_t blockNum = header->u8BlockNum;
   if(abs(lidarmotorspeed - MOTOR_SPEED_600) < 100) { //ignore the speed gap of 6000 rpm
     lidarmotorspeed = MOTOR_SPEED_600;
   }
@@ -567,9 +569,11 @@ int Convert::checkLiadaMode() {
     m_iReturnMode = lidarreturnmode;
     m_iMotorSpeed = lidarmotorspeed;
     m_iLaserNum = laserNum;
+    m_iBlockNum = blockNum;
     ROS_WARN("init mode: workermode: %x,return mode: %x,speed: %d,laser number: %d",m_iWorkMode, m_iReturnMode, m_iMotorSpeed, m_iLaserNum);
     changeAngleSize();
     changeReturnBlockSize();
+    changeTaskflowStepSize(); 
     boost::shared_ptr<PPointCloud> outMag0(new PPointCloud(
         CIRCLE_ANGLE * 100 / m_iAngleSize * m_iLaserNum * m_iReturnBlockSize, 1));
     boost::shared_ptr<PPointCloud> outMag1(new PPointCloud(
@@ -606,10 +610,14 @@ int Convert::checkLiadaMode() {
 }
 
 void Convert::changeAngleSize() {
-  if (m_iLaserNum == 80) {
+  if (m_iLaserNum == PANDAR80_LASER_NUM) {
     m_iAngleSize = LIDAR_ANGLE_SIZE_18;  // 18->0.18degree
     return;
-  }  
+  } 
+  if (m_iLaserNum == PANDAR64S_LASER_NUM || m_iLaserNum == PANDAR40S_LASER_NUM) {
+    m_iAngleSize = LIDAR_ANGLE_SIZE_20;  // 20->0.2degree
+    return;
+  } 
   if (0 == m_iWorkMode && MOTOR_SPEED_600 == m_iMotorSpeed) {
     m_iAngleSize = LIDAR_ANGLE_SIZE_10;  // 10->0.1degree
   }
@@ -631,7 +639,24 @@ void Convert::changeReturnBlockSize() {
     m_iReturnBlockSize = LIDAR_RETURN_BLOCK_SIZE_1;
   }
 }
-
+void Convert::changeTaskflowStepSize() {
+  switch(m_iLaserNum){
+    case PANDAR80_LASER_NUM:
+      lidar_packets_.m_stepSize = PANDAR80_TASKFLOW_STEP_SIZE;
+      lidar_packets_.moveTaskEnd(PANDAR80_TASKFLOW_STEP_SIZE - PANDAR128_TASKFLOW_STEP_SIZE);
+    break;
+    case PANDAR64S_LASER_NUM:
+      lidar_packets_.m_stepSize = PANDAR64S_TASKFLOW_STEP_SIZE;
+      lidar_packets_.moveTaskEnd(PANDAR64S_TASKFLOW_STEP_SIZE - PANDAR128_TASKFLOW_STEP_SIZE);
+    break;
+    case PANDAR40S_LASER_NUM:
+      lidar_packets_.m_stepSize = PANDAR40S_TASKFLOW_STEP_SIZE;
+      lidar_packets_.moveTaskEnd(PANDAR40S_TASKFLOW_STEP_SIZE - PANDAR128_TASKFLOW_STEP_SIZE);
+    break;
+    default:
+    break;
+  }
+}
 void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet,
                              boost::shared_ptr<PPointCloud> &cld) {
   auto header = (Pandar128Head*)(&packet.data[0]);

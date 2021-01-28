@@ -65,6 +65,9 @@
 #define GPS_ITEM_NUM (7)
 
 #define PANDAR128_LASER_NUM (128)
+#define PANDAR64S_LASER_NUM (64)
+#define PANDAR40S_LASER_NUM (40)
+#define PANDAR80_LASER_NUM (80)
 #define PANDAR128_BLOCK_NUM (2)
 #define MAX_BLOCK_NUM (8)
 #define PANDAR128_DISTANCE_UNIT (0.004)
@@ -113,7 +116,10 @@
   (PANDAR128_PACKET_SIZE + PANDAR128_SEQ_NUM_SIZE)
 #define PANDAR128_WITHOUT_CONF_UNIT_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
 
-#define TASKFLOW_STEP_SIZE (225)
+#define PANDAR128_TASKFLOW_STEP_SIZE (225)
+#define PANDAR64S_TASKFLOW_STEP_SIZE (225)
+#define PANDAR40S_TASKFLOW_STEP_SIZE (225)
+#define PANDAR80_TASKFLOW_STEP_SIZE (250)
 #define PANDAR128_CRC_SIZE (4)
 #define PANDAR128_FUNCTION_SAFETY_SIZE (17)
 
@@ -196,7 +202,7 @@ typedef struct PacketsBuffer_s {
   int m_stepSize;
   bool m_startFlag;
   inline PacketsBuffer_s() {
-    m_stepSize = TASKFLOW_STEP_SIZE;
+    m_stepSize = PANDAR128_TASKFLOW_STEP_SIZE;
     m_iterPush = m_buffers.begin();
     m_iterTaskBegin = m_buffers.begin();
     m_iterTaskEnd = m_iterTaskBegin + m_stepSize;
@@ -248,6 +254,9 @@ typedef struct PacketsBuffer_s {
       m_iterTaskEnd = m_iterTaskBegin + m_stepSize;
     }
   }
+  inline void moveTaskEnd(int moveStep){
+    m_iterTaskEnd = m_iterTaskEnd + moveStep;
+  }
 
 } PacketsBuffer;
 
@@ -283,6 +292,7 @@ class Convert {
   int checkLiadaMode();
   void changeAngleSize();
   void changeReturnBlockSize();
+  void changeTaskflowStepSize();
 
   /// Pointer to dynamic reconfigure service srv_
   boost::shared_ptr<
@@ -332,6 +342,7 @@ class Convert {
   int m_iReturnMode;
   int m_iMotorSpeed;
   int m_iLaserNum;
+  int m_iBlockNum;
   int m_iAngleSize;  // 10->0.1degree,20->0.2degree
   int m_iReturnBlockSize;
   bool m_bPublishPointsFlag;

@@ -80,19 +80,27 @@ bool Input::checkPacket(PandarPacket *pkt) {
   bool hasSignature = (flags & 8);
   bool hasConfidence = (flags & 0x10);
 
-  utc_index = 12 +
-            (hasConfidence ? 4 * laserNum * blockNum : 3 * laserNum * blockNum) + 
-            2 * blockNum + 4 +
-            (hasFunctionSafety ? 17 : 0) + 
-            15;
-  ts_index = utc_index + 6;
+  utc_index = PANDAR128_HEAD_SIZE +
+            (hasConfidence ? PANDAR128_UNIT_WITH_CONFIDENCE_SIZE * laserNum * blockNum : PANDAR128_UNIT_WITHOUT_CONFIDENCE_SIZE * laserNum * blockNum) + 
+            PANDAR128_AZIMUTH_SIZE * blockNum + PANDAR128_CRC_SIZE +
+            (hasFunctionSafety ? PANDAR128_FUNCTION_SAFETY_SIZE : 0) + 
+            PANDAR128_TAIL_RESERVED1_SIZE + 
+            PANDAR128_TAIL_RESERVED2_SIZE +
+            PANDAR128_TAIL_RESERVED3_SIZE +
+            PANDAR128_AZIMUTH_FLAG_SIZE +
+            PANDAR128_SHUTDOWN_FLAG_SIZE +
+            PANDAR128_RETURN_MODE_SIZE +
+            PANDAR128_MOTOR_SPEED_SIZE;
+  ts_index = utc_index + PANDAR128_UTC_SIZE;
   seq_index = ts_index +
-              5 +
-              (hasImu ? 22 : 0) + 
-              (hasSeqNum ? 4 : 0);
+              PANDAR128_TS_SIZE +
+              PANDAR128_FACTORY_INFO;
 
-  uint32_t size = seq_index + 4 +
-            (hasSignature ? 32 : 0);
+  uint32_t size = seq_index + 
+                  (hasImu ? PANDAR128_IMU_SIZE : 0) + 
+                  (hasSeqNum ? PANDAR128_SEQ_NUM_SIZE  : 0) +
+                  PANDAR128_CRC_SIZE +
+                  (hasSignature ? PANDAR128_SIGNATURE_SIZE : 0);
   if(pkt->size == size){
     return true;
   }
@@ -229,7 +237,7 @@ int InputSocket::getPacket(PandarPacket *pkt) {
   static uint32_t dropped = 0, u32StartSeq = 0;
   static uint32_t startTick = GetTickCount();
   if(pkt->data[11]& 1){    //Packet has UDP sequence number
-    uint32_t *pSeq = (uint32_t *)&pkt->data[PANDAR128_SEQUENCE_NUMBER_OFFSET];
+    uint32_t *pSeq = (uint32_t *)&pkt->data[seq_index];
     seqnub = *pSeq;
 
     if (m_u32Sequencenum == 0) {

@@ -71,6 +71,7 @@ void LasersTSOffset::setFilePath(std::string file) {
     printf("Parse Lidar firetime now...\n");
   }
   if (line == "sequence,chn id,firetime/us"){
+    printf("Parse P80 Lidar firetime now...\n");
     while (std::getline(fin, line)) {
       int sequence = 0;
       int chnId = 0;
@@ -168,7 +169,7 @@ void LasersTSOffset::fillVector(char *pContent, int nLen, std::vector<int> &vec)
 
 int LasersTSOffset::getTSOffset(int nLaser, int nMode, int nState, float fDistance, int nLaserNum) {
   switch (nLaserNum){
-    case 80:
+    case PANDAR80_LIDAR_NUM:
       return m_fAzimuthOffset[nLaser];
     default:
       if (nLaser >= mNLaserNum || !mBInitFlag) {
@@ -185,7 +186,7 @@ int LasersTSOffset::getTSOffset(int nLaser, int nMode, int nState, float fDistan
 
 int LasersTSOffset::getBlockTS(int nBlock, int nRetMode, int nMode, int nLaserNum) {
   switch (nLaserNum){
-    case 80:
+    case PANDAR80_LIDAR_NUM:
       if (0x39 == nRetMode || 0x3b == nRetMode || 0x3c == nRetMode) {
         return (((BLOCK_ID_MAX - nBlock)/2) * PANDAR80_BLOCK_TIMESTAMP);
       } 
@@ -208,7 +209,7 @@ int LasersTSOffset::getBlockTS(int nBlock, int nRetMode, int nMode, int nLaserNu
 
 float LasersTSOffset::getAngleOffset(int nTSOffset, int nLaserId, int nLaserNum) {
   switch (nLaserNum){
-    case 80:
+    case PANDAR80_LIDAR_NUM:
       return m_fAzimuthOffset[nLaserId] * SPEED_US;
     default:
       return static_cast<float>(nTSOffset) * SPEED;

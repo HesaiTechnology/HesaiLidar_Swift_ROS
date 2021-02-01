@@ -1,4 +1,4 @@
-# HesaiLidar_Pandar128_ROS
+# HesaiLidar_Swift_ROS
 
 星期五, 16. 十月 2020 23:25下午 
 ##version
@@ -33,3 +33,10 @@ Pandar128_1.0.6
 ##modify
 1. Fix that all point cloud values have timestamp and ring
 2. Fix that sdk will core dumped when input wrong correction file path 
+
+星期一, 01. 二月 2021 17:30下午 
+##version
+Pandar128_1.0.7
+
+##modify
+1. Change readme and branch name

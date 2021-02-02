@@ -54,6 +54,60 @@ Input::Input(ros::NodeHandle private_nh, uint16_t port)
   private_nh.param("device_ip", devip_str_, std::string(""));
   if (!devip_str_.empty())
     ROS_INFO_STREAM("Only accepting packets from IP address: " << devip_str_);
+  ts_index = 0;
+  utc_index = 0;
+  seq_index = 0;
+}
+
+bool Input::checkPacket(PandarPacket *pkt) {
+  if(pkt->size < 100)
+  return false;
+  if (pkt->data[0] != 0xEE && pkt->data[1] != 0xFF && pkt->data[2] != 1 ) {    
+    ROS_WARN("Packet with invaild delimiter\n");
+    return false;
+  }
+  if (pkt->data[2] != 1 && pkt->data[3] != 4) {    
+    ROS_WARN("Packet with invaild lidar type\n");
+    return false;
+  }
+  uint8_t laserNum = pkt->data[6];
+  uint8_t blockNum = pkt->data[7];
+  uint8_t flags = pkt->data[11];
+
+  bool hasSeqNum = (flags & 1); 
+  bool hasImu = (flags & 2);
+  bool hasFunctionSafety = (flags & 4);
+  bool hasSignature = (flags & 8);
+  bool hasConfidence = (flags & 0x10);
+
+  utc_index = PANDAR128_HEAD_SIZE +
+            (hasConfidence ? PANDAR128_UNIT_WITH_CONFIDENCE_SIZE * laserNum * blockNum : PANDAR128_UNIT_WITHOUT_CONFIDENCE_SIZE * laserNum * blockNum) + 
+            PANDAR128_AZIMUTH_SIZE * blockNum + PANDAR128_CRC_SIZE +
+            (hasFunctionSafety ? PANDAR128_FUNCTION_SAFETY_SIZE : 0) + 
+            PANDAR128_TAIL_RESERVED1_SIZE + 
+            PANDAR128_TAIL_RESERVED2_SIZE +
+            PANDAR128_TAIL_RESERVED3_SIZE +
+            PANDAR128_AZIMUTH_FLAG_SIZE +
+            PANDAR128_SHUTDOWN_FLAG_SIZE +
+            PANDAR128_RETURN_MODE_SIZE +
+            PANDAR128_MOTOR_SPEED_SIZE;
+  ts_index = utc_index + PANDAR128_UTC_SIZE;
+  seq_index = ts_index +
+              PANDAR128_TS_SIZE +
+              PANDAR128_FACTORY_INFO;
+
+  uint32_t size = seq_index + 
+                  (hasImu ? PANDAR128_IMU_SIZE : 0) + 
+                  (hasSeqNum ? PANDAR128_SEQ_NUM_SIZE  : 0) +
+                  PANDAR128_CRC_SIZE +
+                  (hasSignature ? PANDAR128_SIGNATURE_SIZE : 0);
+  if(pkt->size == size){
+    return true;
+  }
+  else{
+    ROS_WARN("Packet size mismatch.caculated size:%d, packet size:%d", size, pkt->size);
+    return false;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -172,43 +226,47 @@ int InputSocket::getPacket(PandarPacket *pkt) {
   ssize_t nbytes = recvfrom(sockfd_, &pkt->data[0], 10000, 0,
                             (sockaddr *)&sender_address, &sender_address_len);
   pkt->size = nbytes;
+  if (pkt->size == 512) {
+    // ROS_ERROR("GPS");
+    return 2;
+  }
+  else if(!checkPacket(pkt)){
+    return 1;  // Packet size not match
+  }
 
   static uint32_t dropped = 0, u32StartSeq = 0;
   static uint32_t startTick = GetTickCount();
+  if(pkt->data[11]& 1){    //Packet has UDP sequence number
+    uint32_t *pSeq = (uint32_t *)&pkt->data[seq_index];
+    seqnub = *pSeq;
 
-  uint32_t *pSeq = (uint32_t *)&pkt->data[PANDAR128_SEQUENCE_NUMBER_OFFSET];
-  seqnub = *pSeq;
-
-  if (m_u32Sequencenum == 0) {
+    if (m_u32Sequencenum == 0) {
+      m_u32Sequencenum = seqnub;
+      u32StartSeq = m_u32Sequencenum;
+    } else {
+      uint32_t diff = seqnub - m_u32Sequencenum;
+      if (diff > 1) {
+        ROS_WARN("seq diff: %x ", diff);
+        dropped += diff - 1;
+      }
+    }
     m_u32Sequencenum = seqnub;
-    u32StartSeq = m_u32Sequencenum;
-  } else {
-    uint32_t diff = seqnub - m_u32Sequencenum;
-    if (diff > 1) {
-      ROS_WARN("seq diff: %x ", diff);
-      dropped += diff - 1;
+
+    uint32_t endTick = GetTickCount();
+
+    if (endTick - startTick >= 1000 && dropped > 0) {
+      ROS_WARN("!!!!!!!!!! dropped: %d, %d, percent, %f", dropped,
+              m_u32Sequencenum - u32StartSeq,
+              float(dropped) / float(m_u32Sequencenum - u32StartSeq) * 100.0);
+      dropped = 0;
+      u32StartSeq = m_u32Sequencenum;
+      startTick = endTick;
     }
   }
-  m_u32Sequencenum = seqnub;
-
-  uint32_t endTick = GetTickCount();
-
-  if (endTick - startTick >= 1000 && dropped > 0) {
-    ROS_WARN("!!!!!!!!!! dropped: %d, %d, percent, %f", dropped,
-             m_u32Sequencenum - u32StartSeq,
-             float(dropped) / float(m_u32Sequencenum - u32StartSeq) * 100.0);
-    dropped = 0;
-    u32StartSeq = m_u32Sequencenum;
-    startTick = endTick;
-  }
-
   // Average the times at which we begin and end reading.  Use that to
   // estimate when the scan occurred. Add the time offset.
   // double time2 = ros::Time::now().toSec();
   // pkt->stamp = ros::Time((time2 + time1) / 2.0 + time_offset);
-  if (isgps) {
-    return 2;
-  }
   return 0;
 }
 
@@ -255,8 +313,6 @@ InputPCAP::InputPCAP(ros::NodeHandle private_nh, uint16_t port,
   filter << "udp dst port " << port;
   pcap_compile(pcap_, &pcap_packet_filter_, filter.str().c_str(), 1,
                PCAP_NETMASK_UNKNOWN);
-  ts_index = 826;
-  utc_index = 820;
   gap = 1000;
   last_pkt_ts = 0;
   count;
@@ -282,7 +338,13 @@ int InputPCAP::getPacket(PandarPacket *pkt) {
     memcpy(&pkt->data[0], packetBuf + 42, pktHeader->caplen -42);
     pkt->size = pktHeader->caplen -42;
     count++;
-
+    if (pktHeader->caplen == (512 + 42)) {
+      // ROS_ERROR("GPS");
+      return 2;
+    }
+    else if(!checkPacket(pkt)){
+      return 1;  // Packet size not match
+    }
     if (count >= gap) {
       count = 0;
 
@@ -330,19 +392,11 @@ int InputPCAP::getPacket(PandarPacket *pkt) {
 
     pkt->stamp = ros::Time::now();  // time_offset not considered here, as no
                                       // synchronization required
-      if (pktHeader->caplen == (512 + 42)) {
-        // ROS_ERROR("GPS");
-        return 2;
-      }
-      else {
-        return 0;  // success
-      }
-
     // if (pcapFile != NULL) {
     //   pcap_close(pcapFile);
     //   pcapFile = NULL;
     // }
-
+    return 0;
   }
   return 1;
 }

@@ -7,6 +7,10 @@ This repository includes the ROS Driver for Pandar128 LiDAR sensor manufactured 
 
 To get the UDP protocol version number of your device,  check the UDP package header field.
 
+## About the project
+ROS_Pandar128 project includes the ROS Driver for：  
+**Pandar64S/Pandar40S/Pandar80S/Pandar128 with UDP protocol version 1.4**  
+LiDAR sensor manufactured by Hesai Technology.  
 
 ## Build
 
@@ -28,6 +32,9 @@ $ cd rosworkspace/src
 ```
 
 2. Clone recursively this repository in the current path
+```
+$ git clone https://github.com/HesaiTechnology/HesaiLidar_Pandar128_ROS.git
+```
 3. Install required dependencies with the help of `rosdep`
 ```
 $ cd ..

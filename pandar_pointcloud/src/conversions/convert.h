@@ -48,6 +48,7 @@
 #define PANDARSDK_TCP_COMMAND_PORT (9347)
 #define LIDAR_NODE_TYPE "lidar"
 #define LIDAR_ANGLE_SIZE_10 (10)
+#define LIDAR_ANGLE_SIZE_18 (18)
 #define LIDAR_ANGLE_SIZE_20 (20)
 #define LIDAR_ANGLE_SIZE_40 (40)
 #define LIDAR_RETURN_BLOCK_SIZE_1 (1)
@@ -64,6 +65,9 @@
 #define GPS_ITEM_NUM (7)
 
 #define PANDAR128_LASER_NUM (128)
+#define PANDAR64S_LASER_NUM (64)
+#define PANDAR40S_LASER_NUM (40)
+#define PANDAR80_LASER_NUM (80)
 #define PANDAR128_BLOCK_NUM (2)
 #define MAX_BLOCK_NUM (8)
 #define PANDAR128_DISTANCE_UNIT (0.004)
@@ -86,9 +90,10 @@
 #define DISTANCE_SIZE (2)
 #define INTENSITY_SIZE (1)
 #define CONFIDENCE_SIZE (1)
-#define PANDAR128_UNIT_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
+#define PANDAR128_UNIT_WITHOUT_CONFIDENCE_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
+#define PANDAR128_UNIT_WITH_CONFIDENCE_SIZE (DISTANCE_SIZE + INTENSITY_SIZE + CONFIDENCE_SIZE)
 #define PANDAR128_BLOCK_SIZE \
-  (PANDAR128_UNIT_SIZE * PANDAR128_LASER_NUM + PANDAR128_AZIMUTH_SIZE)
+  (PANDAR128_UNIT_WITHOUT_CONFIDENCE_SIZE * PANDAR128_LASER_NUM + PANDAR128_AZIMUTH_SIZE)
 #define PANDAR128_TAIL_RESERVED1_SIZE (3)
 #define PANDAR128_TAIL_RESERVED2_SIZE (3)
 #define PANDAR128_SHUTDOWN_FLAG_SIZE (1)
@@ -111,7 +116,10 @@
   (PANDAR128_PACKET_SIZE + PANDAR128_SEQ_NUM_SIZE)
 #define PANDAR128_WITHOUT_CONF_UNIT_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
 
-#define TASKFLOW_STEP_SIZE (225)
+#define PANDAR128_TASKFLOW_STEP_SIZE (225)
+#define PANDAR64S_TASKFLOW_STEP_SIZE (225)
+#define PANDAR40S_TASKFLOW_STEP_SIZE (225)
+#define PANDAR80_TASKFLOW_STEP_SIZE (250)
 #define PANDAR128_CRC_SIZE (4)
 #define PANDAR128_FUNCTION_SAFETY_SIZE (17)
 
@@ -120,6 +128,7 @@
 
 #define CIRCLE_ANGLE (360)
 #define MOTOR_SPEED_600 (600)
+#define MOTOR_SPEED_900 (900)
 #define MOTOR_SPEED_1200 (1200)
 
 typedef struct __attribute__((__packed__)) Pandar128Unit_s {
@@ -137,25 +146,32 @@ typedef struct Pandar128Head_s {
   uint16_t u16Sob;
   uint8_t u8VersionMajor;
   uint8_t u8VersionMinor;
-  uint8_t u8DistUnit;
-  uint8_t u8Flags;
+  uint16_t u16Reserve1;
   uint8_t u8LaserNum;
   uint8_t u8BlockNum;
   uint8_t u8EchoCount;
+  uint8_t u8DistUnit;
   uint8_t u8EchoNum;
-  uint16_t u16Reserve1;
+  uint8_t u8Flags;
+  inline bool hasSeqNum() const { return u8Flags & 1; }
+  inline bool hasImu() const { return u8Flags & 2; }
+  inline bool hasFunctionSafety() const { return u8Flags & 4; }
+  inline bool hasSignature() const { return u8Flags & 8; }
+  inline bool hasConfidence() const { return u8Flags & 0x10; }
+
 } Pandar128Head;
 
 typedef struct Pandar128Tail_s {
   uint8_t nReserved1[3];
   uint8_t nReserved2[3];
-  uint8_t nShutdownFlag;
   uint8_t nReserved3[3];
-  uint16_t nMotorSpeed;
-  uint32_t nTimestamp;
+  uint16_t nAzimuthFlag;
+  uint8_t nShutdownFlag;
   uint8_t nReturnMode;
-  uint8_t nFactoryInfo;
+  uint16_t nMotorSpeed;
   uint8_t nUTCTime[6];
+  uint32_t nTimestamp;
+  uint8_t nFactoryInfo;
   uint32_t nSeqNum;
 } Pandar128Tail;
 
@@ -176,7 +192,7 @@ struct PandarGPS_s {
   uint32_t fineTime;
 };
 
-typedef std::array<Pandar128Packet, 36000> PktArray;
+typedef std::array<pandar_msgs::PandarPacket, 36000> PktArray;
 
 typedef struct PacketsBuffer_s {
   PktArray m_buffers{};
@@ -186,13 +202,13 @@ typedef struct PacketsBuffer_s {
   int m_stepSize;
   bool m_startFlag;
   inline PacketsBuffer_s() {
-    m_stepSize = TASKFLOW_STEP_SIZE;
+    m_stepSize = PANDAR128_TASKFLOW_STEP_SIZE;
     m_iterPush = m_buffers.begin();
     m_iterTaskBegin = m_buffers.begin();
     m_iterTaskEnd = m_iterTaskBegin + m_stepSize;
     m_startFlag = false;
   }
-  inline int push_back(Pandar128Packet pkt) {
+  inline int push_back(pandar_msgs::PandarPacket pkt) {
     if (!m_startFlag) {
       *(m_iterPush++) = pkt;
       m_startFlag = true;
@@ -238,6 +254,9 @@ typedef struct PacketsBuffer_s {
       m_iterTaskEnd = m_iterTaskBegin + m_stepSize;
     }
   }
+  inline void moveTaskEnd(int moveStep){
+    m_iterTaskEnd = m_iterTaskEnd + moveStep;
+  }
 
 } PacketsBuffer;
 
@@ -265,7 +284,7 @@ class Convert {
   void processGps(const pandar_msgs::PandarGps::ConstPtr &gpsMsg);
 
   int parseData(Pandar128Packet &pkt, const uint8_t *buf, const int len);
-  void calcPointXYZIT(Pandar128Packet &pkt,
+  void calcPointXYZIT(pandar_msgs::PandarPacket &pkt,
                       boost::shared_ptr<PPointCloud> &cld);
   void doTaskFlow(int cursor);
   void loadOffsetFile(std::string file);
@@ -273,6 +292,7 @@ class Convert {
   int checkLiadaMode();
   void changeAngleSize();
   void changeReturnBlockSize();
+  void changeTaskflowStepSize();
 
   /// Pointer to dynamic reconfigure service srv_
   boost::shared_ptr<
@@ -321,6 +341,8 @@ class Convert {
   int m_iWorkMode;
   int m_iReturnMode;
   int m_iMotorSpeed;
+  int m_iLaserNum;
+  int m_iBlockNum;
   int m_iAngleSize;  // 10->0.1degree,20->0.2degree
   int m_iReturnBlockSize;
   bool m_bPublishPointsFlag;

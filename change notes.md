@@ -52,3 +52,10 @@ Pandar128_1.0.7
 
 ##modify
 1. Change readme and branch name
+
+星期二, 04. 二月 2021 17:30下午 
+##version
+PandarSwift_1.0.8
+
+##modify
+1. Support P64S P40S

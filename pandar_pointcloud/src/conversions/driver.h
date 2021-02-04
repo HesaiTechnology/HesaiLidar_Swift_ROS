@@ -26,7 +26,11 @@
 #include <pandar_pointcloud/input.h>
 
 typedef struct PandarGPS_s PandarGPS;
-#define READ_PACKET_SIZE (1800)
+#define PANDAR128_READ_PACKET_SIZE (1800)
+#define PANDAR80_READ_PACKET_SIZE (1800)
+#define PANDAR64S_READ_PACKET_SIZE (900)
+#define PANDAR40S_READ_PACKET_SIZE (225)
+#define PANDAR_LASER_NUMBER_INDEX (6)
 
 namespace pandar_pointcloud {
 class Convert;
@@ -39,6 +43,7 @@ class PandarDriver {
 
   bool poll(void);
   void publishRawData();
+  int getPandarScanArraySize(boost::shared_ptr<Input>);
 
  private:
   /// Callback for dynamic reconfigure
@@ -66,6 +71,8 @@ class PandarDriver {
   int m_iScanPushIndex;
   int m_iScanPopIndex;
   pthread_mutex_t piclock;
+  int m_iPandarScanArraySize;
+  bool m_bGetScanArraySizeFlag;
 
   /** diagnostics updater */
   diagnostic_updater::Updater diagnostics_;

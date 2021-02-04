@@ -67,11 +67,12 @@ PandarDriver::PandarDriver(ros::NodeHandle node, ros::NodeHandle private_nh,
   m_bNeedPublish = false;
   m_iScanPushIndex = 0;
   m_iScanPopIndex = 1;
-
+  m_bGetScanArraySizeFlag = false;
+  m_iPandarScanArraySize = PANDAR128_READ_PACKET_SIZE;
   pandar_msgs::PandarScanPtr scan0(new pandar_msgs::PandarScan);
-  scan0->packets.resize(READ_PACKET_SIZE);
+  scan0->packets.resize(m_iPandarScanArraySize);
   pandar_msgs::PandarScanPtr scan1(new pandar_msgs::PandarScan);
-  scan1->packets.resize(READ_PACKET_SIZE);
+  scan1->packets.resize(m_iPandarScanArraySize);
 
   pandarScanArray[m_iScanPushIndex] = scan0;
   pandarScanArray[m_iScanPopIndex] = scan1;
@@ -180,7 +181,11 @@ bool PandarDriver::poll(void) {
   // Since the pandar delivers data at a very high rate, keep
   // reading and publishing scans as fast as possible.
   // ROS_WARN("PandarDriver::poll(void),readpacket[%d]",readpacket);
-  for (int i = 0; i < READ_PACKET_SIZE; ++i) {
+  if(!m_bGetScanArraySizeFlag){
+    m_iPandarScanArraySize = getPandarScanArraySize(input_);
+    m_bGetScanArraySizeFlag = false;
+  }
+  for (int i = 0; i < m_iPandarScanArraySize; ++i) {
     // while (true)
     // {
     // keep reading until full packet received
@@ -246,7 +251,7 @@ void PandarDriver::publishRawData() {
   if (m_bNeedPublish) {
     // ROS_WARN("PandarDriver::publishRawData()[%d]", m_iScanPopIndex);
     pandarScanArray[m_iScanPopIndex]->header.stamp =
-        pandarScanArray[m_iScanPopIndex]->packets[READ_PACKET_SIZE - 1].stamp;
+        pandarScanArray[m_iScanPopIndex]->packets[m_iPandarScanArraySize - 1].stamp;
     pandarScanArray[m_iScanPopIndex]->header.frame_id = config_.frame_id;
     output_.publish(pandarScanArray[m_iScanPopIndex]);
 
@@ -266,4 +271,22 @@ void PandarDriver::callback(pandar_pointcloud::CloudNodeConfig &config,
   // config_.time_offset = config.time_offset;
 }
 
+int PandarDriver::getPandarScanArraySize(boost::shared_ptr<Input> input_){
+  for (int i = 0; i < 256; ++i) {
+    PandarPacket packet;
+    int rc = input_->getPacket(&packet);
+    switch (packet.data[PANDAR_LASER_NUMBER_INDEX]){
+    case PANDAR128_LASER_NUM:
+      return PANDAR128_READ_PACKET_SIZE;
+    case PANDAR80_LASER_NUM:
+      return PANDAR80_READ_PACKET_SIZE;
+    case PANDAR64S_LASER_NUM:
+      return PANDAR64S_READ_PACKET_SIZE;
+    case PANDAR40S_LASER_NUM:
+      return PANDAR64S_READ_PACKET_SIZE;
+    default:
+      break;
+    }
+  }
+}
 }  // namespace pandar_driver

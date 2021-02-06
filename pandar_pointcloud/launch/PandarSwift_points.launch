@@ -6,7 +6,7 @@
   <!-- declare arguments with default values -->
   <arg name="calibration" default="$(find pandar_pointcloud)/params/correction.csv"/>
   <arg name="device_ip" default="192.168.1.201" />
-  <arg name="frame_id" default="Pandar128" />
+  <arg name="frame_id" default="PandarSwift" />
   <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
   <arg name="max_range" default="130.0" />
   <arg name="firetime_file" default="$(find pandar_pointcloud)/params/laser-ts.csv"/>

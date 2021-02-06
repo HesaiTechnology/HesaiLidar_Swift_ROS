@@ -83,8 +83,8 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "Pandar128_1.0.7";
-  ROS_WARN("--------Pandar128 ROS version: %s--------\n\n",m_sRosVersion.c_str());
+  m_sRosVersion = "PandarSwift_1.0.8";
+  ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
   if (LIDAR_NODE_TYPE == node_type) {
@@ -181,26 +181,25 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     std::ifstream fin(lidarCorrectionFile);
     if (fin.is_open()) {
       ROS_WARN("Open correction file success\n");
+      int length = 0;
+      std::string strlidarCalibration;
+      fin.seekg(0, std::ios::end);
+      length = fin.tellg();
+      fin.seekg(0, std::ios::beg);
+      char *buffer = new char[length];
+      fin.read(buffer, length);
+      fin.close();
+      strlidarCalibration = buffer;
+      ret = loadCorrectionFile(strlidarCalibration);
+      if (ret != 0) {
+        ROS_WARN("Parse local Correction file Error");
+      } 
+      else {
+        ROS_WARN("Parse local Correction file Success!!!");
+      }
     }
     else{
       ROS_WARN("Open correction file failed\n");
-      return;
-    }
-    int length = 0;
-    std::string strlidarCalibration;
-    fin.seekg(0, std::ios::end);
-    length = fin.tellg();
-    fin.seekg(0, std::ios::beg);
-    char *buffer = new char[length];
-    fin.read(buffer, length);
-    fin.close();
-    strlidarCalibration = buffer;
-    ret = loadCorrectionFile(strlidarCalibration);
-    if (ret != 0) {
-      ROS_WARN("Parse local Correction file Error");
-    } 
-    else {
-      ROS_WARN("Parse local Correction file Success!!!");
     }
   }
 

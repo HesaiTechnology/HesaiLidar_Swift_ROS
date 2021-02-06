@@ -44,7 +44,7 @@ $ catkin_make -DCMAKE_BUILD_TYPE=Release
 
 ## Config
 ```
- $ cd src/ROS_128/pandar_pointcloud/launch
+ $ cd src/ROS_P128/pandar_pointcloud/launch
 ```
 open PandarSwift_points.launch to set configuration parameters
 

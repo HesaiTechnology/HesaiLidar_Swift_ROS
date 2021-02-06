@@ -185,7 +185,7 @@ bool PandarDriver::poll(void) {
     m_iPandarScanArraySize = getPandarScanArraySize(input_);
     pandarScanArray[m_iScanPushIndex]->packets.resize(m_iPandarScanArraySize);
     pandarScanArray[m_iScanPopIndex]->packets.resize(m_iPandarScanArraySize);
-    m_bGetScanArraySizeFlag = false;
+    m_bGetScanArraySizeFlag = true;
   }
   for (int i = 0; i < m_iPandarScanArraySize; ++i) {
     // while (true)

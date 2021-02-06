@@ -190,26 +190,25 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     std::ifstream fin(lidarCorrectionFile);
     if (fin.is_open()) {
       ROS_WARN("Open correction file success\n");
+      int length = 0;
+      std::string strlidarCalibration;
+      fin.seekg(0, std::ios::end);
+      length = fin.tellg();
+      fin.seekg(0, std::ios::beg);
+      char *buffer = new char[length];
+      fin.read(buffer, length);
+      fin.close();
+      strlidarCalibration = buffer;
+      ret = loadCorrectionFile(strlidarCalibration);
+      if (ret != 0) {
+        ROS_WARN("Parse local Correction file Error");
+      } 
+      else {
+        ROS_WARN("Parse local Correction file Success!!!");
+      }
     }
     else{
       ROS_WARN("Open correction file failed\n");
-      return;
-    }
-    int length = 0;
-    std::string strlidarCalibration;
-    fin.seekg(0, std::ios::end);
-    length = fin.tellg();
-    fin.seekg(0, std::ios::beg);
-    char *buffer = new char[length];
-    fin.read(buffer, length);
-    fin.close();
-    strlidarCalibration = buffer;
-    ret = loadCorrectionFile(strlidarCalibration);
-    if (ret != 0) {
-      ROS_WARN("Parse local Correction file Error");
-    } 
-    else {
-      ROS_WARN("Parse local Correction file Success!!!");
     }
   }
 

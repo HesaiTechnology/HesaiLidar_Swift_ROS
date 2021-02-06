@@ -183,6 +183,8 @@ bool PandarDriver::poll(void) {
   // ROS_WARN("PandarDriver::poll(void),readpacket[%d]",readpacket);
   if(!m_bGetScanArraySizeFlag){
     m_iPandarScanArraySize = getPandarScanArraySize(input_);
+    pandarScanArray[m_iScanPushIndex]->packets.resize(m_iPandarScanArraySize);
+    pandarScanArray[m_iScanPopIndex]->packets.resize(m_iPandarScanArraySize);
     m_bGetScanArraySizeFlag = false;
   }
   for (int i = 0; i < m_iPandarScanArraySize; ++i) {
@@ -283,7 +285,7 @@ int PandarDriver::getPandarScanArraySize(boost::shared_ptr<Input> input_){
     case PANDAR64S_LASER_NUM:
       return PANDAR64S_READ_PACKET_SIZE;
     case PANDAR40S_LASER_NUM:
-      return PANDAR64S_READ_PACKET_SIZE;
+      return PANDAR40S_READ_PACKET_SIZE;
     default:
       break;
     }

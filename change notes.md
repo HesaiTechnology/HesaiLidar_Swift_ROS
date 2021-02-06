@@ -58,4 +58,4 @@ Pandar128_1.0.7
 PandarSwift_1.0.8
 
 ##modify
-1. Support P64S P40S
+1. Support to parser packet with UDP protocol v1.4

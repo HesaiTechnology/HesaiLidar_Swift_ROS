@@ -1,9 +1,9 @@
 # HesaiLidar_Swift_ROS
 
-This repository includes the ROS Driver for Pandar128 LiDAR sensor manufactured by Hesai Technology. Branches are included for different systems and UDP protocol versions:
-* master: Pandar128/Pandar80/Pandar64S/Pandar40S ROS driver for Ubuntu 18.04 supports the latest UDP protocol v1.4
-* UDP1.4_ubuntu16.04: Pandar128/Pandar80/Pandar64S/Pandar40S ROS driver for Ubuntu 16.04 supports the latest UDP protocol v1.4
-* UDP1.3: Pandar128 ROS driver for ubuntu16.04 and ubuntu 18.04 supports UDP protocol v1.3    
+This repository includes the ROS Driver for Pandar LiDAR sensor manufactured by Hesai Technology. Branches are included for different systems and UDP protocol versions:
+* master: Pandar LiDAR ROS driver for Ubuntu 18.04 supports the latest UDP protocol v1.4
+* UDP1.4_ubuntu16.04: Pandar LiDAR ROS driver for Ubuntu 16.04 supports the latest UDP protocol v1.4
+* UDP1.3: Pandar LiDAR ROS driver for ubuntu16.04 and ubuntu 18.04 supports UDP protocol v1.3    
 
 To get the UDP protocol version number of your device,  check the UDP package header field.
 
@@ -28,7 +28,7 @@ $ cd rosworkspace/src
 
 2. Clone recursively this repository in the current path
 ```
-$ git clone https://github.com/HesaiTechnology/HesaiLidar_Pandar128_ROS.git
+$ git clone https://github.com/HesaiTechnology/HesaiLidar_Swift_ROS.git
 ```
 3. Install required dependencies with the help of `rosdep`
 ```
@@ -44,7 +44,7 @@ $ catkin_make -DCMAKE_BUILD_TYPE=Release
 
 ## Config
 ```
- $ cd src/ROS_Swift/pandar_pointcloud/launch
+ $ cd src/ROS_128/pandar_pointcloud/launch
 ```
 open PandarSwift_points.launch to set configuration parameters
 
@@ -93,7 +93,7 @@ $ roslaunch pandar_pointcloud PandarSwift_points.launch
 
 3. Open Rviz and add display by topic.
 
-4. Change fixed frame to "Pandar128" to view published point clouds.
+4. Change fixed frame to "PandarSwift" to view published point clouds.
 
 ### View the point cloud from rosbag file
 
@@ -124,4 +124,4 @@ $rosbag play <rosbagfiel>
 $ roslaunch pandar_pointcloud transform_nodelet.launch data_type:=rosbag
 ```
 7. Open Rviz and add display by topic.
-8. Change fixed frame to "Pandar128" to view published point clouds.
+8. Change fixed frame to "PandarSwift" to view published point clouds.

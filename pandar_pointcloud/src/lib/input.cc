@@ -313,7 +313,7 @@ InputPCAP::InputPCAP(ros::NodeHandle private_nh, uint16_t port,
   filter << "udp dst port " << port;
   pcap_compile(pcap_, &pcap_packet_filter_, filter.str().c_str(), 1,
                PCAP_NETMASK_UNKNOWN);
-  gap = 200;
+  gap = 100;
   last_pkt_ts = 0;
   count;
   last_time = 0;

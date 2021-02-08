@@ -585,6 +585,7 @@ int Convert::checkLiadaMode() {
     if (m_iWorkMode != lidarworkmode) { //work mode change
       ROS_WARN("change work mode:  %x to %x ",m_iWorkMode, lidarworkmode);
       m_iWorkMode = lidarworkmode;
+      m_iMotorSpeed = lidarmotorspeed;
       changeAngleSize();
       return 0;
     }
@@ -614,7 +615,7 @@ void Convert::changeAngleSize() {
     return;
   } 
   if (m_iLaserNum == PANDAR64S_LASER_NUM || m_iLaserNum == PANDAR40S_LASER_NUM) {
-    m_iAngleSize = LIDAR_ANGLE_SIZE_20;  // 20->0.2degree
+    m_iAngleSize = LIDAR_ANGLE_SIZE_20 * m_iMotorSpeed / MOTOR_SPEED_600;  // 20->0.2degree
     return;
   } 
   if (0 == m_iWorkMode && MOTOR_SPEED_600 == m_iMotorSpeed) {

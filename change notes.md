@@ -59,3 +59,10 @@ PandarSwift_1.0.8
 
 ##modify
 1. Support to parser packet with UDP protocol v1.4
+
+星期一, 08. 二月 2021 10:30下午 
+##version
+PandarSwift_1.0.9
+
+##modify
+1. Fix bug in different rpm

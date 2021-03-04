@@ -8,11 +8,14 @@ This repository includes the ROS Driver for Pandar LiDAR sensor manufactured by 
 To get the UDP protocol version number of your device,  check the UDP package header field.
 
 ## Build
+### Environment and Dependencies
+**G++ version requirement:G++ 7.0 or above**
+**Cmake version requirement:Cmake 3.0.2 or above**
 
 ### Install dependency libraries
 ```
 $ sudo apt-get update
-$ sudo apt install libpcl-dev libpcap-dev libyaml-cpp-dev python-catkin-tools
+$ sudo apt install libpcl-dev libpcap-dev libyaml-cpp-dev python-catkin-tools libboost-dev
 ```
 
 ### Install ROS
@@ -44,7 +47,7 @@ $ catkin_make -DCMAKE_BUILD_TYPE=Release
 
 ## Config
 ```
- $ cd src/ROS_P128/pandar_pointcloud/launch
+ $ cd src/HesaiLidar_Swift_ROS/pandar_pointcloud/launch
 ```
 open PandarSwift_points.launch to set configuration parameters
 

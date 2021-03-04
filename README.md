@@ -15,7 +15,7 @@ To get the UDP protocol version number of your device,  check the UDP package he
 ### Install dependency libraries
 ```
 $ sudo apt-get update
-$ sudo apt install libpcl-dev libpcap-dev libyaml-cpp-dev python-catkin-tools
+$ sudo apt install libpcl-dev libpcap-dev libyaml-cpp-dev python-catkin-tools libboost-dev
 ```
 
 ### Install ROS

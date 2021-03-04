@@ -40,6 +40,7 @@
 #include "driver.h"
 #include "laser_ts.h"
 #include "tcp_command_client.h"
+#include <vector>
 
 #ifndef CIRCLE
 #define CIRCLE (36000)
@@ -244,12 +245,19 @@ typedef struct PacketsBuffer_s {
   }
   inline PktArray::iterator getTaskBegin() { return m_iterTaskBegin; }
   inline PktArray::iterator getTaskEnd() { return m_iterTaskEnd; }
+  inline void moveTaskEnd(PktArray::iterator iter) {
+    m_iterTaskEnd = iter;
+	}
   inline void creatNewTask() {
     if (m_buffers.end() == m_iterTaskEnd) {
       ROS_WARN("creat new task end to start");
       m_iterTaskBegin = m_buffers.begin();
       m_iterTaskEnd = m_iterTaskBegin + m_stepSize;
-    } else {
+    }
+     else if((m_buffers.end() - m_iterTaskEnd) < m_stepSize) {
+			m_iterTaskBegin = m_iterTaskEnd;
+			m_iterTaskEnd = m_buffers.end();
+		}else {
       m_iterTaskBegin = m_iterTaskEnd;
       m_iterTaskEnd = m_iterTaskBegin + m_stepSize;
     }
@@ -262,6 +270,10 @@ typedef struct PacketsBuffer_s {
 
 typedef pandar_pointcloud::PointXYZIT PPoint;
 typedef pcl::PointCloud<PPoint> PPointCloud;
+typedef struct RedundantPoint_s {
+  int index;
+  PPoint point;
+} RedundantPoint;
 
 namespace pandar_pointcloud {
 class Convert {
@@ -284,15 +296,15 @@ class Convert {
   void processGps(const pandar_msgs::PandarGps::ConstPtr &gpsMsg);
 
   int parseData(Pandar128Packet &pkt, const uint8_t *buf, const int len);
-  void calcPointXYZIT(pandar_msgs::PandarPacket &pkt,
-                      boost::shared_ptr<PPointCloud> &cld);
+  void calcPointXYZIT(pandar_msgs::PandarPacket &pkt, int cursor);
   void doTaskFlow(int cursor);
   void loadOffsetFile(std::string file);
   int loadCorrectionFile(std::string correction_content);
   int checkLiadaMode();
   void changeAngleSize();
   void changeReturnBlockSize();
-  void changeTaskflowStepSize();
+  void moveTaskEndToStartAngle();
+  void init();
 
   /// Pointer to dynamic reconfigure service srv_
   boost::shared_ptr<
@@ -316,16 +328,18 @@ class Convert {
   bool hasGps;
 
   unsigned int lastGPSSecond;
-  int lidarRotationStartAngle;
+  int m_iLidarRotationStartAngle;
 
   pandar_pointcloud::PandarDriver drv;
 
   pthread_mutex_t piclock;
   sem_t picsem;
+  pthread_mutex_t m_RedundantPointLock;
   // std::list<pandar_msgs::PandarPacket> LiDARDataSet;
 
-  std::array<boost::shared_ptr<PPointCloud>, 2> outMsgArray;
-  PacketsBuffer lidar_packets_;
+  std::array<boost::shared_ptr<PPointCloud>, 2> m_OutMsgArray;
+  std::vector<RedundantPoint> m_RedundantPointBuffer;
+  PacketsBuffer m_PacketsBuffer;
   double timestamp;
   int start_angle_;
   float cos_all_angle_[CIRCLE];
@@ -334,7 +348,7 @@ class Convert {
   float horizatal_azimuth_[PANDAR128_LASER_NUM];
   LasersTSOffset laserOffset;
   int tz_second_;
-  std::string frame_id_;
+  std::string m_sFrameId;
   std::string lidarFiretimeFile;
   std::string lidarCorrectionFile;
   std::string publishmodel;
@@ -351,6 +365,9 @@ class Convert {
   std::string m_sDeviceIp;
   std::string m_sPcapFile;
   std::string m_sRosVersion;
+  int m_iFirstAzimuthIndex;
+  int m_iLastAzimuthIndex;
+  int m_iTotalPointsNum;
 
 };
 

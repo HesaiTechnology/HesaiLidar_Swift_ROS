@@ -66,3 +66,10 @@ PandarSwift_1.0.9
 
 ##modify
 1. Fix bug in different rpm
+
+星期四, 04. 三月 2021 17:30下午 
+##version
+PandarSwift_1.0.10
+
+##modify
+1. Fix bug in parser half packets

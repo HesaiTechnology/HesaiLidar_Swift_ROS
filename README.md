@@ -7,6 +7,7 @@ This repository includes the ROS Driver for Pandar LiDAR sensor manufactured by 
 
 To get the UDP protocol version number of your device,  check the UDP package header field.
 
+## Build
 ### Environment and Dependencies
 **G++ version requirement:G++ 7.0 or above**
 **Cmake version requirement:Cmake 3.0.2 or above**

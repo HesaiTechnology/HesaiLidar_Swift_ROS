@@ -306,6 +306,7 @@ class Convert {
   void changeReturnBlockSize();
   void moveTaskEndToStartAngle();
   void init();
+  void checkClockwise();
 
   /// Pointer to dynamic reconfigure service srv_
   boost::shared_ptr<
@@ -369,6 +370,7 @@ class Convert {
   int m_iFirstAzimuthIndex;
   int m_iLastAzimuthIndex;
   int m_iTotalPointsNum;
+  bool m_bClockwise;
 
 };
 

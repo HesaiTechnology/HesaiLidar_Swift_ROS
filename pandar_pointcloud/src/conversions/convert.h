@@ -127,10 +127,11 @@
 
 #define ETHERNET_MTU (1500)
 
-#define CIRCLE_ANGLE (360)
+#define CIRCLE_ANGLE (36000)
 #define MOTOR_SPEED_600 (600)
 #define MOTOR_SPEED_900 (900)
 #define MOTOR_SPEED_1200 (1200)
+#define MAX_REDUNDANT_POINT_NUM (1000)
 
 typedef struct __attribute__((__packed__)) Pandar128Unit_s {
   uint16_t u16Distance;

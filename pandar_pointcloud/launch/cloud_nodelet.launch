@@ -16,11 +16,7 @@
   <arg name="read_once" default="false" />
   <arg name="repeat_delay" default="0.0" />
   <arg name="rpm" default="600.0" />
-  <arg name="firetime_file"  default="$(find pandar_pointcloud)/params/laser-ts.csv"/>
-  <arg name="cert_file" default="" />
-  <arg name="private_key_file" default="" />
-  <arg name="ca_file" default="" />
-
+  <arg name="view_mode" default="0" />
   <node pkg="nodelet" type="nodelet" name="$(arg manager)_cloud"
         args="load pandar_pointcloud/CloudNodelet $(arg manager)"
 		output="screen">
@@ -38,10 +34,7 @@
     <param name="read_once" value="$(arg read_once)"/>
     <param name="repeat_delay" value="$(arg repeat_delay)"/>
     <param name="rpm" value="$(arg rpm)"/>
-    <param name="firetime_file"  value="$(arg firetime_file)"/>
-    <param name="cert_file" value="$(arg cert_file)" />
-    <param name="private_key_file" value="$(arg private_key_file)" />
-    <param name="ca_file" value="$(arg ca_file)" />
+    <param name="view_mode"  value="$(arg view_mode)"/>
   </node>
 
   <!--node pkg="nodelet" type="nodelet" name="$(arg manager)_color"

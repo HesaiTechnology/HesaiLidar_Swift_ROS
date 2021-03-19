@@ -1,13 +1,13 @@
 <!-- -*- mode: XML -*- -->
 
 <launch>
-  <arg name="calibration" default="$(find pandar_pointcloud)/params/correction.csv"/>
+  <arg name="calibration" default="$(find pandar_pointcloud)/params/default_PandarAT.dat"/>
   <arg name="frame_id" default="PandarSwift" />
   <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
   <arg name="max_range" default="130.0" />
   <arg name="min_range" default="0.9" />
   <arg name="data_type" default="lidar" />
-  <arg name="firetime_file" default="$(find pandar_pointcloud)/params/laser-ts.csv"/>
+  <arg name="view_mode" default="0" />
 
   <group if="$(eval data_type=='rosbag')">
     <node pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager" />
@@ -19,6 +19,6 @@
     <param name="frame_id" value="$(arg frame_id)"/>
     <param name="max_range" value="$(arg max_range)"/>
     <param name="min_range" value="$(arg min_range)"/>
-    <param name="firetime_file" value="$(arg firetime_file)"/>
+    <param name="view_mode"  value="$(arg view_mode)"/>
   </node>
 </launch>

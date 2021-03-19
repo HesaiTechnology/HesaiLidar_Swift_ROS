@@ -62,11 +62,11 @@ Input::Input(ros::NodeHandle private_nh, uint16_t port)
 bool Input::checkPacket(PandarPacket *pkt) {
   if(pkt->size < 100)
   return false;
-  if (pkt->data[0] != 0xEE && pkt->data[1] != 0xFF && pkt->data[2] != 1 ) {    
+  if (pkt->data[0] != 0xEE && pkt->data[1] != 0xFF) {    
     ROS_WARN("Packet with invaild delimiter\n");
     return false;
   }
-  if (pkt->data[2] != 1 && pkt->data[3] != 4) {    
+  if (pkt->data[2] != 4 && pkt->data[3] != 1) {    
     ROS_WARN("Packet with invaild lidar type\n");
     return false;
   }
@@ -75,32 +75,21 @@ bool Input::checkPacket(PandarPacket *pkt) {
   uint8_t flags = pkt->data[11];
 
   bool hasSeqNum = (flags & 1); 
-  bool hasImu = (flags & 2);
-  bool hasFunctionSafety = (flags & 4);
-  bool hasSignature = (flags & 8);
-  bool hasConfidence = (flags & 0x10);
 
-  utc_index = PANDAR128_HEAD_SIZE +
-            (hasConfidence ? PANDAR128_UNIT_WITH_CONFIDENCE_SIZE * laserNum * blockNum : PANDAR128_UNIT_WITHOUT_CONFIDENCE_SIZE * laserNum * blockNum) + 
-            PANDAR128_AZIMUTH_SIZE * blockNum + PANDAR128_CRC_SIZE +
-            (hasFunctionSafety ? PANDAR128_FUNCTION_SAFETY_SIZE : 0) + 
-            PANDAR128_TAIL_RESERVED1_SIZE + 
-            PANDAR128_TAIL_RESERVED2_SIZE +
-            PANDAR128_TAIL_RESERVED3_SIZE +
-            PANDAR128_AZIMUTH_FLAG_SIZE +
-            PANDAR128_SHUTDOWN_FLAG_SIZE +
-            PANDAR128_RETURN_MODE_SIZE +
-            PANDAR128_MOTOR_SPEED_SIZE;
-  ts_index = utc_index + PANDAR128_UTC_SIZE;
-  seq_index = ts_index +
-              PANDAR128_TS_SIZE +
-              PANDAR128_FACTORY_INFO;
+  ts_index = PANDAR_AT128_HEAD_SIZE +
+            PANDAR_AT128_UNIT_WITH_CONFIDENCE_SIZE * laserNum * blockNum + 
+            PANDAR_AT128_AZIMUTH_SIZE * blockNum +
+            PANDAR_AT128_TAIL_RESERVED1_SIZE + 
+            PANDAR_AT128_TAIL_RESERVED2_SIZE +
+            PANDAR_AT128_SHUTDOWN_FLAG_SIZE +
+            PANDAR_AT128_TAIL_RESERVED3_SIZE +
+            PANDAR_AT128_MOTOR_SPEED_SIZE;
+  utc_index = ts_index + PANDAR_AT128_TS_SIZE +
+              PANDAR_AT128_RETURN_MODE_SIZE +
+              PANDAR_AT128_FACTORY_INFO;
+  seq_index = utc_index + PANDAR_AT128_UTC_SIZE;
 
-  uint32_t size = seq_index + 
-                  (hasImu ? PANDAR128_IMU_SIZE : 0) + 
-                  (hasSeqNum ? PANDAR128_SEQ_NUM_SIZE  : 0) +
-                  PANDAR128_CRC_SIZE +
-                  (hasSignature ? PANDAR128_SIGNATURE_SIZE : 0);
+  uint32_t size = seq_index + (hasSeqNum ? PANDAR_AT128_SEQ_NUM_SIZE  : 0);
   if(pkt->size == size){
     return true;
   }
@@ -187,7 +176,7 @@ int InputSocket::getPacket(PandarPacket *pkt) {
   struct pollfd fds[1];
   fds[0].fd = sockfd_;
   fds[0].events = POLLIN;
-  static const int POLL_TIMEOUT = 20;  // one second (in msec)
+  static const int POLL_TIMEOUT = 1000;  // one second (in msec)
 
   sockaddr_in sender_address;
   socklen_t sender_address_len = sizeof(sender_address);

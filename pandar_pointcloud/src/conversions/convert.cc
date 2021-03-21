@@ -29,7 +29,7 @@
 #include <fstream>
 #include <iostream>
 #include "taskflow.hpp"
-#define PRINT_FLAG (false)
+#define PRINT_FLAG (true)
 
 namespace pandar_pointcloud {
 
@@ -550,7 +550,7 @@ void Convert::init() {
     m_iLastAzimuthIndex = PANDAR_AT128_HEAD_SIZE + 
                 PANDAR_AT128_UNIT_WITH_CONFIDENCE_SIZE * header->u8LaserNum * (header->u8BlockNum - 1) + 
                 PANDAR_AT128_AZIMUTH_SIZE * (header->u8BlockNum - 1);
-		if(abs(lidarmotorspeed - MOTOR_SPEED_600) < 100) { //ignore the speed gap of 6000 rpm
+		if(abs(lidarmotorspeed - MOTOR_SPEED_600) < 30) { //ignore the speed gap of 6000 rpm
 			lidarmotorspeed = MOTOR_SPEED_600;
 		}
 		else if(abs(lidarmotorspeed - MOTOR_SPEED_400) < 30) { //ignore the speed gap of 400 rpm
@@ -563,7 +563,7 @@ void Convert::init() {
       lidarmotorspeed = MOTOR_SPEED_200;
     }
 		else {
-			lidarmotorspeed = MOTOR_SPEED_300; //changing the speed,give enough size
+			lidarmotorspeed = MOTOR_SPEED_200; //changing the speed,give enough size
 		}
 		m_iMotorSpeed = lidarmotorspeed;
 		printf("init mode: workermode: %x,return mode: %x,speed: %d\n",m_iWorkMode, m_iReturnMode, m_iMotorSpeed);
@@ -652,7 +652,7 @@ int Convert::checkLiadaMode() {
   m_iLastAzimuthIndex = PANDAR_AT128_HEAD_SIZE + 
               PANDAR_AT128_UNIT_WITH_CONFIDENCE_SIZE * header->u8LaserNum * (header->u8BlockNum - 1) + 
               PANDAR_AT128_AZIMUTH_SIZE * (header->u8BlockNum - 1);
-  if(abs(lidarmotorspeed - MOTOR_SPEED_600) < 100) { //ignore the speed gap of 6000 rpm
+  if(abs(lidarmotorspeed - MOTOR_SPEED_600) < 30) { //ignore the speed gap of 6000 rpm
     lidarmotorspeed = MOTOR_SPEED_600;
   }
   else if(abs(lidarmotorspeed - MOTOR_SPEED_400) < 30) { //ignore the speed gap of 400 rpm

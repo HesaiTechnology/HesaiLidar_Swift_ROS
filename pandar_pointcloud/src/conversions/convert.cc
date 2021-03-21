@@ -29,6 +29,7 @@
 #include <fstream>
 #include <iostream>
 #include "taskflow.hpp"
+#define PRINT_FLAG (false)
 
 namespace pandar_pointcloud {
 
@@ -83,7 +84,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "PandarSwift_1.0.10";
+  m_sRosVersion = "PandarSwiftROS_1.0.11";
   ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -259,7 +260,7 @@ int Convert::loadCorrectionFile(char * data) {
           p += sizeof(uint16_t) * frame_num;
           memcpy((void *)&m_PandarAT_corrections.end_frame, p, sizeof(uint16_t) * frame_num);
           p += sizeof(uint16_t) * frame_num;
-          ROS_WARN( "frame_num: " ,frame_num);
+          ROS_WARN( "frame_num: %d" ,frame_num);
           ROS_WARN( "start_frame, end_frame: ");
           for (int i = 0; i < frame_num; ++i) 
               ROS_WARN("%lf,   %lf", m_PandarAT_corrections.start_frame[i] / 100.f , m_PandarAT_corrections.end_frame[i] / 100.f);
@@ -279,18 +280,18 @@ int Convert::loadCorrectionFile(char * data) {
               elev_angle_[i] = m_PandarAT_corrections.elevation[i] / 100.f;
               
           }
-          return true;
+          return 0;
       }
         
-      return false;
+      return 1;
     }
     catch(const std::exception& e)
     {
         std::cerr << e.what() << '\n';
-        return false;
+        return 1;
     }
     
-    return false;
+    return 1;
 
 }
 
@@ -469,7 +470,8 @@ int Convert::processLiDARData() {
 				m_bPublishPointsFlag = true;
 				m_iPublishPointsIndex = cursor;
 				cursor = (cursor + 1) % 2;
-        ROS_WARN("ts %lf cld size %u", timestamp, m_OutMsgArray[cursor]->points.size());
+        if(PRINT_FLAG)
+          ROS_WARN("ts %lf cld size %u", timestamp, m_OutMsgArray[cursor]->points.size());
 			} 
 			else
 				ROS_WARN("publishPoints not done yet, new publish is comming\n");
@@ -551,11 +553,17 @@ void Convert::init() {
 		if(abs(lidarmotorspeed - MOTOR_SPEED_600) < 100) { //ignore the speed gap of 6000 rpm
 			lidarmotorspeed = MOTOR_SPEED_600;
 		}
-		else if(abs(lidarmotorspeed - MOTOR_SPEED_1200) < 100) { //ignore the speed gap of 1200 rpm
-			lidarmotorspeed = MOTOR_SPEED_1200;
-		}
+		else if(abs(lidarmotorspeed - MOTOR_SPEED_400) < 30) { //ignore the speed gap of 400 rpm
+    lidarmotorspeed = MOTOR_SPEED_400;
+    }
+    else if(abs(lidarmotorspeed - MOTOR_SPEED_300) < 30) { //ignore the speed gap of 300 rpm
+      lidarmotorspeed = MOTOR_SPEED_300;
+    }
+    else if(abs(lidarmotorspeed - MOTOR_SPEED_200) < 30) { //ignore the speed gap of 200 rpm
+      lidarmotorspeed = MOTOR_SPEED_200;
+    }
 		else {
-			lidarmotorspeed = MOTOR_SPEED_600; //changing the speed,give enough size
+			lidarmotorspeed = MOTOR_SPEED_300; //changing the speed,give enough size
 		}
 		m_iMotorSpeed = lidarmotorspeed;
 		printf("init mode: workermode: %x,return mode: %x,speed: %d\n",m_iWorkMode, m_iReturnMode, m_iMotorSpeed);
@@ -647,11 +655,17 @@ int Convert::checkLiadaMode() {
   if(abs(lidarmotorspeed - MOTOR_SPEED_600) < 100) { //ignore the speed gap of 6000 rpm
     lidarmotorspeed = MOTOR_SPEED_600;
   }
-  else if(abs(lidarmotorspeed - MOTOR_SPEED_300) < 30) { //ignore the speed gap of 1200 rpm
+  else if(abs(lidarmotorspeed - MOTOR_SPEED_400) < 30) { //ignore the speed gap of 400 rpm
+    lidarmotorspeed = MOTOR_SPEED_400;
+  }
+  else if(abs(lidarmotorspeed - MOTOR_SPEED_300) < 30) { //ignore the speed gap of 300 rpm
     lidarmotorspeed = MOTOR_SPEED_300;
   }
+  else if(abs(lidarmotorspeed - MOTOR_SPEED_200) < 30) { //ignore the speed gap of 200 rpm
+    lidarmotorspeed = MOTOR_SPEED_200;
+  }
   else {
-      lidarmotorspeed = MOTOR_SPEED_600; //changing the speed,give enough size
+      lidarmotorspeed = MOTOR_SPEED_300; //changing the speed,give enough size
   }
 
   if (0 == m_iWorkMode && 0 == m_iReturnMode && 0 == m_iMotorSpeed && 0 == m_iLaserNum) { //init lidar mode 
@@ -692,10 +706,10 @@ int Convert::checkLiadaMode() {
 }
 
 void Convert::changeAngleSize() {
-  if (MOTOR_SPEED_600 == m_iMotorSpeed) {
+  if (MOTOR_SPEED_600 == m_iMotorSpeed || MOTOR_SPEED_400 == m_iMotorSpeed) {
     m_iAngleSize = LIDAR_ANGLE_SIZE_10;  // 10->0.1degree
   }
-  else if(MOTOR_SPEED_300 == m_iMotorSpeed){
+  else if(MOTOR_SPEED_300 == m_iMotorSpeed || MOTOR_SPEED_200 == m_iMotorSpeed){
     m_iAngleSize = LIDAR_ANGLE_SIZE_5;  // 5->0.05degree
   }
 }
@@ -760,8 +774,8 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
       elevation = (CIRCLE_ANGLE + elevation) % CIRCLE_ANGLE;    
       auto azimuth = m_iViewMode == 0 ?
           (u16Azimuth + CIRCLE_ANGLE  - m_PandarAT_corrections.azimuth[i]) % CIRCLE_ANGLE  * m_PandarAT_corrections.header.resolution : 
-          ((u16Azimuth + CIRCLE_ANGLE  - m_PandarAT_corrections.start_frame[field] + 9000 * m_PandarAT_corrections.header.resolution)
-          % (9000 * m_PandarAT_corrections.header.resolution) * 2
+          ((u16Azimuth + CIRCLE_ANGLE  - m_PandarAT_corrections.start_frame[field] - 
+          (m_PandarAT_corrections.header.frame_number == 3 ? 3000 : 0)) * 2
           - m_PandarAT_corrections.azimuth[i]
           + m_PandarAT_corrections.azimuth_offset[u16Azimuth]) * m_PandarAT_corrections.header.resolution;
       azimuth = (CIRCLE_ANGLE  + azimuth) % CIRCLE_ANGLE ;

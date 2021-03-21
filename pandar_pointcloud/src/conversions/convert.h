@@ -131,6 +131,8 @@
 #define CIRCLE_ANGLE (36000)
 #define MOTOR_SPEED_300 (300)
 #define MOTOR_SPEED_600 (600)
+#define MOTOR_SPEED_200 (200)
+#define MOTOR_SPEED_400 (400)
 #define MOTOR_SPEED_900 (900)
 #define MOTOR_SPEED_1200 (1200)
 #define MAX_REDUNDANT_POINT_NUM (1000)
@@ -177,7 +179,7 @@
 #define PANDAR_AT128_PACKET_SEQ_NUM_SIZE \
   (PANDAR_AT128_PACKET_SIZE + PANDAR_AT128_SEQ_NUM_SIZE)
 #define PANDAR_AT128_WITHOUT_CONF_UNIT_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
-#define PANDAR_AT128_FRAME_ANGLE_SIZE (6000)
+#define PANDAR_AT128_FRAME_ANGLE_SIZE (6200)
 /************************************* AT 128 *********************************************/
 
 typedef struct __attribute__((__packed__)) Pandar128Unit_s {

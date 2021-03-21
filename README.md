@@ -59,7 +59,7 @@ $ catkin_make -DCMAKE_BUILD_TYPE=Release
 
 ## Configuration 
 ```
- $ cd src/HesaiLidar_Swift_ROS/pandar_pointcloud/PandarSwift_points.launch
+ $ cd src/HesaiLidar_Swift_ROS/pandar_pointcloud/launch
 ```
 open PandarSwift_points.launch to set configuration parameters
 

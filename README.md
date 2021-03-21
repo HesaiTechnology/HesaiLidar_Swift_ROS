@@ -1,11 +1,11 @@
-# HesaiLidar_Swift_ROS #
+# HesaiLidar_Swift_ROS 
 
-## About the project ## 
+## About the project 
 This repository includes the ROS Driver for Pandar LiDAR sensor manufactured by Hesai Technology. Branches are included for different systems and UDP protocol versions.
 
 Developed based on [HesaiLidar_Swift_SDK](https://github.com/HesaiTechnology/HesaiLidar_Swift_SDK), After launched, the project will monitor UDP packets from Lidar,     parse data and publish point cloud frames into ROS under topic: ```/pandar_points```. It can also be used as an official demo showing how to work with  [HesaiLidar_Swift_SDK](https://github.com/HesaiTechnology/HesaiLidar_Swift_SDK).
 
-## Branches ## 
+## Branches 
 ```
 * master: Pandar LiDAR ROS driver for Ubuntu 18.04 supports the latest UDP protocol v1.4
 * UDP1.4_ubuntu16.04: Pandar LiDAR ROS driver for Ubuntu 16.04 supports the latest UDP protocol v1.4
@@ -14,7 +14,7 @@ Developed based on [HesaiLidar_Swift_SDK](https://github.com/HesaiTechnology/Hes
 
 To get the UDP protocol version number of your device,  check the UDP package header field.
 ```
-## Environment and Dependencies ##
+## Environment and Dependencies 
 **System environment requirement: Linux + ROS**  
 ```
 　Recommanded:  
@@ -33,7 +33,7 @@ To get the UDP protocol version number of your device,  check the UDP package he
 $ sudo apt-get update
 $ sudo apt install libpcl-dev libpcap-dev libyaml-cpp-dev  libboost-dev
 ```
-## Download and Build ##
+## Download and Build 
 
 **Install `catkin_tools`**
 ```

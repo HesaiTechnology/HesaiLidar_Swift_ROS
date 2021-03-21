@@ -1,5 +1,5 @@
 <!-- -*- mode: XML -*- -->
-<!-- run pandar_pointcloud/CloudNodelet in a nodelet manager for a Pandar128 -->
+<!-- run pandar_pointcloud/CloudNodelet in a nodelet manager for a PandarAT128 -->
 
 <launch>
   <!-- declare arguments with default values -->

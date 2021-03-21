@@ -48,6 +48,7 @@
 
 #define PANDARSDK_TCP_COMMAND_PORT (9347)
 #define LIDAR_NODE_TYPE "lidar"
+#define LIDAR_ANGLE_SIZE_5 (5)
 #define LIDAR_ANGLE_SIZE_10 (10)
 #define LIDAR_ANGLE_SIZE_18 (18)
 #define LIDAR_ANGLE_SIZE_20 (20)
@@ -128,10 +129,58 @@
 #define ETHERNET_MTU (1500)
 
 #define CIRCLE_ANGLE (36000)
+#define MOTOR_SPEED_300 (300)
 #define MOTOR_SPEED_600 (600)
+#define MOTOR_SPEED_200 (200)
+#define MOTOR_SPEED_400 (400)
 #define MOTOR_SPEED_900 (900)
 #define MOTOR_SPEED_1200 (1200)
 #define MAX_REDUNDANT_POINT_NUM (1000)
+/************************************* AT 128 *********************************************/
+#define PANDAR_AT128_SOB_SIZE (2)
+#define PANDAR_AT128_VERSION_MAJOR_SIZE (1)
+#define PANDAR_AT128_VERSION_MINOR_SIZE (1)
+#define PANDAR_AT128_HEAD_RESERVED1_SIZE (2)
+#define PANDAR_AT128_LASER_NUM_SIZE (1)
+#define PANDAR_AT128_BLOCK_NUM_SIZE (1)
+#define PANDAR_AT128_DISTANCE_UNIT_SIZE (1)
+#define PANDAR_AT128_ECHO_COUNT_SIZE (1)
+#define PANDAR_AT128_ECHO_NUM_SIZE (1)
+#define PANDAR_AT128_HEAD_RESERVED2_SIZE (1)
+#define PANDAR_AT128_HEAD_SIZE                                        \
+  (PANDAR_AT128_SOB_SIZE + PANDAR_AT128_VERSION_MAJOR_SIZE +            \
+   PANDAR_AT128_VERSION_MINOR_SIZE + PANDAR_AT128_HEAD_RESERVED1_SIZE + \
+   PANDAR_AT128_LASER_NUM_SIZE + PANDAR_AT128_BLOCK_NUM_SIZE +          \
+   PANDAR_AT128_ECHO_COUNT_SIZE + PANDAR_AT128_ECHO_NUM_SIZE +          \
+   PANDAR_AT128_HEAD_RESERVED2_SIZE + PANDAR_AT128_DISTANCE_UNIT_SIZE)
+#define PANDAR_AT128_AZIMUTH_SIZE (2)
+#define PANDAR_AT128_UNIT_WITHOUT_CONFIDENCE_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
+#define PANDAR_AT128_UNIT_WITH_CONFIDENCE_SIZE (DISTANCE_SIZE + INTENSITY_SIZE + CONFIDENCE_SIZE)
+#define PANDAR_AT128_BLOCK_SIZE \
+  (PANDAR_AT128_UNIT_WITHOUT_CONFIDENCE_SIZE * PANDAR_AT128_LASER_NUM + PANDAR_AT128_AZIMUTH_SIZE)
+#define PANDAR_AT128_TAIL_RESERVED1_SIZE (3)
+#define PANDAR_AT128_TAIL_RESERVED2_SIZE (3)
+#define PANDAR_AT128_SHUTDOWN_FLAG_SIZE (1)
+#define PANDAR_AT128_TAIL_RESERVED3_SIZE (3)
+#define PANDAR_AT128_MOTOR_SPEED_SIZE (2)
+#define PANDAR_AT128_TS_SIZE (4)
+#define PANDAR_AT128_RETURN_MODE_SIZE (1)
+#define PANDAR_AT128_FACTORY_INFO (1)
+#define PANDAR_AT128_UTC_SIZE (6)
+#define PANDAR_AT128_TAIL_SIZE                                        \
+  (PANDAR_AT128_TAIL_RESERVED1_SIZE + PANDAR_AT128_TAIL_RESERVED2_SIZE + \
+   PANDAR_AT128_SHUTDOWN_FLAG_SIZE + PANDAR_AT128_TAIL_RESERVED3_SIZE +  \
+   PANDAR_AT128_MOTOR_SPEED_SIZE + PANDAR_AT128_TS_SIZE +                \
+   PANDAR_AT128_RETURN_MODE_SIZE + PANDAR_AT128_FACTORY_INFO + PANDAR_AT128_UTC_SIZE)
+#define PANDAR_AT128_PACKET_SIZE                                         \
+  (PANDAR_AT128_HEAD_SIZE + PANDAR_AT128_BLOCK_SIZE * PANDAR_AT128_BLOCK_NUM + \
+   PANDAR_AT128_TAIL_SIZE)
+#define PANDAR_AT128_SEQ_NUM_SIZE (4)
+#define PANDAR_AT128_PACKET_SEQ_NUM_SIZE \
+  (PANDAR_AT128_PACKET_SIZE + PANDAR_AT128_SEQ_NUM_SIZE)
+#define PANDAR_AT128_WITHOUT_CONF_UNIT_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
+#define PANDAR_AT128_FRAME_ANGLE_SIZE (6200)
+/************************************* AT 128 *********************************************/
 
 typedef struct __attribute__((__packed__)) Pandar128Unit_s {
   uint16_t u16Distance;
@@ -193,7 +242,71 @@ struct PandarGPS_s {
   uint16_t hour;
   uint32_t fineTime;
 };
+/************************************* AT 128 *********************************************/
+typedef struct PandarAT128Head_s {
+  uint16_t u16Sob;
+  uint8_t u8VersionMajor;
+  uint8_t u8VersionMinor;
+  uint16_t u16Reserve1;
+  uint8_t u8LaserNum;
+  uint8_t u8BlockNum;
+  uint8_t u8EchoCount;
+  uint8_t u8DistUnit;
+  uint8_t u8EchoNum;
+  uint8_t u8Flags;
+  inline bool hasSeqNum() const { return u8Flags & 1; }
+  inline bool hasImu() const { return u8Flags & 2; }
+  inline bool hasFunctionSafety() const { return u8Flags & 4; }
+  inline bool hasSignature() const { return u8Flags & 8; }
+  inline bool hasConfidence() const { return u8Flags & 0x10; }
 
+} PandarAT128Head;
+
+typedef struct PandarAT128Tail_s {
+  uint8_t nReserved1[3];
+  uint8_t nReserved2[3];
+  uint8_t nShutdownFlag;
+  uint8_t nReserved3[3];
+  uint16_t nMotorSpeed;;
+  uint32_t nTimestamp;
+  uint8_t nReturnMode;
+  uint8_t nFactoryInfo;
+  uint8_t nUTCTime[6];
+} PandarAT128Tail;
+
+struct PandarATCorrectionsHeader {
+    uint8_t delimiter[2];
+    uint8_t version[2];
+    uint8_t channel_number;
+    uint8_t mirror_number;
+    uint8_t frame_number;
+    uint8_t frame_config[8];
+    uint8_t resolution;
+};
+static_assert(sizeof(PandarATCorrectionsHeader) == 16);
+#pragma pack(pop)
+
+struct PandarATCorrections {
+public:
+    PandarATCorrectionsHeader header;
+    uint16_t start_frame[8];
+    uint16_t end_frame[8];
+    int16_t azimuth[128];
+    int16_t elevation[128];
+    int8_t azimuth_offset[36000];
+    int8_t elevation_offset[36000];
+    uint8_t SHA256[32];
+    std::array<float, 36000> sin_map;
+    std::array<float, 36000> cos_map;
+    PandarATCorrections() {
+        for(int i = 0; i < 36000; ++i) {
+            sin_map[i] = std::sin(i * M_PI / 18000);
+            cos_map[i] = std::cos(i * M_PI / 18000);
+        }
+    }
+};
+
+/************************************* AT 128 *********************************************/
 typedef std::array<pandar_msgs::PandarPacket, 36000> PktArray;
 
 typedef struct PacketsBuffer_s {
@@ -300,13 +413,16 @@ class Convert {
   void calcPointXYZIT(pandar_msgs::PandarPacket &pkt, int cursor);
   void doTaskFlow(int cursor);
   void loadOffsetFile(std::string file);
-  int loadCorrectionFile(std::string correction_content);
+  int loadCorrectionFile(char * data);
   int checkLiadaMode();
   void changeAngleSize();
   void changeReturnBlockSize();
   void moveTaskEndToStartAngle();
   void init();
   void checkClockwise();
+  bool isNeedPublish();
+  int calculatePointIndex(uint16_t azimuth, int blockId, int laserId);
+  int calculatePointBufferSize();
 
   /// Pointer to dynamic reconfigure service srv_
   boost::shared_ptr<
@@ -371,6 +487,12 @@ class Convert {
   int m_iLastAzimuthIndex;
   int m_iTotalPointsNum;
   bool m_bClockwise;
+  std::vector<float> m_sin_azimuth_map_;
+  std::vector<float> m_cos_azimuth_map_;
+  std::vector<float> m_sin_elevation_map_;
+  std::vector<float> m_cos_elevation_map_;
+  PandarATCorrections m_PandarAT_corrections;
+  int m_iViewMode;
 
 };
 

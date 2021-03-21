@@ -1,15 +1,13 @@
 <!-- -*- mode: XML -*- -->
-<!-- run pandar_pointcloud/CloudNodelet in a nodelet manager for a Pandar128 -->
+<!-- run pandar_pointcloud/CloudNodelet in a nodelet manager for a PandarAT128 -->
 
 <launch>
-
   <!-- declare arguments with default values -->
-  <arg name="calibration" default="$(find pandar_pointcloud)/params/correction.csv"/>
+  <arg name="calibration" default="$(find pandar_pointcloud)/params/default_PandarAT.dat"/>
   <arg name="device_ip" default="192.168.1.201" />
   <arg name="frame_id" default="PandarSwift" />
   <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
   <arg name="max_range" default="130.0" />
-  <arg name="firetime_file" default="$(find pandar_pointcloud)/params/laser-ts.csv"/>
   <arg name="min_range" default="0.5" />
   <arg name="pcap" default="" />
   <arg name="port" default="2368" />
@@ -19,12 +17,7 @@
   <arg name="rpm" default="600.0" />
   <arg name="start_angle" default="0.0" />
   <arg name="publish_model" default="both_point_raw" />
-  <!--"cert_file" represents the path of the user's certificate-->
-  <arg name="cert_file" default="" />
-  <!--"private_key_file" represents the path of the user's private key-->
-  <arg name="private_key_file" default="" />
-  <!--"ca_file" represents the path of the root certificate-->
-  <arg name="ca_file" default="" />
+  <arg name="view_mode" default="1" />
 
   <!-- start nodelet manager -->
   <node pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager" output="screen" />
@@ -45,10 +38,7 @@
     <arg name="read_once" value="$(arg read_once)"/>
     <arg name="repeat_delay" value="$(arg repeat_delay)"/>
     <arg name="rpm" value="$(arg rpm)"/>
-    <arg name="firetime_file" value="$(arg firetime_file)"/>
-    <arg name="cert_file" value="$(arg cert_file)" />
-    <arg name="private_key_file" value="$(arg private_key_file)" />
-    <arg name="ca_file" value="$(arg ca_file)" />
+    <arg name="view_mode" value="$(arg view_mode)"/>
   </include>
   <!--
   -->

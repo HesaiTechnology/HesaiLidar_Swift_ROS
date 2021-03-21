@@ -26,7 +26,7 @@
 #include <pandar_pointcloud/input.h>
 
 typedef struct PandarGPS_s PandarGPS;
-#define PANDAR128_READ_PACKET_SIZE (1800)
+#define PANDAR128_READ_PACKET_SIZE (300)
 #define PANDAR80_READ_PACKET_SIZE (500)
 #define PANDAR64S_READ_PACKET_SIZE (400)
 #define PANDAR40S_READ_PACKET_SIZE (100)

@@ -29,7 +29,7 @@
 #include <fstream>
 #include <iostream>
 #include "taskflow.hpp"
-#define PRINT_FLAG (true)
+#define PRINT_FLAG (false)
 
 namespace pandar_pointcloud {
 

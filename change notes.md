@@ -80,3 +80,10 @@ PandarSwiftROS_1.0.11
 
 ##modify
 1. Support Pandar AT128 first time
+
+星期一, 22. 三月 2021 19:30下午 
+##version
+PandarSwiftROS_1.0.12
+
+##modify
+1. Support Pandar AT128 with three mirror

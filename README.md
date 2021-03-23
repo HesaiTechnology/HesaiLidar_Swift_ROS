@@ -3,7 +3,7 @@
 ## About the project 
 This repository includes the ROS Driver for Pandar LiDAR sensor manufactured by Hesai Technology. Branches are included for different systems and UDP protocol versions.
 
-Developed based on [HesaiLidar_Swift_SDK](https://github.com/HesaiTechnology/HesaiLidar_Swift_SDK), After launched, the project will monitor UDP packets from Lidar,     parse data and publish point cloud frames into ROS under topic: ```/pandar_points```. It can also be used as an official demo showing how to work with  [HesaiLidar_Swift_SDK](https://github.com/HesaiTechnology/HesaiLidar_Swift_SDK).
+Developed based on [HesaiLidar_Swift_SDK](https://github.com/HesaiTechnology/HesaiLidar_Swift_SDK), After launched, the project will monitor UDP packets from Lidar,parse data and publish point cloud frames into ROS under topic: ```/pandar_points```. It can also be used as an official demo showing how to work with [HesaiLidar_Swift_SDK](https://github.com/HesaiTechnology/HesaiLidar_Swift_SDK).
 
 ## Branches 
 ```
@@ -83,15 +83,6 @@ Data source will be read from pcap file instead of LiDAR once "pcap_file" not em
 
 
 ## Run
-
-Set UDP buffer default size
-```
-$sudo sysctl -w net.core.rmem_default=26214400
-```
-Enter super user mode
-```
-$sudo -s
-```
 
 ### View the point cloud from connected LiDAR
 

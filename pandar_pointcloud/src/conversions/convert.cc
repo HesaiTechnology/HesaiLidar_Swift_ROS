@@ -221,7 +221,6 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
       lidarFiretimeFile);  // parameter is the path of lidarFiretimeFil
   ROS_WARN("node_type[%s]", node_type.c_str());
 
-  system("sudo sysctl -w net.core.rmem_default=12582912 ");
 
   if (LIDAR_NODE_TYPE == node_type) {
     boost::thread thrd(boost::bind(&Convert::DriverReadThread, this));

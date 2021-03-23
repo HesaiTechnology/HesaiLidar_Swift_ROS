@@ -152,6 +152,8 @@ InputSocket::InputSocket(ros::NodeHandle private_nh, uint16_t port)
   int nochecksum = 1;
   int set_error = setsockopt(sockfd_, SOL_SOCKET, SO_NO_CHECK, &nochecksum,
                              sizeof(nochecksum));
+  int nRecvBuf = 26214400;
+	setsockopt(sockfd_, SOL_SOCKET, SO_RCVBUF, (const char*)&nRecvBuf, sizeof(int));
   ROS_DEBUG("Pandar socket fd is %d\n", sockfd_);
 }
 

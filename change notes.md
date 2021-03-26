@@ -94,3 +94,11 @@ PandarSwiftROS_1.0.13
 
 ##modify
 1. Change default correction file of transform nodelet
+
+星期五, 26. 三月 2021 19:30下午 
+##version
+PandarSwiftROS_1.0.14
+
+##modify
+1. Change the calculation formula of azimuth
+2. Fix bug in switch frame

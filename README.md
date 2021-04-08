@@ -3,7 +3,7 @@
 ## About the project 
 This repository includes the ROS Driver for Pandar LiDAR sensor manufactured by Hesai Technology. Branches are included for different systems and UDP protocol versions.
 
-Developed based on [HesaiLidar_Swift_SDK](https://github.com/HesaiTechnology/HesaiLidar_Swift_SDK), After launched, the project will monitor UDP packets from Lidar,parse data and publish point cloud frames into ROS under topic: ```/pandar_points```. It can also be used as an official demo showing how to work with [HesaiLidar_Swift_SDK](https://github.com/HesaiTechnology/HesaiLidar_Swift_SDK).
+Developed based on [HesaiLidar_Swift_SDK](https://github.com/HesaiTechnology/HesaiLidar_Swift_SDK), After launched, the project will monitor UDP packets from Lidar,parse data and publish point clouds frames into ROS under topic: ```/pandar_points```. It can also be used as an official demo showing how to work with [HesaiLidar_Swift_SDK](https://github.com/HesaiTechnology/HesaiLidar_Swift_SDK).
 
 ## Branches 
 ```
@@ -77,6 +77,7 @@ Data source will be read from connected LiDAR when "pcap_file" is set to empty
 |Parameter | Value|
 |---------|---------------|
 |pcap |pcap file path|
+|calibration|lidar calibration file path|　
 
 Data source will be read from pcap file instead of LiDAR once "pcap_file" not empty
 
@@ -92,7 +93,7 @@ Enter super user mode
 $sudo -s
 ```
 
-### View the point cloud from connected LiDAR
+### View the point clouds from connected LiDAR
 
 1. Make sure current path in the `rosworkspace` directory
 ```
@@ -109,7 +110,7 @@ $ roslaunch pandar_pointcloud PandarSwift_points.launch
 
 4. Change fixed frame to "PandarSwift" to view published point clouds.
 
-### View the point cloud from rosbag file
+### View the point clouds from rosbag file
 
 1. Make sure current path in the `rosworkspace` directory
 ```
@@ -128,9 +129,9 @@ $rosbag record -b 4096 /pandar_packets
 
 4. stop roslaunch and rosbag record by "Ctrl + C"
 
-4. play raw data rosbag
+5. play raw data rosbag
 ```
-$rosbag play <rosbagfiel>
+$rosbag play <rosbagfile>
 ```
 
 6. launch transform_nodelet.launch
@@ -144,12 +145,12 @@ $ roslaunch pandar_pointcloud transform_nodelet.launch data_type:=rosbag
 |Parameter | Default Value|
 |---------|---------------|
 |calibration|Path of correction file, will be used when not able to get correction file from a connected Liar|
-|device_ip_ip|The IP address of connected Lidar, will be used to get calibration file|
+|device_ip_ip|The IP address of connected Lidar, will be used to get correction file|
 |frame_id|frame id of published messages|
 |firetime_file|Path of firetime files|
 |pcap|Path of the pcap file, once not empty, driver will get data from pcap file instead of a connected Lidar|
-|port|The destination port of Lidar, driver will monitor this port to get point cloud packets from Lidar|
-|start_angle|Driver will publish one frame point cloud data when azimuth angel step over start_angle, make sure set to within FOV|
+|port|The destination port of Lidar, driver will monitor this port to get point clouds packets from Lidar|
+|start_angle|Driver will publish one frame point clouds data when azimuth angle step over start_angle, make sure set to within FOV|
 |publish_model|default "points":publish point clouds "raw":publish raw UDP packets "both_point_raw":publish point clouds and UDP packets|
 |cert_file|Path of the user's certificate|
 |private_key_file|Path of the user's private key|

@@ -144,7 +144,20 @@ typedef struct __attribute__((__packed__)) Pandar128Block_s {
   Pandar128Unit units[PANDAR128_LASER_NUM];
 } Pandar128Block;
 
-typedef struct Pandar128Head_s {
+typedef struct Pandar128HeadVersion13_s {
+  uint16_t u16Sob;
+  uint8_t u8VersionMajor;
+  uint8_t u8VersionMinor;
+  uint8_t u8DistUnit;
+  uint8_t u8Flags;
+  uint8_t u8LaserNum;
+  uint8_t u8BlockNum;
+  uint8_t u8EchoCount;
+  uint8_t u8EchoNum;
+  uint16_t u16Reserve1;
+} Pandar128HeadVersion13;
+
+typedef struct Pandar128HeadVersion14_s {
   uint16_t u16Sob;
   uint8_t u8VersionMajor;
   uint8_t u8VersionMinor;
@@ -161,9 +174,22 @@ typedef struct Pandar128Head_s {
   inline bool hasSignature() const { return u8Flags & 8; }
   inline bool hasConfidence() const { return u8Flags & 0x10; }
 
-} Pandar128Head;
+} Pandar128HeadVersion14;
 
-typedef struct Pandar128Tail_s {
+typedef struct Pandar128TailVersion13_s {
+  uint8_t nReserved1[3];
+  uint8_t nReserved2[3];
+  uint8_t nShutdownFlag;
+  uint8_t nReserved3[3];
+  uint16_t nMotorSpeed;
+  uint32_t nTimestamp;
+  uint8_t nReturnMode;
+  uint8_t nFactoryInfo;
+  uint8_t nUTCTime[6];
+  uint32_t nSeqNum;
+} Pandar128TailVersion13;
+
+typedef struct Pandar128TailVersion14_s {
   uint8_t nReserved1[3];
   uint8_t nReserved2[3];
   uint8_t nReserved3[3];
@@ -175,13 +201,13 @@ typedef struct Pandar128Tail_s {
   uint32_t nTimestamp;
   uint8_t nFactoryInfo;
   uint32_t nSeqNum;
-} Pandar128Tail;
+} Pandar128TailVersion14;
 
-typedef struct __attribute__((__packed__)) Pandar128Packet_t {
-  Pandar128Head head;
+typedef struct __attribute__((__packed__)) Pandar128PacketVersion13_t {
+  Pandar128HeadVersion13 head;
   Pandar128Block blocks[PANDAR128_BLOCK_NUM];
-  Pandar128Tail tail;
-} Pandar128Packet;
+  Pandar128TailVersion13 tail;
+} Pandar128PacketVersion13;
 
 struct PandarGPS_s {
   uint16_t flag;
@@ -288,7 +314,6 @@ class Convert {
   void processGps(pandar_msgs::PandarGps &gpsMsg);
   void pushLiDARData(pandar_msgs::PandarPacket packet);
   int processLiDARData();
-  void publishPointsThread();
   void publishPoints();
 
  private:
@@ -296,7 +321,7 @@ class Convert {
   void processScan(const pandar_msgs::PandarScan::ConstPtr &scanMsg);
   void processGps(const pandar_msgs::PandarGps::ConstPtr &gpsMsg);
 
-  int parseData(Pandar128Packet &pkt, const uint8_t *buf, const int len);
+  int parseData(Pandar128PacketVersion13 &pkt, const uint8_t *buf, const int len);
   void calcPointXYZIT(pandar_msgs::PandarPacket &pkt, int cursor);
   void doTaskFlow(int cursor);
   void loadOffsetFile(std::string file);
@@ -307,6 +332,8 @@ class Convert {
   void moveTaskEndToStartAngle();
   void init();
   void checkClockwise();
+  void SetEnvironmentVariableTZ();
+  bool isNeedPublish();
 
   /// Pointer to dynamic reconfigure service srv_
   boost::shared_ptr<
@@ -342,14 +369,14 @@ class Convert {
   std::array<boost::shared_ptr<PPointCloud>, 2> m_OutMsgArray;
   std::vector<RedundantPoint> m_RedundantPointBuffer;
   PacketsBuffer m_PacketsBuffer;
-  double timestamp;
+  double m_dTimestamp;
   int start_angle_;
-  float cos_all_angle_[CIRCLE];
-  float sin_all_angle_[CIRCLE];
-  float elev_angle_[PANDAR128_LASER_NUM];
-  float horizatal_azimuth_[PANDAR128_LASER_NUM];
-  LasersTSOffset laserOffset;
-  int tz_second_;
+  float m_fCosAllAngle[CIRCLE];
+  float m_fSinAllAngle[CIRCLE];
+  float m_fElevAngle[PANDAR128_LASER_NUM];
+  float m_fHorizatalAzimuth[PANDAR128_LASER_NUM];
+  LasersTSOffset m_objLaserOffset;
+  int m_iTimeZoneSecond;
   std::string m_sFrameId;
   std::string lidarFiretimeFile;
   std::string lidarCorrectionFile;
@@ -367,6 +394,8 @@ class Convert {
   std::string m_sDeviceIp;
   std::string m_sPcapFile;
   std::string m_sRosVersion;
+	uint8_t m_u8UdpVersionMajor;
+	uint8_t m_u8UdpVersionMinor;
   int m_iFirstAzimuthIndex;
   int m_iLastAzimuthIndex;
   int m_iTotalPointsNum;

@@ -51,8 +51,8 @@ class LasersTSOffset {
     bool                               mBInitFlag;
     std::vector<std::vector<int>>      mVLasers;
     int                                mNLaserNum;
-    std::map<std::pair<int, int>, int> mShortOffsetIndex;
-    std::map<std::pair<int, int>, int> mLongOffsetIndex;
+    std::vector<int> mShortOffsetIndex;
+    std::vector<int> mLongOffsetIndex;
     float                              mCosAllAngle[CIRCLE];
     float                              mSinAllAngle[CIRCLE];
     float                              mSinPAIAngle[PAI_ANGLE];

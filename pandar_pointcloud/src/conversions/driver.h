@@ -43,6 +43,7 @@ class PandarDriver {
 
   bool poll(void);
   void publishRawData();
+  void setUdpVersion(uint8_t major, uint8_t minor);
   int getPandarScanArraySize(boost::shared_ptr<Input>);
 
  private:
@@ -63,7 +64,7 @@ class PandarDriver {
     double time_offset;    ///< time in seconds added to each pandar time stamp
   } config_;
 
-  boost::shared_ptr<Input> input_;
+  boost::shared_ptr<Input> m_spInput;
   ros::Publisher output_;
   ros::Publisher gpsoutput_;
   bool m_bNeedPublish;

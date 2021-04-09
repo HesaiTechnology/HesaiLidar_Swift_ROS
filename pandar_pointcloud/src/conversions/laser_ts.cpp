@@ -57,6 +57,8 @@ LasersTSOffset::LasersTSOffset() {
   }
 
   mTanPAIAngle[HALF_PAI_ANGLE-1] = mTanPAIAngle[HALF_PAI_ANGLE-2];
+  mShortOffsetIndex.resize(100);
+  mLongOffsetIndex.resize(100);
 }
 
 LasersTSOffset::~LasersTSOffset() {
@@ -120,12 +122,11 @@ void LasersTSOffset::setFilePath(std::string file) {
     }
 
     for (int i = 0; i < mode.size(); i++) {
-      std::pair<int, int> key(mode[i], state[i]);
-
+      int index = mode[i] * 10 + state[i];
       if (i % 2 == 0) {
-        mLongOffsetIndex[key] = i;
+        mLongOffsetIndex[index] = i;
       } else {
-        mShortOffsetIndex[key] = i;
+        mShortOffsetIndex[index] = i;
       }
     }
 
@@ -176,10 +177,10 @@ int LasersTSOffset::getTSOffset(int nLaser, int nMode, int nState, float fDistan
         return 0;
       }
       if (fDistance >= mFDist) {
-        return mVLasers[nLaser][mLongOffsetIndex[std::pair<int, int>(nMode, nState)]];
+        return mVLasers[nLaser][mLongOffsetIndex[nMode * 10 + nState]];
       } 
       else {
-        return mVLasers[nLaser][mShortOffsetIndex[std::pair<int, int>(nMode, nState)]];
+        return mVLasers[nLaser][mShortOffsetIndex[nMode * 10 + nState]];
       }
   }
 }

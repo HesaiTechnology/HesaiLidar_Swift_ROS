@@ -8,17 +8,21 @@
   <arg name="min_range" default="0.9" />
   <arg name="data_type" default="lidar" />
   <arg name="firetime_file" default="$(find pandar_pointcloud)/params/laser-ts.csv"/>
+  <arg name="namespace" default="hesai"/>
+  <arg name="coordinate_correction_flag" default="false" />
 
   <group if="$(eval data_type=='rosbag')">
-    <node pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager" />
+    <node pkg="nodelet" type="nodelet" ns="$(arg namespace)" name="$(arg manager)" args="manager" />
   </group>
 
-  <node pkg="nodelet" type="nodelet" name="$(arg manager)_transform"
+  <node pkg="nodelet" type="nodelet" ns="$(arg namespace)" name="$(arg manager)_transform"
         args="load pandar_pointcloud/TransformNodelet $(arg manager)" >
     <param name="calibration" value="$(arg calibration)"/>
     <param name="frame_id" value="$(arg frame_id)"/>
     <param name="max_range" value="$(arg max_range)"/>
     <param name="min_range" value="$(arg min_range)"/>
     <param name="firetime_file" value="$(arg firetime_file)"/>
+    <param name="namespace" value="$(arg namespace)"/>
+    <param name="coordinate_correction_flag" value="$(arg coordinate_correction_flag)"/>
   </node>
 </launch>

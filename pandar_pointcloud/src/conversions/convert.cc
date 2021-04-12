@@ -84,7 +84,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "PandarSwiftROS_1.0.11";
+  m_sRosVersion = "PandarSwiftROS_1.0.14";
   ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -221,7 +221,6 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
       lidarFiretimeFile);  // parameter is the path of lidarFiretimeFil
   ROS_WARN("node_type[%s]", node_type.c_str());
 
-  system("sudo sysctl -w net.core.rmem_default=12582912 ");
 
   if (LIDAR_NODE_TYPE == node_type) {
     boost::thread thrd(boost::bind(&Convert::DriverReadThread, this));
@@ -506,9 +505,9 @@ void Convert::moveTaskEndToStartAngle() {
     for(PktArray::iterator iter = m_PacketsBuffer.m_iterTaskBegin; iter < m_PacketsBuffer.m_iterTaskEnd; iter++) {
       for(int i = 0; i < m_PandarAT_corrections.header.frame_number; i++){
         if((*(uint16_t*)(&(iter->data[0]) + m_iFirstAzimuthIndex) < (m_PandarAT_corrections.start_frame[i])) &&
-          ((m_PandarAT_corrections.start_frame[i]) <= *(uint16_t*)(&((iter + 1)->data[0]) + m_iLastAzimuthIndex)) ||
-          (*(uint16_t*)(&((iter)->data[0]) + m_iFirstAzimuthIndex) > *(uint16_t*)(&((iter + 1)->data[0]) + m_iLastAzimuthIndex)) &&
-          ((m_PandarAT_corrections.start_frame[i]) <= *(uint16_t*)(&((iter + 1)->data[0]) + m_iLastAzimuthIndex))){
+          ((m_PandarAT_corrections.start_frame[i]) <= *(uint16_t*)(&((iter + 1)->data[0]) + m_iFirstAzimuthIndex)) ||
+          (*(uint16_t*)(&((iter)->data[0]) + m_iFirstAzimuthIndex) > *(uint16_t*)(&((iter + 1)->data[0]) + m_iFirstAzimuthIndex)) &&
+          ((m_PandarAT_corrections.start_frame[i]) <= *(uint16_t*)(&((iter + 1)->data[0]) + m_iFirstAzimuthIndex))){
             m_PacketsBuffer.moveTaskEnd(iter + 1);
             break;
         }
@@ -519,8 +518,8 @@ void Convert::moveTaskEndToStartAngle() {
     for(PktArray::iterator iter = m_PacketsBuffer.m_iterTaskBegin; iter < m_PacketsBuffer.m_iterTaskEnd; iter++) {
       if ((*(uint16_t*)(&(iter->data[0]) + m_iFirstAzimuthIndex) < m_PandarAT_corrections.start_frame[0]) &&
         (m_PandarAT_corrections.start_frame[0] <= *(uint16_t*)(&((iter + 1)->data[0]) + m_iFirstAzimuthIndex)) || 
-        (*(uint16_t*)(&((iter)->data[0]) + m_iFirstAzimuthIndex) > *(uint16_t*)(&((iter + 1)->data[0]) + m_iLastAzimuthIndex)) &&
-        ((m_PandarAT_corrections.start_frame[0]) <= *(uint16_t*)(&((iter + 1)->data[0]) + m_iLastAzimuthIndex))) {
+        (*(uint16_t*)(&((iter)->data[0]) + m_iFirstAzimuthIndex) > *(uint16_t*)(&((iter + 1)->data[0]) + m_iFirstAzimuthIndex)) &&
+        ((m_PandarAT_corrections.start_frame[0]) <= *(uint16_t*)(&((iter + 1)->data[0]) + m_iFirstAzimuthIndex))) {
         // printf("move iter to : %d\n", (iter + 1)->blocks[0].fAzimuth);
         m_PacketsBuffer.moveTaskEnd(iter + 1);
         break;
@@ -773,9 +772,8 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
               (m_PandarAT_corrections.elevation[i] + m_PandarAT_corrections.elevation_offset[u16Azimuth]) * m_PandarAT_corrections.header.resolution;
       elevation = (CIRCLE_ANGLE + elevation) % CIRCLE_ANGLE;    
       auto azimuth = m_iViewMode == 0 ?
-          (u16Azimuth + CIRCLE_ANGLE  - m_PandarAT_corrections.azimuth[i]) % CIRCLE_ANGLE  * m_PandarAT_corrections.header.resolution : 
-          ((u16Azimuth + CIRCLE_ANGLE  - m_PandarAT_corrections.start_frame[field] - 
-          (m_PandarAT_corrections.header.frame_number == 3 ? 3000 : 0)) * 2
+          (u16Azimuth + CIRCLE_ANGLE  - m_PandarAT_corrections.azimuth[i] / 2) % CIRCLE_ANGLE  * m_PandarAT_corrections.header.resolution : 
+          ((u16Azimuth + CIRCLE_ANGLE  - m_PandarAT_corrections.start_frame[field]) * 2
           - m_PandarAT_corrections.azimuth[i]
           + m_PandarAT_corrections.azimuth_offset[u16Azimuth]) * m_PandarAT_corrections.header.resolution;
       azimuth = (CIRCLE_ANGLE  + azimuth) % CIRCLE_ANGLE ;
@@ -817,7 +815,7 @@ bool Convert::isNeedPublish(){
     for(int i = 0; i < m_PandarAT_corrections.header.frame_number; i++){
       if((abs(endAzimuth - (m_PandarAT_corrections.start_frame[i])) <= m_iAngleSize) || 
         (beginAzimuth < (m_PandarAT_corrections.start_frame[i])) && ((m_PandarAT_corrections.start_frame[i]) <= endAzimuth) ||
-        (endAzimuth < beginAzimuth && endAzimuth >= m_PandarAT_corrections.start_frame[i]))
+        (endAzimuth < beginAzimuth && (endAzimuth + CIRCLE_ANGLE - beginAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE))
             return true;
     }
     return false;
@@ -825,7 +823,7 @@ bool Convert::isNeedPublish(){
   else{
     if((abs(endAzimuth - m_PandarAT_corrections.start_frame[0]) <= m_iAngleSize) || 
         (beginAzimuth < m_PandarAT_corrections.start_frame[0]) && (m_PandarAT_corrections.start_frame[0] <= endAzimuth) ||
-        (endAzimuth < beginAzimuth && endAzimuth >= m_PandarAT_corrections.start_frame[0])){
+        (endAzimuth < beginAzimuth && (endAzimuth + CIRCLE_ANGLE - beginAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE)){
       return true;
     }
     return false;
@@ -872,25 +870,26 @@ int Convert::calculatePointIndex(uint16_t u16Azimuth, int blockid, int laserid){
       }
     break;
     case 3: // three mirror case
+      uint16_t Azimuth = (u16Azimuth + 3000) % CIRCLE_ANGLE;
       if (LIDAR_RETURN_BLOCK_SIZE_2 == m_iReturnBlockSize) {
         if(m_iViewMode == 1){
-          point_index = (u16Azimuth) % PANDAR_AT128_FRAME_ANGLE_SIZE / m_iAngleSize * m_iLaserNum *
+          point_index = (Azimuth) % PANDAR_AT128_FRAME_ANGLE_SIZE / m_iAngleSize * m_iLaserNum *
                     m_iReturnBlockSize +
                 m_iLaserNum * (blockid % 2) + laserid;
         }
         else{
-          if(u16Azimuth >= 0 && u16Azimuth <= (PANDAR_AT128_FRAME_ANGLE_SIZE)){
-            point_index =  u16Azimuth / m_iAngleSize * m_iLaserNum *
+          if(Azimuth >= 0 && Azimuth <= (PANDAR_AT128_FRAME_ANGLE_SIZE)){
+            point_index =  Azimuth / m_iAngleSize * m_iLaserNum *
                       m_iReturnBlockSize +
                   m_iLaserNum * (blockid % 2) + laserid;
           }
-          else if (u16Azimuth > (PANDAR_AT128_FRAME_ANGLE_SIZE) && u16Azimuth <= (PANDAR_AT128_FRAME_ANGLE_SIZE * 3)){
-            point_index = (u16Azimuth % PANDAR_AT128_FRAME_ANGLE_SIZE + PANDAR_AT128_FRAME_ANGLE_SIZE) / m_iAngleSize * m_iLaserNum *
+          else if (Azimuth > (PANDAR_AT128_FRAME_ANGLE_SIZE) && Azimuth <= (PANDAR_AT128_FRAME_ANGLE_SIZE * 3)){
+            point_index = (Azimuth % PANDAR_AT128_FRAME_ANGLE_SIZE + PANDAR_AT128_FRAME_ANGLE_SIZE) / m_iAngleSize * m_iLaserNum *
                       m_iReturnBlockSize +
                   m_iLaserNum * (blockid % 2) + laserid;
           }
           else{
-            point_index = (u16Azimuth % PANDAR_AT128_FRAME_ANGLE_SIZE + PANDAR_AT128_FRAME_ANGLE_SIZE * 2) / m_iAngleSize * m_iLaserNum *
+            point_index = (Azimuth % PANDAR_AT128_FRAME_ANGLE_SIZE + PANDAR_AT128_FRAME_ANGLE_SIZE * 2) / m_iAngleSize * m_iLaserNum *
                       m_iReturnBlockSize +
                   m_iLaserNum * (blockid % 2) + laserid;
           }        
@@ -898,17 +897,17 @@ int Convert::calculatePointIndex(uint16_t u16Azimuth, int blockid, int laserid){
 
       } else {
         if(m_iViewMode == 1){
-          point_index = (u16Azimuth) % PANDAR_AT128_FRAME_ANGLE_SIZE  / m_iAngleSize * m_iLaserNum + laserid;
+          point_index = (Azimuth) % PANDAR_AT128_FRAME_ANGLE_SIZE  / m_iAngleSize * m_iLaserNum + laserid;
         }
         else {
-          if(u16Azimuth >= 0 && u16Azimuth <= (PANDAR_AT128_FRAME_ANGLE_SIZE)){
-            point_index = (u16Azimuth)/ m_iAngleSize * m_iLaserNum + laserid;
+          if(Azimuth >= 0 && Azimuth <= (PANDAR_AT128_FRAME_ANGLE_SIZE)){
+            point_index = (Azimuth)/ m_iAngleSize * m_iLaserNum + laserid;
           }
-          else if (u16Azimuth > (PANDAR_AT128_FRAME_ANGLE_SIZE) && u16Azimuth <= (PANDAR_AT128_FRAME_ANGLE_SIZE * 3)){
-            point_index = (u16Azimuth % PANDAR_AT128_FRAME_ANGLE_SIZE + PANDAR_AT128_FRAME_ANGLE_SIZE) / m_iAngleSize * m_iLaserNum + laserid;
+          else if (Azimuth > (PANDAR_AT128_FRAME_ANGLE_SIZE) && Azimuth <= (PANDAR_AT128_FRAME_ANGLE_SIZE * 3)){
+            point_index = (Azimuth % PANDAR_AT128_FRAME_ANGLE_SIZE + PANDAR_AT128_FRAME_ANGLE_SIZE) / m_iAngleSize * m_iLaserNum + laserid;
           }
           else{
-            point_index = (u16Azimuth % PANDAR_AT128_FRAME_ANGLE_SIZE + PANDAR_AT128_FRAME_ANGLE_SIZE * 2) / m_iAngleSize * m_iLaserNum + laserid;
+            point_index = (Azimuth % PANDAR_AT128_FRAME_ANGLE_SIZE + PANDAR_AT128_FRAME_ANGLE_SIZE * 2) / m_iAngleSize * m_iLaserNum + laserid;
           }        
         }
       }

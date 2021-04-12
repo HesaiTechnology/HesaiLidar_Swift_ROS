@@ -18,9 +18,10 @@
   <arg name="start_angle" default="0.0" />
   <arg name="publish_model" default="both_point_raw" />
   <arg name="view_mode" default="1" />
+  <arg name="namespace" default="hesai"/>
 
   <!-- start nodelet manager -->
-  <node pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager" output="screen" />
+  <node pkg="nodelet" type="nodelet" ns="$(arg namespace)" name="$(arg manager)" args="manager" output="screen" />
 
   <!-- start cloud nodelet -->
   <include file="$(find pandar_pointcloud)/launch/cloud_nodelet.launch">
@@ -39,6 +40,7 @@
     <arg name="repeat_delay" value="$(arg repeat_delay)"/>
     <arg name="rpm" value="$(arg rpm)"/>
     <arg name="view_mode" value="$(arg view_mode)"/>
+    <arg name="namespace" value="$(arg namespace)"/>
   </include>
   <!--
   -->

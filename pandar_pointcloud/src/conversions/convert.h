@@ -423,6 +423,7 @@ class Convert {
   bool isNeedPublish();
   int calculatePointIndex(uint16_t azimuth, int blockId, int laserId);
   int calculatePointBufferSize();
+  void SetEnvironmentVariableTZ();
 
   /// Pointer to dynamic reconfigure service srv_
   boost::shared_ptr<

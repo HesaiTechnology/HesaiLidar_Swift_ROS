@@ -400,6 +400,7 @@ class Convert {
   int m_iLastAzimuthIndex;
   int m_iTotalPointsNum;
   bool m_bClockwise;
+  bool m_bCoordinateCorrectionFlag;
 
 };
 

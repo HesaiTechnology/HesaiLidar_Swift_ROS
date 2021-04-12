@@ -29,6 +29,7 @@
 #include <fstream>
 #include <iostream>
 #include "taskflow.hpp"
+// #define PRINT_FLAG 
 
 namespace pandar_pointcloud {
 
@@ -115,6 +116,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
   private_nh.getParam("cert_file", cert);
   private_nh.getParam("private_key_file", privateKey);
   private_nh.getParam("ca_file", ca);
+  private_nh.getParam("coordinate_correction_flag", m_bCoordinateCorrectionFlag);
   TcpCommandSetSsl(cert.c_str(), privateKey.c_str(), ca.c_str());
   
   ROS_WARN("frame_id [%s]", m_sFrameId.c_str());
@@ -595,7 +597,9 @@ void Convert::publishPoints() {
   pcl::toROSMsg(*m_OutMsgArray[m_iPublishPointsIndex], output);
   output_.publish(output);
   m_bPublishPointsFlag = false;
+#ifdef PRINT_FLAG
   ROS_WARN("ts %lf cld size %u", m_dTimestamp, m_OutMsgArray[m_iPublishPointsIndex]->points.size());
+#endif  
   m_dTimestamp = 0;
 
   // uint32_t end = GetTickCount();
@@ -785,7 +789,9 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 				float originPitch = pitch;
 				int offset = m_objLaserOffset.getTSOffset(i, mode, state, distance, pkt.head.u8LaserNum);
 				azimuth += m_objLaserOffset.getAngleOffset(offset, i, pkt.head.u8LaserNum);
-				// pitch += m_objLaserOffset.getPitchOffset(m_sFrameId, pitch, distance);
+        if(m_bCoordinateCorrectionFlag){
+          pitch += m_objLaserOffset.getPitchOffset(m_sFrameId, pitch, distance);
+        }
 				if(pitch < 0) {
 					pitch += 360.0f;
 				} 
@@ -793,7 +799,9 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 					pitch -= 360.0f;
 				}
 				float xyDistance = distance * m_fCosAllAngle[static_cast<int>(pitch * 100 + 0.5)];
-				// azimuth += m_objLaserOffset.getAzimuthOffset(m_sFrameId, originAzimuth, block.fAzimuth / 100.0f, xyDistance);
+        if(m_bCoordinateCorrectionFlag){
+          azimuth += m_objLaserOffset.getAzimuthOffset(m_sFrameId, originAzimuth, block.fAzimuth / 100.0f, xyDistance);
+        }
 				int azimuthIdx = static_cast<int>(azimuth * 100 + 0.5);
 				if(azimuthIdx >= CIRCLE) {
 					azimuthIdx -= CIRCLE;
@@ -882,8 +890,9 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 
         azimuth += m_objLaserOffset.getAngleOffset(offset, i, header->u8LaserNum);
 
-        pitch += m_objLaserOffset.getPitchOffset(m_sFrameId, pitch, distance);
-
+        if(m_bCoordinateCorrectionFlag){
+          pitch += m_objLaserOffset.getPitchOffset(m_sFrameId, pitch, distance);
+        }
         if (pitch < 0) {
           pitch += 360.0f;
         } else if (pitch >= 360.0f) {
@@ -892,8 +901,9 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 
         float xyDistance =
             distance * m_fCosAllAngle[static_cast<int>(pitch * 100 + 0.5)];
-        azimuth += m_objLaserOffset.getAzimuthOffset(
-            m_sFrameId, originAzimuth, u16Azimuth / 100.0f, xyDistance);
+        if(m_bCoordinateCorrectionFlag){
+          azimuth += m_objLaserOffset.getAzimuthOffset(m_sFrameId, originAzimuth, u16Azimuth / 100.0f, xyDistance);
+        }
 
         int azimuthIdx = static_cast<int>(azimuth * 100 + 0.5);
         if (azimuthIdx >= CIRCLE) {

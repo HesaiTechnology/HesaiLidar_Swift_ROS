@@ -152,6 +152,8 @@ $ roslaunch pandar_pointcloud transform_nodelet.launch data_type:=rosbag
 |port|The destination port of Lidar, driver will monitor this port to get point clouds packets from Lidar|
 |start_angle|Driver will publish one frame point clouds data when azimuth angle step over start_angle, make sure set to within FOV|
 |publish_model|default "points":publish point clouds "raw":publish raw UDP packets "both_point_raw":publish point clouds and UDP packets|
+|namespace|namesapce of the launching node|
+|coordinate_correction_flag|default "false":Disable coordinate correction "true":Enable coordinate correction|
 |cert_file|Path of the user's certificate|
 |private_key_file|Path of the user's private key|
 |ca_file|Path of the root certificate|

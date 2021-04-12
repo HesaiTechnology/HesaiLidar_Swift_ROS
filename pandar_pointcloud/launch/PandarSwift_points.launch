@@ -19,6 +19,8 @@
   <arg name="rpm" default="600.0" />
   <arg name="start_angle" default="0.0" />
   <arg name="publish_model" default="both_point_raw" />
+  <arg name="namespace" default="hesai2"/>
+  <arg name="coordinate_correction_flag" default="false" />
   <!--"cert_file" represents the path of the user's certificate-->
   <arg name="cert_file" default="" />
   <!--"private_key_file" represents the path of the user's private key-->
@@ -27,7 +29,7 @@
   <arg name="ca_file" default="" />
 
   <!-- start nodelet manager -->
-  <node pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager" output="screen" />
+  <node pkg="nodelet" type="nodelet" ns="$(arg namespace)" name="$(arg manager)" args="manager" output="screen" />
 
   <!-- start cloud nodelet -->
   <include file="$(find pandar_pointcloud)/launch/cloud_nodelet.launch">
@@ -46,6 +48,8 @@
     <arg name="repeat_delay" value="$(arg repeat_delay)"/>
     <arg name="rpm" value="$(arg rpm)"/>
     <arg name="firetime_file" value="$(arg firetime_file)"/>
+    <arg name="namespace" value="$(arg namespace)"/>
+    <arg name="coordinate_correction_flag" value="$(arg coordinate_correction_flag)"/>
     <arg name="cert_file" value="$(arg cert_file)" />
     <arg name="private_key_file" value="$(arg private_key_file)" />
     <arg name="ca_file" value="$(arg ca_file)" />

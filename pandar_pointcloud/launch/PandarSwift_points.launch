@@ -19,7 +19,7 @@
   <arg name="rpm" default="600.0" />
   <arg name="start_angle" default="0.0" />
   <arg name="publish_model" default="both_point_raw" />
-  <arg name="namespace" default="hesai2"/>
+  <arg name="namespace" default="hesai"/>
   <arg name="coordinate_correction_flag" default="false" />
   <!--"cert_file" represents the path of the user's certificate-->
   <arg name="cert_file" default="" />

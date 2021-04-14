@@ -281,15 +281,23 @@ int PandarDriver::getPandarScanArraySize(boost::shared_ptr<Input> m_spInput){
   for (int i = 0; i < 256; ++i) {
     PandarPacket packet;
     int rc = m_spInput->getPacket(&packet);
-    switch (packet.data[PANDAR_LASER_NUMBER_INDEX]){
-    case PANDAR128_LASER_NUM:
-      return PANDAR128_READ_PACKET_SIZE;
-    case PANDAR80_LASER_NUM:
-      return PANDAR80_READ_PACKET_SIZE;
-    case PANDAR64S_LASER_NUM:
-      return PANDAR64S_READ_PACKET_SIZE;
-    case PANDAR40S_LASER_NUM:
-      return PANDAR40S_READ_PACKET_SIZE;
+    switch (packet.data[PANDAR_MAJOR_VERSION_INDEX])
+    {
+    case UDP_VERSION_MAJOR_1:
+      switch (packet.data[PANDAR_LASER_NUMBER_INDEX]){
+        case PANDAR128_LASER_NUM:
+          return PANDAR128_READ_PACKET_SIZE;
+        case PANDAR80_LASER_NUM:
+          return PANDAR80_READ_PACKET_SIZE;
+        case PANDAR64S_LASER_NUM:
+          return PANDAR64S_READ_PACKET_SIZE;
+        case PANDAR40S_LASER_NUM:
+          return PANDAR40S_READ_PACKET_SIZE;
+        default:
+          break;
+      }
+    case UDP_VERSION_MAJOR_3:
+    return PANDARQT128_READ_PACKET_SIZE;
     default:
       break;
     }

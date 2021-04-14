@@ -27,10 +27,12 @@
 
 typedef struct PandarGPS_s PandarGPS;
 #define PANDAR128_READ_PACKET_SIZE (1800)
+#define PANDARQT128_READ_PACKET_SIZE (200)
 #define PANDAR80_READ_PACKET_SIZE (500)
 #define PANDAR64S_READ_PACKET_SIZE (400)
 #define PANDAR40S_READ_PACKET_SIZE (100)
 #define PANDAR_LASER_NUMBER_INDEX (6)
+#define PANDAR_MAJOR_VERSION_INDEX (2)
 
 namespace pandar_pointcloud {
 class Convert;

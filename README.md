@@ -7,7 +7,7 @@ Developed based on [HesaiLidar_Swift_SDK](https://github.com/HesaiTechnology/Hes
 
 ## Branches 
 ```
-* master: Pandar LiDAR ROS driver for Ubuntu 18.04 supports the latest UDP protocol v1.4
+* master: Pandar LiDAR ROS driver for Ubuntu 18.04 supports the latest UDP protocol v1.4 and v3.2
 * UDP1.4_ubuntu16.04: Pandar LiDAR ROS driver for Ubuntu 16.04 supports the latest UDP protocol v1.4
 * UDP1.3: Pandar LiDAR ROS driver for ubuntu16.04 and ubuntu 18.04 supports UDP protocol v1.3 
 

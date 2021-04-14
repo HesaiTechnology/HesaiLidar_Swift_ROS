@@ -119,30 +119,59 @@ bool Input::checkPacket(PandarPacket *pkt) {
 }
 
 void Input::setUdpVersion(uint8_t major, uint8_t minor) {
-	if(UDP_VERSION_MAJOR_1 == major) {
-		if(UDP_VERSION_MINOR_3 == minor) {
-			m_sUdpVresion = UDP_VERSION_1_3;
-			m_iTimestampIndex = udpVersion13[TIMESTAMP_INDEX];
-			m_iUtcIindex = udpVersion13[UTC_INDEX];
-			m_iSequenceNumberIndex = udpVersion13[SEQUENCE_NUMBER_INDEX];
-			m_iPacketSize = udpVersion13[PACKET_SIZE];
-			m_bGetUdpVersion = true;
-			return;
-		}
-		if(UDP_VERSION_MINOR_4 == minor) {
-			m_sUdpVresion = UDP_VERSION_1_4;
-			m_iTimestampIndex = udpVersion14[TIMESTAMP_INDEX];
-			m_iUtcIindex = udpVersion14[UTC_INDEX];
-			m_iSequenceNumberIndex = udpVersion14[SEQUENCE_NUMBER_INDEX];
-			m_iPacketSize = udpVersion14[PACKET_SIZE];
-			m_bGetUdpVersion = true;
-			return;
-		}
-		printf("error udp version minor: %d\n", minor);
-	}
-	else{
-		printf("error udp version major: %d\n", major);
-	}	
+  switch (major)
+  {
+    case UDP_VERSION_MAJOR_1:
+    {
+      switch (minor)
+      {
+      case UDP_VERSION_MINOR_3:
+        m_sUdpVresion = UDP_VERSION_1_3;
+        m_iTimestampIndex = udpVersion13[TIMESTAMP_INDEX];
+        m_iUtcIindex = udpVersion13[UTC_INDEX];
+        m_iSequenceNumberIndex = udpVersion13[SEQUENCE_NUMBER_INDEX];
+        m_iPacketSize = udpVersion13[PACKET_SIZE];
+        m_bGetUdpVersion = true;
+        break;
+        
+      case UDP_VERSION_MINOR_4:
+        m_sUdpVresion = UDP_VERSION_1_4;
+        m_iTimestampIndex = udpVersion14[TIMESTAMP_INDEX];
+        m_iUtcIindex = udpVersion14[UTC_INDEX];
+        m_iSequenceNumberIndex = udpVersion14[SEQUENCE_NUMBER_INDEX];
+        m_iPacketSize = udpVersion14[PACKET_SIZE];
+        m_bGetUdpVersion = true;
+        break;
+      
+      default:
+        printf("error udp version minor: %d\n", minor);
+        break;
+      }
+    }
+    break;
+    case UDP_VERSION_MAJOR_3:
+    {
+      switch (minor)
+      {
+      case UDP_VERSION_MINOR_2:
+        m_sUdpVresion = UDP_VERSION_3_2;
+        m_iTimestampIndex = udpVersion32[TIMESTAMP_INDEX];
+        m_iUtcIindex = udpVersion32[UTC_INDEX];
+        m_iSequenceNumberIndex = udpVersion32[SEQUENCE_NUMBER_INDEX];
+        m_iPacketSize = udpVersion32[PACKET_SIZE];
+        m_bGetUdpVersion = true;
+        break;
+
+      default:
+        printf("error udp version minor: %d\n", minor);
+        break;
+      }  
+	  }
+    break;
+    default:
+    printf("error udp version minor: %d\n", minor);
+    break;
+  }
 }
 
 std::string Input::getUdpVersion() {

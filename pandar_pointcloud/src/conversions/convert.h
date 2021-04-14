@@ -52,6 +52,7 @@
 #define LIDAR_ANGLE_SIZE_18 (18)
 #define LIDAR_ANGLE_SIZE_20 (20)
 #define LIDAR_ANGLE_SIZE_40 (40)
+#define LIDAR_ANGLE_SIZE_80 (80)
 #define LIDAR_RETURN_BLOCK_SIZE_1 (1)
 #define LIDAR_RETURN_BLOCK_SIZE_2 (2)
 
@@ -121,6 +122,7 @@
 #define PANDAR64S_TASKFLOW_STEP_SIZE (225)
 #define PANDAR40S_TASKFLOW_STEP_SIZE (225)
 #define PANDAR80_TASKFLOW_STEP_SIZE (250)
+#define PANDARQT128_TASKFLOW_STEP_SIZE (100)
 #define PANDAR128_CRC_SIZE (4)
 #define PANDAR128_FUNCTION_SAFETY_SIZE (17)
 
@@ -144,7 +146,7 @@ typedef struct __attribute__((__packed__)) Pandar128Block_s {
   Pandar128Unit units[PANDAR128_LASER_NUM];
 } Pandar128Block;
 
-typedef struct Pandar128HeadVersion13_s {
+typedef struct __attribute__((__packed__)) Pandar128HeadVersion13_s {
   uint16_t u16Sob;
   uint8_t u8VersionMajor;
   uint8_t u8VersionMinor;
@@ -157,7 +159,7 @@ typedef struct Pandar128HeadVersion13_s {
   uint16_t u16Reserve1;
 } Pandar128HeadVersion13;
 
-typedef struct Pandar128HeadVersion14_s {
+typedef struct __attribute__((__packed__)) Pandar128HeadVersion14_s {
   uint16_t u16Sob;
   uint8_t u8VersionMajor;
   uint8_t u8VersionMinor;
@@ -176,7 +178,26 @@ typedef struct Pandar128HeadVersion14_s {
 
 } Pandar128HeadVersion14;
 
-typedef struct Pandar128TailVersion13_s {
+typedef struct __attribute__((__packed__)) PandarQT128Head_s {
+  uint16_t u16Sob;
+  uint8_t u8VersionMajor;
+  uint8_t u8VersionMinor;
+  uint16_t u16Reserve1;
+  uint8_t u8LaserNum;
+  uint8_t u8BlockNum;
+  uint8_t u8EchoCount;
+  uint8_t u8DistUnit;
+  uint8_t u8EchoNum;
+  uint8_t u8Flags;
+  inline bool hasSeqNum() const { return u8Flags & 1; }
+  inline bool hasImu() const { return u8Flags & 2; }
+  inline bool hasFunctionSafety() const { return u8Flags & 4; }
+  inline bool hasSignature() const { return u8Flags & 8; }
+  inline bool hasConfidence() const { return u8Flags & 0x10; }
+
+} PandarQT128Head;
+
+typedef struct __attribute__((__packed__)) Pandar128TailVersion13_s {
   uint8_t nReserved1[3];
   uint8_t nReserved2[3];
   uint8_t nShutdownFlag;
@@ -189,7 +210,7 @@ typedef struct Pandar128TailVersion13_s {
   uint32_t nSeqNum;
 } Pandar128TailVersion13;
 
-typedef struct Pandar128TailVersion14_s {
+typedef struct __attribute__((__packed__)) Pandar128TailVersion14_s {
   uint8_t nReserved1[3];
   uint8_t nReserved2[3];
   uint8_t nReserved3[3];
@@ -202,6 +223,20 @@ typedef struct Pandar128TailVersion14_s {
   uint8_t nFactoryInfo;
   uint32_t nSeqNum;
 } Pandar128TailVersion14;
+
+typedef struct __attribute__((__packed__)) PandarQT128Tail_s {
+  uint8_t nReserved1[3];
+  uint8_t nReserved2[3];
+  uint8_t nReserved3[3];
+  uint16_t nAzimuthFlag;
+  uint8_t nShutdownFlag;
+  uint8_t nReturnMode;
+  uint16_t nMotorSpeed;
+  uint8_t nUTCTime[6];
+  uint32_t nTimestamp;
+  uint8_t nFactoryInfo;
+  uint32_t nSeqNum;
+} PandarQT128Tail;
 
 typedef struct __attribute__((__packed__)) Pandar128PacketVersion13_t {
   Pandar128HeadVersion13 head;
@@ -323,6 +358,7 @@ class Convert {
 
   int parseData(Pandar128PacketVersion13 &pkt, const uint8_t *buf, const int len);
   void calcPointXYZIT(pandar_msgs::PandarPacket &pkt, int cursor);
+  void calcQT128PointXYZIT(pandar_msgs::PandarPacket &pkt, int cursor);
   void doTaskFlow(int cursor);
   void loadOffsetFile(std::string file);
   int loadCorrectionFile(std::string correction_content);

@@ -44,8 +44,11 @@
 #define UDP_VERSION_MAJOR_1 (1)
 #define UDP_VERSION_MINOR_3 (3)
 #define UDP_VERSION_MINOR_4 (4)
+#define UDP_VERSION_MAJOR_3 (3)
+#define UDP_VERSION_MINOR_2 (2)
 #define UDP_VERSION_1_3 "1.3"
 #define UDP_VERSION_1_4 "1.4"
+#define UDP_VERSION_3_2 "3.2"
 #define PANDAR128_SOB_SIZE (2)
 #define PANDAR128_VERSION_MAJOR_SIZE (1)
 #define PANDAR128_VERSION_MINOR_SIZE (1)
@@ -98,6 +101,13 @@ static std::map<enumIndex, int> udpVersion13 = {
 };
 
 static std::map<enumIndex, int> udpVersion14 = {
+	{TIMESTAMP_INDEX, 826},
+	{UTC_INDEX, 820},
+	{SEQUENCE_NUMBER_INDEX, 831},
+	{PACKET_SIZE, 893},
+};
+
+static std::map<enumIndex, int> udpVersion32 = {
 	{TIMESTAMP_INDEX, 826},
 	{UTC_INDEX, 820},
 	{SEQUENCE_NUMBER_INDEX, 831},

@@ -26,7 +26,7 @@
 #define OFFSET2   (-27778)
 #define PAI       (3.14159265358979323846)
 #define SEC_TO_NS (1000000000.0)
-#define SPEED     (3600.0 / SEC_TO_NS)
+#define SPEED     (600.0 / SEC_TO_NS)
 #define A_TO_R    (PAI / 180.0)
 #define R_TO_A    (180.0 / PAI)
 
@@ -208,12 +208,12 @@ int LasersTSOffset::getBlockTS(int nBlock, int nRetMode, int nMode, int nLaserNu
   }
 }
 
-float LasersTSOffset::getAngleOffset(int nTSOffset, int nLaserId, int nLaserNum) {
+float LasersTSOffset::getAngleOffset(int nTSOffset, int nLaserId, int nLaserNum, int speed) {
   switch (nLaserNum){
     case PANDAR80_LIDAR_NUM:
-      return m_fAzimuthOffset[nLaserId] * SPEED_US;
+      return m_fAzimuthOffset[nLaserId] * speed * 6E-9;
     default:
-      return static_cast<float>(nTSOffset) * SPEED;
+      return static_cast<float>(nTSOffset) * speed * 6E-9;
   }
 }
 

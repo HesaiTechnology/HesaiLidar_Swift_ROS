@@ -84,7 +84,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "PandarSwiftROS_1.0.11";
+  m_sRosVersion = "PandarSwiftROS_1.0.15";
   ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -654,7 +654,7 @@ void Convert::checkClockwise(){
     ((frontAzimuth > backAzimuth) && (frontAzimuth - backAzimuth) > m_iAngleSize * 10))
   {
     m_bClockwise = true; //Clockwise
-	return;
+    return;
   }
 
   if(((frontAzimuth > backAzimuth) && ((frontAzimuth - backAzimuth) <  m_iAngleSize * 10))
@@ -662,7 +662,7 @@ void Convert::checkClockwise(){
     ((frontAzimuth < backAzimuth) && (backAzimuth - frontAzimuth) > m_iAngleSize * 10))
   {
     m_bClockwise = false; //countClockwise
-	return;
+    return;
   }
 
 }
@@ -908,7 +908,7 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 				float pitch = m_fElevAngle[i];
 				float originPitch = pitch;
 				int offset = m_objLaserOffset.getTSOffset(i, mode, state, distance, pkt.head.u8LaserNum);
-				azimuth += m_objLaserOffset.getAngleOffset(offset, i, pkt.head.u8LaserNum);
+				azimuth += m_objLaserOffset.getAngleOffset(offset, i, pkt.head.u8LaserNum, pkt.tail.nMotorSpeed);
         if(m_bCoordinateCorrectionFlag){
           pitch += m_objLaserOffset.getPitchOffset(m_sFrameId, pitch, distance);
         }
@@ -1008,7 +1008,7 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
         float originPitch = pitch;
         int offset = m_objLaserOffset.getTSOffset(i, mode, state, distance, header->u8LaserNum);
 
-        azimuth += m_objLaserOffset.getAngleOffset(offset, i, header->u8LaserNum);
+        azimuth += m_objLaserOffset.getAngleOffset(offset, i, header->u8LaserNum, tail->nMotorSpeed);
 
         if(m_bCoordinateCorrectionFlag){
           pitch += m_objLaserOffset.getPitchOffset(m_sFrameId, pitch, distance);

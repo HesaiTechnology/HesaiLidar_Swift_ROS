@@ -41,7 +41,7 @@ class LasersTSOffset {
     void  setFilePath(std::string sFile);
     int   getTSOffset(int nLaser, int nMode, int nState, float fDistance, int nLaserNum);
     int   getBlockTS(int nBlock, int nRetMode, int nMode, int nLaserNum);
-    float getAngleOffset(int nTSOffset, int nLaserId, int nLaserNum);
+    float getAngleOffset(int nTSOffset, int nLaserId, int nLaserNum, int speed);
     float getAzimuthOffset(std::string type, float azimuth, \
         float originAzimuth, float distance);
     float getPitchOffset(std::string type, float pitch, float distance);

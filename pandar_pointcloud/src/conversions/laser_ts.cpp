@@ -169,19 +169,14 @@ void LasersTSOffset::fillVector(char *pContent, int nLen, std::vector<int> &vec)
 }
 
 int LasersTSOffset::getTSOffset(int nLaser, int nMode, int nState, float fDistance, int nLaserNum) {
-  switch (nLaserNum){
-    case PANDAR80_LIDAR_NUM:
-      return m_fAzimuthOffset[nLaser];
-    default:
-      if (nLaser >= mNLaserNum || !mBInitFlag) {
-        return 0;
-      }
-      if (fDistance >= mFDist) {
-        return mVLasers[nLaser][mLongOffsetIndex[nMode * 10 + nState]];
-      } 
-      else {
-        return mVLasers[nLaser][mShortOffsetIndex[nMode * 10 + nState]];
-      }
+  if (nLaser >= mNLaserNum || !mBInitFlag) {
+    return 0;
+  }
+  if (fDistance >= mFDist) {
+    return mVLasers[nLaser][mLongOffsetIndex[nMode * 10 + nState]];
+  } 
+  else {
+    return mVLasers[nLaser][mShortOffsetIndex[nMode * 10 + nState]];
   }
 }
 
@@ -208,13 +203,8 @@ int LasersTSOffset::getBlockTS(int nBlock, int nRetMode, int nMode, int nLaserNu
   }
 }
 
-float LasersTSOffset::getAngleOffset(int nTSOffset, int nLaserId, int nLaserNum, int speed) {
-  switch (nLaserNum){
-    case PANDAR80_LIDAR_NUM:
-      return m_fAzimuthOffset[nLaserId] * speed * 6E-9;
-    default:
-      return static_cast<float>(nTSOffset) * speed * 6E-9;
-  }
+float LasersTSOffset::getAngleOffset(int nTSOffset, int speed) {
+    return static_cast<float>(nTSOffset) * speed * 6E-9;
 }
 
 

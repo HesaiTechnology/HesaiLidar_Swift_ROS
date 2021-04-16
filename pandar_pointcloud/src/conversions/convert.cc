@@ -908,7 +908,7 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 				float pitch = m_fElevAngle[i];
 				float originPitch = pitch;
 				int offset = m_objLaserOffset.getTSOffset(i, mode, state, distance, pkt.head.u8LaserNum);
-				azimuth += m_objLaserOffset.getAngleOffset(offset, i, pkt.head.u8LaserNum, pkt.tail.nMotorSpeed);
+				azimuth += m_objLaserOffset.getAngleOffset(offset, pkt.tail.nMotorSpeed);
         if(m_bCoordinateCorrectionFlag){
           pitch += m_objLaserOffset.getPitchOffset(m_sFrameId, pitch, distance);
         }
@@ -1008,7 +1008,7 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
         float originPitch = pitch;
         int offset = m_objLaserOffset.getTSOffset(i, mode, state, distance, header->u8LaserNum);
 
-        azimuth += m_objLaserOffset.getAngleOffset(offset, i, header->u8LaserNum, tail->nMotorSpeed);
+        azimuth += m_objLaserOffset.getAngleOffset(offset, tail->nMotorSpeed);
 
         if(m_bCoordinateCorrectionFlag){
           pitch += m_objLaserOffset.getPitchOffset(m_sFrameId, pitch, distance);

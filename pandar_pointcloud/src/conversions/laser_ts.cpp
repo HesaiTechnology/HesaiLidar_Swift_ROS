@@ -208,13 +208,8 @@ int LasersTSOffset::getBlockTS(int nBlock, int nRetMode, int nMode, int nLaserNu
   }
 }
 
-float LasersTSOffset::getAngleOffset(int nTSOffset, int nLaserId, int nLaserNum, int speed) {
-  switch (nLaserNum){
-    case PANDAR80_LIDAR_NUM:
-      return m_fAzimuthOffset[nLaserId] * speed * 6E-9;
-    default:
-      return static_cast<float>(nTSOffset) * speed * 6E-9;
-  }
+float LasersTSOffset::getAngleOffset(int nTSOffset, int speed) {
+    return static_cast<float>(nTSOffset) * speed * 6E-9;
 }
 
 

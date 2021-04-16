@@ -25,11 +25,11 @@
 #endif
 
 #ifndef PAI_ANGLE
-#define PAI_ANGLE (18001)
+#define PAI_ANGLE (180000)
 #endif
 
 #ifndef HALF_PAI_ANGLE
-#define HALF_PAI_ANGLE (9001)
+#define HALF_PAI_ANGLE (90000)
 #endif
 #define PANDAR80_LIDAR_NUM (80)
 
@@ -54,10 +54,11 @@ class LasersTSOffset {
     std::vector<int> mShortOffsetIndex;
     std::vector<int> mLongOffsetIndex;
     float                              mCosAllAngle[CIRCLE];
-    float                              mSinAllAngle[CIRCLE];
-    float                              mSinPAIAngle[PAI_ANGLE];
-    float                              mTanPAIAngle[HALF_PAI_ANGLE];
+    float                              mSinAllAngleHB[CIRCLE];
+    float                              mSinAllAngleH[CIRCLE];
+    float                              mArcSin[PAI_ANGLE];
     float                              m_fAzimuthOffset[PANDAR80_LIDAR_NUM];
+    float                              m_fArctanHB;
 
     void fillVector(char *pContent, int nLen, std::vector<int> &vec);
     float atanAngle(float value);

@@ -32,6 +32,7 @@
 #define HALF_PAI_ANGLE (90000)
 #endif
 #define PANDAR80_LIDAR_NUM (80)
+#define PANDAR128_LIDAR_NUM (128)
 
 class LasersTSOffset {
   public:
@@ -39,11 +40,10 @@ class LasersTSOffset {
     ~LasersTSOffset();
 
     void  setFilePath(std::string sFile);
-    int   getTSOffset(int nLaser, int nMode, int nState, float fDistance, int nLaserNum);
+    float getTSOffset(int nLaser, int nMode, int nState, float fDistance, int nMajorVersion);
     int   getBlockTS(int nBlock, int nRetMode, int nMode, int nLaserNum);
-    float getAngleOffset(int nTSOffset, int speed);
-    float getAzimuthOffset(std::string type, float azimuth, \
-        float originAzimuth, float distance);
+    float getAngleOffset(int nTSOffset, int speed, int nMajorVersion);
+    float getAzimuthOffset(std::string type, float azimuth, float originAzimuth, float distance);
     float getPitchOffset(std::string type, float pitch, float distance);
 
   private:
@@ -57,7 +57,7 @@ class LasersTSOffset {
     float                              mSinAllAngleHB[CIRCLE];
     float                              mSinAllAngleH[CIRCLE];
     float                              mArcSin[PAI_ANGLE];
-    float                              m_fAzimuthOffset[PANDAR80_LIDAR_NUM];
+    float                              m_fAzimuthOffset[PANDAR128_LIDAR_NUM];
     float                              m_fArctanHB;
 
     void fillVector(char *pContent, int nLen, std::vector<int> &vec);

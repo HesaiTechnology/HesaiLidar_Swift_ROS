@@ -9,7 +9,7 @@
   <arg name="frame_id" default="PandarSwift" />
   <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
   <arg name="max_range" default="130.0" />
-  <arg name="firetime_file" default="$(find pandar_pointcloud)/params/laser-ts.csv"/>
+  <arg name="firetime_file" default="$(find pandar_pointcloud)/params/Pandar128_Firetimes.csv"/>
   <arg name="min_range" default="0.5" />
   <arg name="pcap" default="" />
   <arg name="port" default="2368" />

@@ -21,6 +21,8 @@
 #include "laser_ts.h"
 #include <fstream>
 #include <sstream> 
+#include <iostream>
+#include <boost/algorithm/string.hpp>
 
 #define OFFSET1   (3148)
 #define OFFSET2   (-27778)
@@ -69,16 +71,17 @@ void LasersTSOffset::setFilePath(std::string file) {
   if (std::getline(fin, line)) { //first line sequence,chn id,firetime/us
     printf("Parse Lidar firetime now...\n");
   }
-  if (line == "sequence,chn id,firetime/us"){
-    printf("Parse P80 Lidar firetime now...\n");
+  std::vector<std::string>  firstLine;
+  boost::split(firstLine, line, boost::is_any_of(","));
+  if (firstLine.size() == 2){
     while (std::getline(fin, line)) {
       int sequence = 0;
       int chnId = 0;
       float firetime;
       std::stringstream ss(line);
       std::string subline;
-      std::getline(ss, subline, ',');
-      std::stringstream(subline) >> sequence;
+      // std::getline(ss, subline, ',');
+      // std::stringstream(subline) >> sequence;
       std::getline(ss, subline, ',');
       std::stringstream(subline) >> chnId;
       std::getline(ss, subline, ',');
@@ -165,15 +168,22 @@ void LasersTSOffset::fillVector(char *pContent, int nLen, std::vector<int> &vec)
   }
 }
 
-int LasersTSOffset::getTSOffset(int nLaser, int nMode, int nState, float fDistance, int nLaserNum) {
-  if (nLaser >= mNLaserNum || !mBInitFlag) {
-    return 0;
-  }
-  if (fDistance >= mFDist) {
-    return mVLasers[nLaser][mLongOffsetIndex[nMode * 10 + nState]];
-  } 
-  else {
-    return mVLasers[nLaser][mShortOffsetIndex[nMode * 10 + nState]];
+float LasersTSOffset::getTSOffset(int nLaser, int nMode, int nState, float fDistance, int nMajorVersion) {
+  switch (nMajorVersion){
+    case 1:
+      if (nLaser >= mNLaserNum || !mBInitFlag) {
+        return 0;
+      }
+      if (fDistance >= mFDist) {
+        return mVLasers[nLaser][mLongOffsetIndex[nMode * 10 + nState]];
+      } 
+      else {
+        return mVLasers[nLaser][mShortOffsetIndex[nMode * 10 + nState]];
+      }
+    case 3:
+      return m_fAzimuthOffset[nLaser];
+    default:
+      return 0;
   }
 }
 
@@ -200,8 +210,15 @@ int LasersTSOffset::getBlockTS(int nBlock, int nRetMode, int nMode, int nLaserNu
   }
 }
 
-float LasersTSOffset::getAngleOffset(int nTSOffset, int speed) {
-    return static_cast<float>(nTSOffset) * speed * 6E-9;
+float LasersTSOffset::getAngleOffset(int nTSOffset, int speed, int nMajorVersion) {
+  switch (nMajorVersion){
+    case 1:
+      return nTSOffset * speed * 6E-9;
+    case 3:
+      return nTSOffset * speed * 6E-6;
+    default:
+      return 0;
+  }
 }
 
 

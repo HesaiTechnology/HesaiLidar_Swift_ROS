@@ -29,7 +29,7 @@
 #include <fstream>
 #include <iostream>
 #include "taskflow.hpp"
-#define PRINT_FLAG 
+// #define PRINT_FLAG 
 
 namespace pandar_pointcloud {
 
@@ -906,9 +906,8 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 				float azimuth = m_fHorizatalAzimuth[i] + (block.fAzimuth / 100.0f);
 				float originAzimuth = azimuth;
 				float pitch = m_fElevAngle[i];
-				float originPitch = pitch;
-				int offset = m_objLaserOffset.getTSOffset(i, mode, state, distance, pkt.head.u8LaserNum);
-				azimuth += m_objLaserOffset.getAngleOffset(offset, pkt.tail.nMotorSpeed);
+				int offset = m_objLaserOffset.getTSOffset(i, mode, state, distance, m_u8UdpVersionMajor);
+				azimuth += m_objLaserOffset.getAngleOffset(offset, pkt.tail.nMotorSpeed, m_u8UdpVersionMajor);
         if(m_bCoordinateCorrectionFlag){
           pitch += m_objLaserOffset.getPitchOffset(m_sFrameId, pitch, distance);
         }
@@ -1005,10 +1004,9 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
         float azimuth = m_fHorizatalAzimuth[i] + (u16Azimuth / 100.0f);
         float originAzimuth = azimuth;
         float pitch = m_fElevAngle[i];
-        float originPitch = pitch;
-        int offset = m_objLaserOffset.getTSOffset(i, mode, state, distance, header->u8LaserNum);
+        int offset = m_objLaserOffset.getTSOffset(i, mode, state, distance, m_u8UdpVersionMajor);
 
-        azimuth += m_objLaserOffset.getAngleOffset(offset, tail->nMotorSpeed);
+        azimuth += m_objLaserOffset.getAngleOffset(offset, tail->nMotorSpeed, m_u8UdpVersionMajor);
 
         if(m_bCoordinateCorrectionFlag){
           pitch += m_objLaserOffset.getPitchOffset(m_sFrameId, pitch, distance);
@@ -1121,6 +1119,8 @@ void Convert::calcQT128PointXYZIT(pandar_msgs::PandarPacket &packet, int cursor)
       float azimuth = m_fHorizatalAzimuth[i] + (u16Azimuth / 100.0f);
       float originAzimuth = azimuth;
       float pitch = m_fElevAngle[i];
+      int offset = m_objLaserOffset.getTSOffset(i, mode, state, distance, m_u8UdpVersionMajor);
+      azimuth += m_objLaserOffset.getAngleOffset(offset, tail->nMotorSpeed, m_u8UdpVersionMajor);
       if (pitch < 0) {
         pitch += 360.0f;
       } else if (pitch >= 360.0f) {

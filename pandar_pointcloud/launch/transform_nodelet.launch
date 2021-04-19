@@ -7,7 +7,7 @@
   <arg name="max_range" default="130.0" />
   <arg name="min_range" default="0.9" />
   <arg name="data_type" default="lidar" />
-  <arg name="firetime_file" default="$(find pandar_pointcloud)/params/laser-ts.csv"/>
+  <arg name="firetime_file" default="$(find pandar_pointcloud)/params/Pandar128_Firetimes.csv"/>
   <arg name="namespace" default="hesai"/>
   <arg name="coordinate_correction_flag" default="false" />
 

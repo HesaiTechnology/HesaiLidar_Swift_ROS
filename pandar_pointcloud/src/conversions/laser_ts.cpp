@@ -57,7 +57,7 @@ LasersTSOffset::LasersTSOffset() {
 
   mShortOffsetIndex.resize(100);
   mLongOffsetIndex.resize(100);
-  m_fArctanHB = atanf(PANDAR128_COORDINATE_CORRECTION_H / PANDAR128_COORDINATE_CORRECTION_B) + 0.5f;
+  m_fArctanHB = atanf(PANDAR128_COORDINATE_CORRECTION_B / PANDAR128_COORDINATE_CORRECTION_H) + 0.5f;
 }
 
 LasersTSOffset::~LasersTSOffset() {

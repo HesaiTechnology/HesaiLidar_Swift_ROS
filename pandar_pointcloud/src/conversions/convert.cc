@@ -29,7 +29,7 @@
 #include <fstream>
 #include <iostream>
 #include "taskflow.hpp"
-#define PRINT_FLAG (false)
+// #define PRINT_FLAG 
 
 namespace pandar_pointcloud {
 
@@ -84,7 +84,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "PandarSwiftROS_1.0.14";
+  m_sRosVersion = "PandarSwiftROS_1.0.15";
   ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -122,6 +122,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
   ROS_WARN("frame_id [%s]", m_sFrameId.c_str());
   ROS_WARN("lidarFiretimeFile [%s]", lidarFiretimeFile.c_str());
   ROS_WARN("lidarCorrectionFile [%s]", lidarCorrectionFile.c_str());
+  SetEnvironmentVariableTZ();
 
   m_iWorkMode = 0;
   m_iReturnMode = 0;
@@ -234,9 +235,9 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
   }
 
   m_iPublishPointsIndex = 0;
-  m_bPublishPointsFlag = false;
-  boost::thread publishPointsThr(
-      boost::bind(&Convert::publishPointsThread, this));
+  // m_bPublishPointsFlag = false;
+  // boost::thread publishPointsThr(
+  //     boost::bind(&Convert::publishPointsThread, this));
 
   if ((publishmodel == "both_point_raw" || publishmodel == "raw") &&
       LIDAR_NODE_TYPE == node_type) {
@@ -465,15 +466,9 @@ int Convert::processLiDARData() {
 			doTaskFlow(cursor);
 			uint32_t startTick2 = GetTickCount();
 			// printf("move and taskflow time:%d\n", startTick2 - startTick1);
-			if(m_bPublishPointsFlag == false) {
-				m_bPublishPointsFlag = true;
-				m_iPublishPointsIndex = cursor;
-				cursor = (cursor + 1) % 2;
-        if(PRINT_FLAG)
-          ROS_WARN("ts %lf cld size %u", timestamp, m_OutMsgArray[cursor]->points.size());
-			} 
-			else
-				ROS_WARN("publishPoints not done yet, new publish is comming\n");
+      m_iPublishPointsIndex = cursor;
+      cursor = (cursor + 1) % 2;
+      publishPoints();
         
 			m_OutMsgArray[cursor]->clear();
 			m_OutMsgArray[cursor]->resize(calculatePointBufferSize());
@@ -491,10 +486,10 @@ int Convert::processLiDARData() {
 			m_OutMsgArray[cursor]->height = 1;
 			continue;
 		}
-    uint32_t taskflow1 = GetTickCount();
+    // uint32_t taskflow1 = GetTickCount();
 			// printf("if compare time: %d\n", ifTick - startTick);
 		doTaskFlow(cursor);
-		uint32_t taskflow2 = GetTickCount();
+		// uint32_t taskflow2 = GetTickCount();
 			// printf("taskflow time: %d\n", taskflow2 - taskflow1);
   }
 }
@@ -577,36 +572,22 @@ void Convert::init() {
 }
 
 void Convert::publishPoints() {
-  uint32_t start = GetTickCount();
+  // uint32_t start = GetTickCount();
 
   pcl_conversions::toPCL(ros::Time(timestamp),
                          m_OutMsgArray[m_iPublishPointsIndex]->header.stamp);
   sensor_msgs::PointCloud2 output;
   pcl::toROSMsg(*m_OutMsgArray[m_iPublishPointsIndex], output);
   output_.publish(output);
-  m_bPublishPointsFlag = false;
+#ifdef PRINT_FLAG
+  ROS_WARN("ts %lf cld size %u", timestamp, m_OutMsgArray[m_iPublishPointsIndex]->points.size());
+#endif  
   timestamp = 0;
 
-  uint32_t end = GetTickCount();
-  if (end - start > 150) ROS_WARN("publishPoints time:%d", end - start);
+  // uint32_t end = GetTickCount();
+  // if (end - start > 150) ROS_WARN("publishPoints time:%d", end - start);
 }
 
-void Convert::publishPointsThread() {
-  sched_param param;
-  param.sched_priority = 90;
-  // SCHED_FIFO和SCHED_RR
-  int rc = pthread_setschedparam(pthread_self(), SCHED_FIFO, &param);
-  ROS_WARN("publishPointsThread:set result [%d]", rc);
-  int ret_policy;
-  pthread_getschedparam(pthread_self(), &ret_policy, &param);
-  ROS_WARN("publishPointsThread:get thead %lu, policy %d and priority %d\n",
-           pthread_self(), ret_policy, param.sched_priority);
-
-  while (1) {
-    usleep(100);
-    if (m_bPublishPointsFlag) publishPoints();
-  }
-}
 
 void Convert::checkClockwise(){
   if((*(uint16_t*)(&(m_PacketsBuffer.m_iterTaskBegin->data[0]) + m_iFirstAzimuthIndex) < 
@@ -947,6 +928,33 @@ void Convert::processGps(const pandar_msgs::PandarGps::ConstPtr &gpsMsg) {
     gps2.used = 0;
   }
   // ROS_ERROR("Got data second : %f " ,(double)gps2.gps);
+}
+void Convert::SetEnvironmentVariableTZ(){
+  char *TZ; 
+  if((TZ = getenv("TZ"))){
+    printf("TZ=%s\n",TZ); 
+    return;
+  } 
+  unsigned int timezone = 0;
+  time_t t1, t2 ;
+  struct tm *tm_local, *tm_utc;
+  time(&t1);
+  t2 = t1;
+  tm_local = localtime(&t1);
+  t1 = mktime(tm_local) ;
+  tm_utc = gmtime(&t2);
+  t2 = mktime(tm_utc);
+  timezone = t2 >= t1 ? (t2 - t1) / 3600 : (t1 - t2) / 3600;
+  std::string data = "TZ=UTC" + std::to_string(timezone);
+  int len = data.length();
+  TZ = (char *)malloc((len + 1) * sizeof(char));
+  data.copy(TZ, len, 0); 
+  if(putenv(TZ) == 0){
+    printf("set environment %s\n", TZ);
+  }
+  else{
+    printf("set environment fail\n");
+  }
 }
 
 }  // namespace pandar_pointcloud

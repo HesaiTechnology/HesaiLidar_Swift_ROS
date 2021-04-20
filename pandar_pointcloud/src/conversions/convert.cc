@@ -30,6 +30,7 @@
 #include <iostream>
 #include "taskflow.hpp"
 // #define PRINT_FLAG 
+// #define FIRETIME_CORRECTION_CHECK 
 
 namespace pandar_pointcloud {
 
@@ -240,6 +241,8 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
 
   m_iPublishPointsIndex = 0;
   m_bPublishPointsFlag = false;
+  boost::thread publishPointsThr(
+      boost::bind(&Convert::publishPointsThread, this));
 
   if ((publishmodel == "both_point_raw" || publishmodel == "raw") &&
       LIDAR_NODE_TYPE == node_type) {
@@ -468,9 +471,16 @@ int Convert::processLiDARData() {
 			doTaskFlow(cursor);
 			// uint32_t startTick2 = GetTickCount();
 			// printf("move and taskflow time:%d\n", startTick2 - startTick1);
-      m_iPublishPointsIndex = cursor;
-      cursor = (cursor + 1) % 2;
-      publishPoints();
+      if(m_bPublishPointsFlag == false) {
+				m_bPublishPointsFlag = true;
+				m_iPublishPointsIndex = cursor;
+				cursor = (cursor + 1) % 2;
+#ifdef PRINT_FLAG
+        ROS_WARN("ts %lf cld size %u", m_dTimestamp, m_OutMsgArray[m_iPublishPointsIndex]->points.size());
+#endif  
+			} 
+			else
+				ROS_WARN("publishPoints not done yet, new publish is comming\n");
         
 			m_OutMsgArray[cursor]->clear();
 			m_OutMsgArray[cursor]->resize(CIRCLE_ANGLE / m_iAngleSize * m_iLaserNum * m_iReturnBlockSize );
@@ -636,15 +646,28 @@ void Convert::publishPoints() {
   pcl::toROSMsg(*m_OutMsgArray[m_iPublishPointsIndex], output);
   output_.publish(output);
   m_bPublishPointsFlag = false;
-#ifdef PRINT_FLAG
-  ROS_WARN("ts %lf cld size %u", m_dTimestamp, m_OutMsgArray[m_iPublishPointsIndex]->points.size());
-#endif  
   m_dTimestamp = 0;
 
   // uint32_t end = GetTickCount();
   // if (end - start > 150) ROS_WARN("publishPoints time:%d", end - start);
 }
 
+void Convert::publishPointsThread() {
+  sched_param param;
+  param.sched_priority = 90;
+  // SCHED_FIFO和SCHED_RR
+  int rc = pthread_setschedparam(pthread_self(), SCHED_FIFO, &param);
+  ROS_WARN("publishPointsThread:set result [%d]", rc);
+  int ret_policy;
+  pthread_getschedparam(pthread_self(), &ret_policy, &param);
+  ROS_WARN("publishPointsThread:get thead %lu, policy %d and priority %d\n",
+           pthread_self(), ret_policy, param.sched_priority);
+
+  while (1) {
+    usleep(100);
+    if (m_bPublishPointsFlag) publishPoints();
+  }
+}
 
 void Convert::checkClockwise(){
   uint16_t frontAzimuth = *(uint16_t*)(&(m_PacketsBuffer.m_iterTaskBegin->data[0]) + m_iFirstAzimuthIndex);
@@ -906,8 +929,11 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 				float azimuth = m_fHorizatalAzimuth[i] + (block.fAzimuth / 100.0f);
 				float originAzimuth = azimuth;
 				float pitch = m_fElevAngle[i];
-				int offset = m_objLaserOffset.getTSOffset(i, mode, state, distance, m_u8UdpVersionMajor);
+				float offset = m_bClockwise ? m_objLaserOffset.getTSOffset(i, mode, state, distance, m_u8UdpVersionMajor) : -m_objLaserOffset.getTSOffset(i, mode, state, distance, m_u8UdpVersionMajor);
 				azimuth += m_objLaserOffset.getAngleOffset(offset, pkt.tail.nMotorSpeed, m_u8UdpVersionMajor);
+#ifdef FIRETIME_CORRECTION_CHECK 
+        ROS_WARN("Laser ID = %d, speed = %d, origin azimuth = %f, azimuth = %f, delt = %f", i + 1, pkt.tail.nMotorSpeed, originAzimuth, azimuth, azimuth - originAzimuth);  
+#endif     
         if(m_bCoordinateCorrectionFlag){
           pitch += m_objLaserOffset.getPitchOffset(m_sFrameId, pitch, distance);
         }
@@ -1004,10 +1030,12 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
         float azimuth = m_fHorizatalAzimuth[i] + (u16Azimuth / 100.0f);
         float originAzimuth = azimuth;
         float pitch = m_fElevAngle[i];
-        int offset = m_objLaserOffset.getTSOffset(i, mode, state, distance, m_u8UdpVersionMajor);
+        float offset = m_bClockwise ? m_objLaserOffset.getTSOffset(i, mode, state, distance, m_u8UdpVersionMajor) : -m_objLaserOffset.getTSOffset(i, mode, state, distance, m_u8UdpVersionMajor);
 
         azimuth += m_objLaserOffset.getAngleOffset(offset, tail->nMotorSpeed, m_u8UdpVersionMajor);
-
+#ifdef FIRETIME_CORRECTION_CHECK 
+        ROS_WARN("Laser ID = %d, speed = %d, origin azimuth = %f, azimuth = %f, delt = %f", i + 1, tail->nMotorSpeed, originAzimuth, azimuth, azimuth - originAzimuth);  
+#endif  
         if(m_bCoordinateCorrectionFlag){
           pitch += m_objLaserOffset.getPitchOffset(m_sFrameId, pitch, distance);
         }
@@ -1119,8 +1147,11 @@ void Convert::calcQT128PointXYZIT(pandar_msgs::PandarPacket &packet, int cursor)
       float azimuth = m_fHorizatalAzimuth[i] + (u16Azimuth / 100.0f);
       float originAzimuth = azimuth;
       float pitch = m_fElevAngle[i];
-      int offset = m_objLaserOffset.getTSOffset(i, mode, state, distance, m_u8UdpVersionMajor);
+      float offset = m_bClockwise ? m_objLaserOffset.getTSOffset(i, mode, state, distance, m_u8UdpVersionMajor) : -m_objLaserOffset.getTSOffset(i, mode, state, distance, m_u8UdpVersionMajor);
       azimuth += m_objLaserOffset.getAngleOffset(offset, tail->nMotorSpeed, m_u8UdpVersionMajor);
+#ifdef FIRETIME_CORRECTION_CHECK 
+        ROS_WARN("Laser ID = %d, speed = %d, origin azimuth = %f, azimuth = %f, delt = %f", i + 1, tail->nMotorSpeed, originAzimuth, azimuth, azimuth - originAzimuth);  
+#endif  
       if (pitch < 0) {
         pitch += 360.0f;
       } else if (pitch >= 360.0f) {

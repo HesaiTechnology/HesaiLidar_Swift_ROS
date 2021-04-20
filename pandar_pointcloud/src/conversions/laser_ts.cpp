@@ -210,7 +210,7 @@ int LasersTSOffset::getBlockTS(int nBlock, int nRetMode, int nMode, int nLaserNu
   }
 }
 
-float LasersTSOffset::getAngleOffset(int nTSOffset, int speed, int nMajorVersion) {
+float LasersTSOffset::getAngleOffset(float nTSOffset, int speed, int nMajorVersion) {
   switch (nMajorVersion){
     case 1:
       return nTSOffset * speed * 6E-9;

@@ -346,6 +346,7 @@ class Convert {
 
   void DriverReadThread();
   void publishRawDataThread();
+  void publishPointsThread();
   void processGps(pandar_msgs::PandarGps &gpsMsg);
   void pushLiDARData(pandar_msgs::PandarPacket packet);
   int processLiDARData();

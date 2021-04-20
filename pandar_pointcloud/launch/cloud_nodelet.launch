@@ -16,7 +16,7 @@
   <arg name="read_once" default="false" />
   <arg name="repeat_delay" default="0.0" />
   <arg name="rpm" default="600.0" />
-  <arg name="firetime_file"  default="$(find pandar_pointcloud)/params/Pandar128_Correction.csv"/>
+  <arg name="firetime_file"  default="$(find pandar_pointcloud)/params/Pandar128_Firetimes.csv"/>
   <arg name="namespace" default="hesai"/>
   <arg name="coordinate_correction_flag" default="false" />
   <arg name="cert_file" default="" />

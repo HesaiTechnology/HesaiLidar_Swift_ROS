@@ -103,11 +103,11 @@ PandarDriver::PandarDriver(ros::NodeHandle node, ros::NodeHandle private_nh,
   if (dump_file != "")  // have PCAP file?
   {
     // read data from packet capture file
-    input_.reset(new pandar_pointcloud::InputPCAP(private_nh, udp_port,
+    m_spInput.reset(new pandar_pointcloud::InputPCAP(private_nh, udp_port,
                                                   packet_rate, dump_file));
   } else {
     // read data from live socket
-    input_.reset(new pandar_pointcloud::InputSocket(private_nh, udp_port));
+    m_spInput.reset(new pandar_pointcloud::InputSocket(private_nh, udp_port));
   }
   // ROS_WARN("drive nodeType[%s]", nodeType.c_str());
   // ROS_WARN("drive publishmodel[%s]", publishmodel.c_str());
@@ -182,7 +182,7 @@ bool PandarDriver::poll(void) {
   // reading and publishing scans as fast as possible.
   // ROS_WARN("PandarDriver::poll(void),readpacket[%d]",readpacket);
   if(!m_bGetScanArraySizeFlag){
-    m_iPandarScanArraySize = getPandarScanArraySize(input_);
+    m_iPandarScanArraySize = getPandarScanArraySize(m_spInput);
     pandarScanArray[m_iScanPushIndex]->packets.resize(m_iPandarScanArraySize);
     pandarScanArray[m_iScanPopIndex]->packets.resize(m_iPandarScanArraySize);
     m_bGetScanArraySizeFlag = true;
@@ -192,7 +192,7 @@ bool PandarDriver::poll(void) {
     // {
     // keep reading until full packet received
     PandarPacket packet;
-    int rc = input_->getPacket(&packet);
+    int rc = m_spInput->getPacket(&packet);
     pandarScanArray[m_iScanPushIndex]->packets[i].stamp = packet.stamp;
     pandarScanArray[m_iScanPushIndex]->packets[i].size = packet.size;
     pandarScanArray[m_iScanPushIndex]->packets[i].data.resize(packet.size);
@@ -248,7 +248,7 @@ bool PandarDriver::poll(void) {
 }
 
 void PandarDriver::publishRawData() {
-  uint32_t start = GetTickCount();
+  // uint32_t start = GetTickCount();
 
   if (m_bNeedPublish) {
     // ROS_WARN("PandarDriver::publishRawData()[%d]", m_iScanPopIndex);
@@ -262,9 +262,13 @@ void PandarDriver::publishRawData() {
     usleep(1000);
   }
 
-  uint32_t end = GetTickCount();
-  uint32_t delta = end - start;
+  // uint32_t end = GetTickCount();
+  // uint32_t delta = end - start;
   // if (delta > 50) ROS_WARN("publishRawData, time %dms", delta);
+}
+
+void PandarDriver::setUdpVersion(uint8_t major, uint8_t minor) {
+	m_spInput->setUdpVersion(major, minor);
 }
 
 void PandarDriver::callback(pandar_pointcloud::CloudNodeConfig &config,
@@ -273,19 +277,27 @@ void PandarDriver::callback(pandar_pointcloud::CloudNodeConfig &config,
   // config_.time_offset = config.time_offset;
 }
 
-int PandarDriver::getPandarScanArraySize(boost::shared_ptr<Input> input_){
+int PandarDriver::getPandarScanArraySize(boost::shared_ptr<Input> m_spInput){
   for (int i = 0; i < 256; ++i) {
     PandarPacket packet;
-    int rc = input_->getPacket(&packet);
-    switch (packet.data[PANDAR_LASER_NUMBER_INDEX]){
-    case PANDAR128_LASER_NUM:
-      return PANDAR128_READ_PACKET_SIZE;
-    case PANDAR80_LASER_NUM:
-      return PANDAR80_READ_PACKET_SIZE;
-    case PANDAR64S_LASER_NUM:
-      return PANDAR64S_READ_PACKET_SIZE;
-    case PANDAR40S_LASER_NUM:
-      return PANDAR40S_READ_PACKET_SIZE;
+    int rc = m_spInput->getPacket(&packet);
+    switch (packet.data[PANDAR_MAJOR_VERSION_INDEX])
+    {
+    case UDP_VERSION_MAJOR_1:
+      switch (packet.data[PANDAR_LASER_NUMBER_INDEX]){
+        case PANDAR128_LASER_NUM:
+          return PANDAR128_READ_PACKET_SIZE;
+        case PANDAR80_LASER_NUM:
+          return PANDAR80_READ_PACKET_SIZE;
+        case PANDAR64S_LASER_NUM:
+          return PANDAR64S_READ_PACKET_SIZE;
+        case PANDAR40S_LASER_NUM:
+          return PANDAR40S_READ_PACKET_SIZE;
+        default:
+          break;
+      }
+    case UDP_VERSION_MAJOR_3:
+    return PANDARQT128_READ_PACKET_SIZE;
     default:
       break;
     }

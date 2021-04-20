@@ -27,10 +27,12 @@
 
 typedef struct PandarGPS_s PandarGPS;
 #define PANDAR128_READ_PACKET_SIZE (1800)
+#define PANDARQT128_READ_PACKET_SIZE (200)
 #define PANDAR80_READ_PACKET_SIZE (500)
 #define PANDAR64S_READ_PACKET_SIZE (400)
 #define PANDAR40S_READ_PACKET_SIZE (100)
 #define PANDAR_LASER_NUMBER_INDEX (6)
+#define PANDAR_MAJOR_VERSION_INDEX (2)
 
 namespace pandar_pointcloud {
 class Convert;
@@ -43,6 +45,7 @@ class PandarDriver {
 
   bool poll(void);
   void publishRawData();
+  void setUdpVersion(uint8_t major, uint8_t minor);
   int getPandarScanArraySize(boost::shared_ptr<Input>);
 
  private:
@@ -63,7 +66,7 @@ class PandarDriver {
     double time_offset;    ///< time in seconds added to each pandar time stamp
   } config_;
 
-  boost::shared_ptr<Input> input_;
+  boost::shared_ptr<Input> m_spInput;
   ros::Publisher output_;
   ros::Publisher gpsoutput_;
   bool m_bNeedPublish;

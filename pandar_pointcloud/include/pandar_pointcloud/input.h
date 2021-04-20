@@ -41,6 +41,14 @@
 
 #include <ros/ros.h>
 #include <pandar_msgs/PandarPacket.h>
+#define UDP_VERSION_MAJOR_1 (1)
+#define UDP_VERSION_MINOR_3 (3)
+#define UDP_VERSION_MINOR_4 (4)
+#define UDP_VERSION_MAJOR_3 (3)
+#define UDP_VERSION_MINOR_2 (2)
+#define UDP_VERSION_1_3 "1.3"
+#define UDP_VERSION_1_4 "1.4"
+#define UDP_VERSION_3_2 "3.2"
 #define PANDAR128_SOB_SIZE (2)
 #define PANDAR128_VERSION_MAJOR_SIZE (1)
 #define PANDAR128_VERSION_MINOR_SIZE (1)
@@ -78,6 +86,34 @@
 #define PANDAR128_SIGNATURE_SIZE (32)
 #define PANDAR128_SEQ_NUM_SIZE (4)
 
+enum enumIndex{
+	TIMESTAMP_INDEX,
+	UTC_INDEX,
+	SEQUENCE_NUMBER_INDEX,
+	PACKET_SIZE,
+};
+
+static std::map<enumIndex, int> udpVersion13 = {
+	{TIMESTAMP_INDEX, 796},
+	{UTC_INDEX, 802},
+	{SEQUENCE_NUMBER_INDEX, 817},
+	{PACKET_SIZE, 812},
+};
+
+static std::map<enumIndex, int> udpVersion14 = {
+	{TIMESTAMP_INDEX, 826},
+	{UTC_INDEX, 820},
+	{SEQUENCE_NUMBER_INDEX, 831},
+	{PACKET_SIZE, 893},
+};
+
+static std::map<enumIndex, int> udpVersion32 = {
+	{TIMESTAMP_INDEX, 826},
+	{UTC_INDEX, 820},
+	{SEQUENCE_NUMBER_INDEX, 831},
+	{PACKET_SIZE, 893},
+};
+
 typedef struct PandarPacket_s {
   ros::Time stamp;
   uint8_t data[1500];
@@ -108,14 +144,19 @@ namespace pandar_pointcloud
      */
     virtual int getPacket(PandarPacket *pkt) = 0;
     bool checkPacket(PandarPacket *pkt);
+    void setUdpVersion(uint8_t major, uint8_t minor);
+    std::string getUdpVersion();
 
   protected:
     ros::NodeHandle private_nh_;
     uint16_t port_;
     std::string devip_str_;
-    int ts_index;
-    int utc_index;
-    int seq_index;
+    std::string m_sUdpVresion;
+    bool m_bGetUdpVersion;
+    int m_iTimestampIndex;
+    int m_iUtcIindex;
+    int m_iSequenceNumberIndex;
+    int m_iPacketSize;
   };
 
   /** @brief Live pandar input from socket. */

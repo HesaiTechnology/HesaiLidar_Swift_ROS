@@ -73,3 +73,13 @@ PandarSwift_1.0.10
 
 ##modify
 1. Fix bug in parser half packets
+
+Wednesday, April 14th, 2021 17:30
+##version
+PandarSwiftROS_1.0.15
+
+##modify
+1. Add namespace parmeter for topic
+2. Optimize calculation efficiency
+3. Support QT128
+4. Fix bug in calculation firetime correction

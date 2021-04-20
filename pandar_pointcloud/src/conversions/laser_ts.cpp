@@ -21,12 +21,14 @@
 #include "laser_ts.h"
 #include <fstream>
 #include <sstream> 
+#include <iostream>
+#include <boost/algorithm/string.hpp>
 
 #define OFFSET1   (3148)
 #define OFFSET2   (-27778)
 #define PAI       (3.14159265358979323846)
 #define SEC_TO_NS (1000000000.0)
-#define SPEED     (3600.0 / SEC_TO_NS)
+#define SPEED     (600.0 / SEC_TO_NS)
 #define A_TO_R    (PAI / 180.0)
 #define R_TO_A    (180.0 / PAI)
 
@@ -35,6 +37,9 @@
 #define SEC_TO_US (1000000.0)
 #define SPEED_US  (3600.0 / SEC_TO_US)
 
+#define PANDAR128_COORDINATE_CORRECTION_H (0.04)
+#define PANDAR128_COORDINATE_CORRECTION_B (0.012)
+
 LasersTSOffset::LasersTSOffset() {
   mBInitFlag = false;
   mNLaserNum = 0;
@@ -42,21 +47,17 @@ LasersTSOffset::LasersTSOffset() {
   for (int j = 0; j < CIRCLE; j++) {
     float angle = static_cast<float>(j) / 100.0f;
 
-    mCosAllAngle[j] = cosf(A_TO_R * angle);
-    mSinAllAngle[j] = sinf(A_TO_R * angle);
+    mSinAllAngleHB[j] = sinf(A_TO_R * angle) * sqrtf(PANDAR128_COORDINATE_CORRECTION_B * PANDAR128_COORDINATE_CORRECTION_B  + PANDAR128_COORDINATE_CORRECTION_H * PANDAR128_COORDINATE_CORRECTION_H);
+    mSinAllAngleH[j] = sinf(A_TO_R * angle) * PANDAR128_COORDINATE_CORRECTION_H;
   }
 
   for (int j = 0; j < PAI_ANGLE; j++) {
-    float angle = static_cast<float>(j) / 100.0f - 90.0f;
-    mSinPAIAngle[j] = sinf(angle * A_TO_R);
+    mArcSin[j] = asinf(float(j - HALF_PAI_ANGLE) / HALF_PAI_ANGLE);
   }
 
-  for (int j = 0; j < HALF_PAI_ANGLE - 1; j++) {
-    float angle = static_cast<float>(j) / 100.0f;
-    mTanPAIAngle[j] = tanf(angle * A_TO_R);
-  }
-
-  mTanPAIAngle[HALF_PAI_ANGLE-1] = mTanPAIAngle[HALF_PAI_ANGLE-2];
+  mShortOffsetIndex.resize(100);
+  mLongOffsetIndex.resize(100);
+  m_fArctanHB = atanf(PANDAR128_COORDINATE_CORRECTION_B / PANDAR128_COORDINATE_CORRECTION_H) + 0.5f;
 }
 
 LasersTSOffset::~LasersTSOffset() {
@@ -70,16 +71,17 @@ void LasersTSOffset::setFilePath(std::string file) {
   if (std::getline(fin, line)) { //first line sequence,chn id,firetime/us
     printf("Parse Lidar firetime now...\n");
   }
-  if (line == "sequence,chn id,firetime/us"){
-    printf("Parse P80 Lidar firetime now...\n");
+  std::vector<std::string>  firstLine;
+  boost::split(firstLine, line, boost::is_any_of(","));
+  if (firstLine.size() == 2){
     while (std::getline(fin, line)) {
       int sequence = 0;
       int chnId = 0;
       float firetime;
       std::stringstream ss(line);
       std::string subline;
-      std::getline(ss, subline, ',');
-      std::stringstream(subline) >> sequence;
+      // std::getline(ss, subline, ',');
+      // std::stringstream(subline) >> sequence;
       std::getline(ss, subline, ',');
       std::stringstream(subline) >> chnId;
       std::getline(ss, subline, ',');
@@ -120,12 +122,11 @@ void LasersTSOffset::setFilePath(std::string file) {
     }
 
     for (int i = 0; i < mode.size(); i++) {
-      std::pair<int, int> key(mode[i], state[i]);
-
+      int index = mode[i] * 10 + state[i];
       if (i % 2 == 0) {
-        mLongOffsetIndex[key] = i;
+        mLongOffsetIndex[index] = i;
       } else {
-        mShortOffsetIndex[key] = i;
+        mShortOffsetIndex[index] = i;
       }
     }
 
@@ -167,20 +168,22 @@ void LasersTSOffset::fillVector(char *pContent, int nLen, std::vector<int> &vec)
   }
 }
 
-int LasersTSOffset::getTSOffset(int nLaser, int nMode, int nState, float fDistance, int nLaserNum) {
-  switch (nLaserNum){
-    case PANDAR80_LIDAR_NUM:
-      return m_fAzimuthOffset[nLaser];
-    default:
+float LasersTSOffset::getTSOffset(int nLaser, int nMode, int nState, float fDistance, int nMajorVersion) {
+  switch (nMajorVersion){
+    case 1:
       if (nLaser >= mNLaserNum || !mBInitFlag) {
         return 0;
       }
       if (fDistance >= mFDist) {
-        return mVLasers[nLaser][mLongOffsetIndex[std::pair<int, int>(nMode, nState)]];
+        return mVLasers[nLaser][mLongOffsetIndex[nMode * 10 + nState]];
       } 
       else {
-        return mVLasers[nLaser][mShortOffsetIndex[std::pair<int, int>(nMode, nState)]];
+        return mVLasers[nLaser][mShortOffsetIndex[nMode * 10 + nState]];
       }
+    case 3:
+      return m_fAzimuthOffset[nLaser];
+    default:
+      return 0;
   }
 }
 
@@ -207,24 +210,21 @@ int LasersTSOffset::getBlockTS(int nBlock, int nRetMode, int nMode, int nLaserNu
   }
 }
 
-float LasersTSOffset::getAngleOffset(int nTSOffset, int nLaserId, int nLaserNum) {
-  switch (nLaserNum){
-    case PANDAR80_LIDAR_NUM:
-      return m_fAzimuthOffset[nLaserId] * SPEED_US;
+float LasersTSOffset::getAngleOffset(float nTSOffset, int speed, int nMajorVersion) {
+  switch (nMajorVersion){
+    case 1:
+      return nTSOffset * speed * 6E-9;
+    case 3:
+      return nTSOffset * speed * 6E-6;
     default:
-      return static_cast<float>(nTSOffset) * SPEED;
+      return 0;
   }
 }
 
 
 float LasersTSOffset::getAzimuthOffset(std::string type, float azimuth, \
     float originAzimuth, float distance) {
-  int   a     = -1;
-  float b     = 0.012f;
-  float h     = 0.04f;
-  float value = b / h;
-  int   angle = static_cast<int>(100 * (atanAngle(value) + \
-      (azimuth - originAzimuth)) + 0.5f);
+  int  angle = static_cast<int>(100 * (m_fArctanHB + azimuth - originAzimuth));
 
   if (angle < 0) {
     angle += CIRCLE;
@@ -236,16 +236,17 @@ float LasersTSOffset::getAzimuthOffset(std::string type, float azimuth, \
     return 0;
   }
 
-  value = sqrtf(b * b  + h * h) / distance * mSinAllAngle[angle];
-
-  return a * asinAngle(value);
+  float value = mSinAllAngleHB[angle] / distance;
+  if(value < -1 || value > 1)
+    return 0;
+  int index = int(value * HALF_PAI_ANGLE) + HALF_PAI_ANGLE;
+  if(index < 0 || index > PAI_ANGLE -1)
+    return 0;
+  return -mArcSin[index];
 }
 
 float LasersTSOffset::getPitchOffset(std::string type, float pitch, float distance) {
-  int   a     = -1;
-  float b     = 0.012f;
-  float h     = 0.04;
-  int   angle = static_cast<int>(100 * pitch + 0.5f);
+  int  angle = static_cast<int>(100 * pitch + 0.5f);
 
   if (angle < 0) {
     angle += CIRCLE;
@@ -253,59 +254,12 @@ float LasersTSOffset::getPitchOffset(std::string type, float pitch, float distan
     angle -= CIRCLE;
   }
 
-  float value = h / distance * mSinAllAngle[angle];
-
-  return a * asinAngle(value);
+  float value =  mSinAllAngleH[angle] / distance;
+  if(value < -1.0 || value > 1.0)
+    return 0;
+  int index = int(value * HALF_PAI_ANGLE) + HALF_PAI_ANGLE;
+  if(index < 0 || index > PAI_ANGLE -1)
+    return 0;
+  return -mArcSin[index];
 }
 
-float LasersTSOffset::atanAngle(float value) {
-  int i = 0;
-  int j = HALF_PAI_ANGLE - 1;
-
-  if (value < mTanPAIAngle[0]) {
-    return 0.0f;
-  } else if (value > mTanPAIAngle[HALF_PAI_ANGLE-1]) {
-    return 90.0f;
-  }
-
-  while (i < j - 2) {
-    int mid = (i + j) / 2;
-    if (mTanPAIAngle[mid] < value) {
-      i = mid;
-      mid = (i + j) / 2;
-    } else if (mTanPAIAngle[mid] > value) {
-      j = mid;
-      mid = (i + j) / 2;
-    } else {
-      return (mid / 100.0f);
-    }
-  }
-
-  return (i + j) / 2 / 100.0f;
-}
-
-float LasersTSOffset::asinAngle(float value) {
-  int i = 0;
-  int j = PAI_ANGLE - 1;
-
-  if (value < mSinPAIAngle[0]) {
-    return -90.0f;
-  } else if (value > mSinPAIAngle[PAI_ANGLE-1]) {
-    return 90.0f;
-  }
-
-  while (i < j - 2) {
-    int mid = (i + j) / 2;
-    if (mSinPAIAngle[mid] < value) {
-      i = mid;
-      mid = (i + j) / 2;
-    } else if (mSinPAIAngle[mid] > value) {
-      j = mid;
-      mid = (i + j) / 2;
-    } else {
-      return (mid / 100.0f - 90.0f);
-    }
-  }
-
-  return (i + j) / 2 / 100.0f - 90.0f;
-}

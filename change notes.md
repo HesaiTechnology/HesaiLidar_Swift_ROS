@@ -83,3 +83,12 @@ PandarSwiftROS_1.0.15
 2. Optimize calculation efficiency
 3. Support QT128
 4. Fix bug in calculation firetime correction
+
+Monday, April 26th, 2021 20:30
+##version
+PandarSwiftROS_1.0.16
+
+##modify
+1. Fix bug in calculate cosAllAngle and sinAllAngle
+
+

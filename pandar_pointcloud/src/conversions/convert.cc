@@ -85,7 +85,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "PandarSwiftROS_1.0.15";
+  m_sRosVersion = "PandarSwiftROS_1.0.16";
   ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -937,13 +937,13 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
         if(m_bCoordinateCorrectionFlag){
           pitch += m_objLaserOffset.getPitchOffset(m_sFrameId, pitch, distance);
         }
-				if(pitch < 0) {
-					pitch += 360.0f;
-				} 
-				else if(pitch >= 360.0f) {
-					pitch -= 360.0f;
-				}
-				float xyDistance = distance * m_fCosAllAngle[static_cast<int>(pitch * 100 + 0.5)];
+				int pitchIdx = static_cast<int>(pitch * 100 + 0.5);
+        if (pitchIdx  >= CIRCLE) {
+          pitchIdx  -= CIRCLE;
+        } else if (pitchIdx  < 0) {
+          pitchIdx  += CIRCLE;
+        }
+				float xyDistance = distance * m_fCosAllAngle[pitchIdx];
         if(m_bCoordinateCorrectionFlag){
           azimuth += m_objLaserOffset.getAzimuthOffset(m_sFrameId, originAzimuth, block.fAzimuth / 100.0f, xyDistance);
         }
@@ -956,7 +956,7 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 				}
 				point.x = xyDistance * m_fSinAllAngle[azimuthIdx];
 				point.y = xyDistance * m_fCosAllAngle[azimuthIdx];
-				point.z = distance * m_fSinAllAngle[static_cast<int>(pitch * 100 + 0.5)];
+				point.z = distance * m_fSinAllAngle[pitchIdx];
 				point.intensity = unit.u8Intensity;
 				point.timestamp = unix_second + (static_cast<double>(pkt.tail.nTimestamp)) / 1000000.0;
 				point.timestamp = point.timestamp + m_objLaserOffset.getBlockTS(blockid, pkt.tail.nReturnMode, mode, pkt.head.u8LaserNum) / 1000000000.0 + offset / 1000000000.0;
@@ -1039,14 +1039,15 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
         if(m_bCoordinateCorrectionFlag){
           pitch += m_objLaserOffset.getPitchOffset(m_sFrameId, pitch, distance);
         }
-        if (pitch < 0) {
-          pitch += 360.0f;
-        } else if (pitch >= 360.0f) {
-          pitch -= 360.0f;
+        int pitchIdx = static_cast<int>(pitch * 100 + 0.5);
+        if (pitchIdx  >= CIRCLE) {
+          pitchIdx  -= CIRCLE;
+        } else if (pitchIdx  < 0) {
+          pitchIdx  += CIRCLE;
         }
 
         float xyDistance =
-            distance * m_fCosAllAngle[static_cast<int>(pitch * 100 + 0.5)];
+            distance * m_fCosAllAngle[pitchIdx];
         if(m_bCoordinateCorrectionFlag){
           azimuth += m_objLaserOffset.getAzimuthOffset(m_sFrameId, originAzimuth, u16Azimuth / 100.0f, xyDistance);
         }
@@ -1060,7 +1061,7 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 
         point.x = xyDistance * m_fSinAllAngle[azimuthIdx];
         point.y = xyDistance * m_fCosAllAngle[azimuthIdx];
-        point.z = distance * m_fSinAllAngle[static_cast<int>(pitch * 100 + 0.5)];
+        point.z = distance * m_fSinAllAngle[pitchIdx];
 
         point.intensity = u8Intensity;
         point.timestamp =
@@ -1152,14 +1153,15 @@ void Convert::calcQT128PointXYZIT(pandar_msgs::PandarPacket &packet, int cursor)
 #ifdef FIRETIME_CORRECTION_CHECK 
         ROS_WARN("Laser ID = %d, speed = %d, origin azimuth = %f, azimuth = %f, delt = %f", i + 1, tail->nMotorSpeed, originAzimuth, azimuth, azimuth - originAzimuth);  
 #endif  
-      if (pitch < 0) {
-        pitch += 360.0f;
-      } else if (pitch >= 360.0f) {
-        pitch -= 360.0f;
+      int pitchIdx = static_cast<int>(pitch * 100 + 0.5);
+      if (pitchIdx  >= CIRCLE) {
+        pitchIdx  -= CIRCLE;
+      } else if (pitchIdx  < 0) {
+        pitchIdx  += CIRCLE;
       }
 
       float xyDistance =
-          distance * m_fCosAllAngle[static_cast<int>(pitch * 100 + 0.5)];
+          distance * m_fCosAllAngle[pitchIdx];
 
       int azimuthIdx = static_cast<int>(azimuth * 100 + 0.5);
       if (azimuthIdx >= CIRCLE) {
@@ -1170,7 +1172,7 @@ void Convert::calcQT128PointXYZIT(pandar_msgs::PandarPacket &packet, int cursor)
 
       point.x = xyDistance * m_fSinAllAngle[azimuthIdx];
       point.y = xyDistance * m_fCosAllAngle[azimuthIdx];
-      point.z = distance * m_fSinAllAngle[static_cast<int>(pitch * 100 + 0.5)];
+      point.z = distance * m_fSinAllAngle[pitchIdx];
 
       point.intensity = u8Intensity;
       point.timestamp =

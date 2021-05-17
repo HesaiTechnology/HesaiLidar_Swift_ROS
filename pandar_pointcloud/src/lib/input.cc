@@ -65,7 +65,7 @@ Input::Input(ros::NodeHandle private_nh, uint16_t port)
 bool Input::checkPacket(PandarPacket *pkt) {
   if(pkt->size < 100)
   return false;
-  if (pkt->data[0] != 0xEE && pkt->data[1] != 0xFF && pkt->data[2] != 1 ) {    
+  if (pkt->data[0] != 0xEE && pkt->data[1] != 0xFF) {    
     ROS_WARN("Packet with invaild delimiter\n");
     return false;
   }

@@ -90,6 +90,36 @@ void LasersTSOffset::setFilePath(std::string file) {
       m_fAzimuthOffset[chnId - 1] = firetime;
     }
   }
+  else if(firstLine.size() == 5){
+    std::getline(fin, line);
+    std::getline(fin, line);
+    while (std::getline(fin, line)) {
+      int sequence = 0;
+      int chnIdCDB = 0;
+      int chnIdCDA = 0;
+      float firetimeCDB;
+      float firetimeCDA;
+      std::string blank;
+      std::stringstream ss(line);
+      std::string subline;
+      // std::getline(ss, subline, ',');
+      // std::stringstream(subline) >> sequence;
+      std::getline(ss, subline, ',');
+      std::stringstream(subline) >> chnIdCDB;
+      std::getline(ss, subline, ',');
+      std::stringstream(subline) >> firetimeCDB;
+      // printf("chnIdCDB, firetimeCDB:[%d][%f]  ", chnIdCDB, firetimeCDB);
+      m_fCDBAzimuthOffset[chnIdCDB - 1] = firetimeCDB;
+      std::getline(ss, subline, ',');
+      std::stringstream(subline) >> blank;
+      std::getline(ss, subline, ',');
+      std::stringstream(subline) >> chnIdCDA;
+      std::getline(ss, subline, ',');
+      std::stringstream(subline) >> firetimeCDA;
+      // printf("chnIdCDA, firetimeCDA:[%d][%f]\n", chnIdCDA, firetimeCDA);
+      m_fCDAAzimuthOffset[chnIdCDA - 1] = firetimeCDA;
+    }
+  }
   else{
     fin.close();
     FILE             *pFile       = fopen(file.c_str(), "r");
@@ -181,7 +211,12 @@ float LasersTSOffset::getTSOffset(int nLaser, int nMode, int nState, float fDist
         return mVLasers[nLaser][mShortOffsetIndex[nMode * 10 + nState]];
       }
     case 3:
-      return m_fAzimuthOffset[nLaser];
+      switch (nMode){
+        case 0:
+          return m_fCDAAzimuthOffset[nLaser];
+        case 1:
+          return m_fCDBAzimuthOffset[nLaser];
+      }
     default:
       return 0;
   }

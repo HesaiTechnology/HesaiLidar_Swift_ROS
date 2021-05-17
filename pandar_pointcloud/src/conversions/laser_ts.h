@@ -58,6 +58,8 @@ class LasersTSOffset {
     float                              mSinAllAngleH[CIRCLE];
     float                              mArcSin[PAI_ANGLE];
     float                              m_fAzimuthOffset[PANDAR128_LIDAR_NUM];
+    float                              m_fCDAAzimuthOffset[PANDAR128_LIDAR_NUM];
+    float                              m_fCDBAzimuthOffset[PANDAR128_LIDAR_NUM];
     float                              m_fArctanHB;
 
     void fillVector(char *pContent, int nLen, std::vector<int> &vec);

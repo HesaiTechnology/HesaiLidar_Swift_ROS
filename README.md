@@ -7,9 +7,9 @@ Developed based on [HesaiLidar_Swift_SDK](https://github.com/HesaiTechnology/Hes
 
 ## Branches 
 ```
-* master: Pandar LiDAR ROS driver for Ubuntu 18.04 supports the latest UDP protocol v1.4 v1.3 and v3.2 
+* master: Pandar LiDAR ROS driver for Ubuntu 18.04 and Ubuntu20.04 supports the latest UDP protocol v1.4 v1.3 and v3.2 
 * UDP1.4_ubuntu16.04: Pandar LiDAR ROS driver for Ubuntu 16.04 supports the latest UDP protocol v1.4
-* UDP1.3: Pandar LiDAR ROS driver for ubuntu16.04 and ubuntu 18.04 supports UDP protocol v1.3 
+* UDP1.3: Pandar LiDAR ROS driver for ubuntu16.04,ubuntu 18.04 and Ubuntu 20.04 supports UDP protocol v1.3 
 
 To get the UDP protocol version number of your device,  check the UDP package header field.
 ```
@@ -18,7 +18,8 @@ To get the UDP protocol version number of your device,  check the UDP package he
 ```
 　Recommanded:  
 　Ubuntu 16.04 - with ROS kinetic desktop-full installed or  
-　Ubuntu 18.04 - with ROS melodic desktop-full installed  
+　Ubuntu 18.04 - with ROS melodic desktop-full installed or 
+  Ubuntu 20.04 - with ROS noetic desktop-full installed
 　Check resources on http://ros.org for installation guide 
 ```
 **Compiler version requirement**
@@ -83,15 +84,6 @@ Data source will be read from pcap file instead of LiDAR once "pcap_file" not em
 
 
 ## Run
-
-Set UDP buffer default size
-```
-$sudo sysctl -w net.core.rmem_default=26214400
-```
-Enter super user mode
-```
-$sudo -s
-```
 
 ### View the point clouds from connected LiDAR
 

@@ -85,7 +85,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "PandarSwiftROS_1.0.16";
+  m_sRosVersion = "PandarSwiftROS_1.0.17";
   ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -1111,6 +1111,9 @@ void Convert::calcQT128PointXYZIT(pandar_msgs::PandarPacket &packet, int cursor)
               PANDAR128_AZIMUTH_SIZE * header->u8BlockNum + 
               PANDAR128_CRC_SIZE + 
               (header->hasFunctionSafety()? PANDAR128_FUNCTION_SAFETY_SIZE : 0));
+  if (packet.data[0] != 0xEE && packet.data[1] != 0xFF) {    
+    return ;
+  }
   struct tm t = {0};
 
   t.tm_year = tail->nUTCTime[0];
@@ -1126,6 +1129,7 @@ void Convert::calcQT128PointXYZIT(pandar_msgs::PandarPacket &packet, int cursor)
   int index = 0;
   index += PANDAR128_HEAD_SIZE;
   for (int blockid = 0; blockid < header->u8BlockNum; blockid++) {
+    bool firetimeCorrectionMode = (blockid % 2 == 0) ? (tail->nReserved2[2] & 1) : (tail->nReserved2[2] & 2);
     uint16_t u16Azimuth = *(uint16_t*)(&packet.data[0] + index);
     // ROS_WARN("#####block.fAzimuth[%u]",u16Azimuth);
     index += PANDAR128_AZIMUTH_SIZE;
@@ -1148,10 +1152,10 @@ void Convert::calcQT128PointXYZIT(pandar_msgs::PandarPacket &packet, int cursor)
       float azimuth = m_fHorizatalAzimuth[i] + (u16Azimuth / 100.0f);
       float originAzimuth = azimuth;
       float pitch = m_fElevAngle[i];
-      float offset = m_bClockwise ? m_objLaserOffset.getTSOffset(i, mode, state, distance, m_u8UdpVersionMajor) : -m_objLaserOffset.getTSOffset(i, mode, state, distance, m_u8UdpVersionMajor);
+      float offset = m_bClockwise ? m_objLaserOffset.getTSOffset(i, firetimeCorrectionMode, state, distance, m_u8UdpVersionMajor) : -m_objLaserOffset.getTSOffset(i, firetimeCorrectionMode, state, distance, m_u8UdpVersionMajor);
       azimuth += m_objLaserOffset.getAngleOffset(offset, tail->nMotorSpeed, m_u8UdpVersionMajor);
 #ifdef FIRETIME_CORRECTION_CHECK 
-        ROS_WARN("Laser ID = %d, speed = %d, origin azimuth = %f, azimuth = %f, delt = %f", i + 1, tail->nMotorSpeed, originAzimuth, azimuth, azimuth - originAzimuth);  
+        ROS_WARN("Laser ID = %d, speed = %d, correction mode = %d, block id = %d, origin azimuth = %f, azimuth = %f, delt = %f", i + 1, tail->nMotorSpeed, firetimeCorrectionMode, blockid, originAzimuth, azimuth, azimuth - originAzimuth);  
 #endif  
       int pitchIdx = static_cast<int>(pitch * 100 + 0.5);
       if (pitchIdx  >= CIRCLE) {

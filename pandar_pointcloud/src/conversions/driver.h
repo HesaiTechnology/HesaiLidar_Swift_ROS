@@ -16,14 +16,16 @@
 #ifndef _PANDAR_DRIVER_H_
 #define _PANDAR_DRIVER_H_ 1
 
-#include <diagnostic_updater/diagnostic_updater.h>
-#include <diagnostic_updater/publisher.h>
-#include <dynamic_reconfigure/server.h>
-#include <ros/ros.h>
+// #include <diagnostic_updater/diagnostic_updater.h>
+// #include <diagnostic_updater/publisher.h>
+// #include <dynamic_reconfigure/server.h>
+// #include <ros/ros.h>
 #include <string>
+#include <rclcpp/rclcpp.hpp>
 
-#include <pandar_pointcloud/CloudNodeConfig.h>
+// #include <pandar_pointcloud/CloudNodeConfig.h>
 #include <pandar_pointcloud/input.h>
+#include <rclcpp_action/rclcpp_action.hpp>
 
 typedef struct PandarGPS_s PandarGPS;
 #define PANDAR128_READ_PACKET_SIZE (1800)
@@ -39,7 +41,7 @@ class Convert;
 
 class PandarDriver {
  public:
-  PandarDriver(ros::NodeHandle node, ros::NodeHandle private_nh,
+  PandarDriver(rclcpp::Node::SharedPtr& private_nh,
                std::string nodetype, pandar_pointcloud::Convert *convert);
   ~PandarDriver() {}
 
@@ -50,12 +52,12 @@ class PandarDriver {
 
  private:
   /// Callback for dynamic reconfigure
-  void callback(pandar_pointcloud::CloudNodeConfig &config, uint32_t level);
+  // void callback(pandar_pointcloud::CloudNodeConfig &config, uint32_t level);
 
   /// Pointer to dynamic reconfigure service srv_
-  boost::shared_ptr<
-      dynamic_reconfigure::Server<pandar_pointcloud::CloudNodeConfig> >
-      srv_;
+  // boost::shared_ptr<
+  //     dynamic_reconfigure::Server<pandar_pointcloud::CloudNodeConfig> >
+  //     srv_;
 
   // configuration parameters
   struct {
@@ -67,10 +69,10 @@ class PandarDriver {
   } config_;
 
   boost::shared_ptr<Input> m_spInput;
-  ros::Publisher output_;
-  ros::Publisher gpsoutput_;
+  rclcpp::Publisher<pandar_pointcloud::msg::PandarScan>::SharedPtr output_;
+  rclcpp::Publisher<pandar_pointcloud::msg::PandarGps>::SharedPtr gpsoutput_;
   bool m_bNeedPublish;
-  std::array<pandar_msgs::PandarScanPtr, 2> pandarScanArray;
+  std::array<pandar_pointcloud::msg::PandarScan::SharedPtr, 2> pandarScanArray;
   int m_iScanPushIndex;
   int m_iScanPopIndex;
   pthread_mutex_t piclock;
@@ -78,10 +80,10 @@ class PandarDriver {
   bool m_bGetScanArraySizeFlag;
 
   /** diagnostics updater */
-  diagnostic_updater::Updater diagnostics_;
+  // diagnostic_updater::Updater diagnostics_;
   double diag_min_freq_;
   double diag_max_freq_;
-  boost::shared_ptr<diagnostic_updater::TopicDiagnostic> diag_topic_;
+  // boost::shared_ptr<diagnostic_updater::TopicDiagnostic> diag_topic_;
   std::string publishmodel;
   std::string nodeType;
 

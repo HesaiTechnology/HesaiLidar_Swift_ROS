@@ -19,28 +19,24 @@
 #ifndef _PANDAR_POINTCLOUD_CONVERT_H_
 #define _PANDAR_POINTCLOUD_CONVERT_H_ 1
 
-#include <pandar_pointcloud/rawdata.h>
 #include <pthread.h>
-#include <ros/ros.h>
 #include <semaphore.h>
-#include <sensor_msgs/PointCloud2.h>
-
-#include <dynamic_reconfigure/server.h>
-#include <image_transport/image_transport.h>
-#include <pandar_msgs/PandarGps.h>
-#include <pandar_msgs/PandarPacket.h>
-#include <pandar_msgs/PandarScan.h>
-#include <pandar_pointcloud/CloudNodeConfig.h>
-#include <pandar_pointcloud/calibration.h>
+#include <rclcpp/rclcpp.hpp>
+#include <pcl_conversions/pcl_conversions.h>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <pandar_pointcloud/msg/pandar_gps.hpp>
+#include <pandar_pointcloud/msg/pandar_packet.hpp>
+#include <pandar_pointcloud/msg/pandar_scan.hpp>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
-#include <pcl_conversions/pcl_conversions.h>
 #include <boost/atomic.hpp>
 #include <boost/lockfree/queue.hpp>
 #include "driver.h"
 #include "laser_ts.h"
 #include "tcp_command_client.h"
 #include <vector>
+#include "point_types.h"
+#include <rclcpp_action/rclcpp_action.hpp>
 
 #ifndef CIRCLE
 #define CIRCLE (36000)
@@ -255,7 +251,7 @@ struct PandarGPS_s {
   uint32_t fineTime;
 };
 
-typedef std::array<pandar_msgs::PandarPacket, 36000> PktArray;
+typedef std::array<pandar_pointcloud::msg::PandarPacket, 36000> PktArray;
 
 typedef struct PacketsBuffer_s {
   PktArray m_buffers{};
@@ -271,7 +267,7 @@ typedef struct PacketsBuffer_s {
     m_iterTaskEnd = m_iterTaskBegin + m_stepSize;
     m_startFlag = false;
   }
-  inline int push_back(pandar_msgs::PandarPacket pkt) {
+  inline int push_back(pandar_pointcloud::msg::PandarPacket pkt) {
     if (!m_startFlag) {
       *(m_iterPush++) = pkt;
       m_startFlag = true;
@@ -286,7 +282,7 @@ typedef struct PacketsBuffer_s {
       if (m_iterPush == m_iterTaskBegin) {
         static uint32_t tmp = m_iterTaskBegin - m_buffers.begin();
         if (m_iterTaskBegin - m_buffers.begin() != tmp) {
-          ROS_WARN("buffer don't have space!,%d",
+          printf("buffer don't have space!,%d",
                    m_iterTaskBegin - m_buffers.begin());
           tmp = m_iterTaskBegin - m_buffers.begin();
         }
@@ -295,7 +291,7 @@ typedef struct PacketsBuffer_s {
       }
       if (lastOverflowed) {
         lastOverflowed = false;
-        ROS_WARN("buffer recovered");
+        printf("buffer recovered");
       }
       *(m_iterPush++) = pkt;
       return 1;
@@ -312,7 +308,7 @@ typedef struct PacketsBuffer_s {
 	}
   inline void creatNewTask() {
     if (m_buffers.end() == m_iterTaskEnd) {
-      ROS_WARN("creat new task end to start");
+      printf("creat new task end to start");
       m_iterTaskBegin = m_buffers.begin();
       m_iterTaskEnd = m_iterTaskBegin + m_stepSize;
     }
@@ -340,26 +336,26 @@ typedef struct RedundantPoint_s {
 namespace pandar_pointcloud {
 class Convert {
  public:
-  Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
+  Convert(rclcpp::Node::SharedPtr& private_nh,
           std::string nod_typee = LIDAR_NODE_TYPE);
   ~Convert() {}
 
   void DriverReadThread();
   void publishRawDataThread();
   void publishPointsThread();
-  void processGps(pandar_msgs::PandarGps &gpsMsg);
-  void pushLiDARData(pandar_msgs::PandarPacket packet);
+  void processGps(pandar_pointcloud::msg::PandarGps &gpsMsg);
+  void pushLiDARData(pandar_pointcloud::msg::PandarPacket packet);
   int processLiDARData();
   void publishPoints();
 
  private:
-  void callback(pandar_pointcloud::CloudNodeConfig &config, uint32_t level);
-  void processScan(const pandar_msgs::PandarScan::ConstPtr &scanMsg);
-  void processGps(const pandar_msgs::PandarGps::ConstPtr &gpsMsg);
+  // void callback(pandar_pointcloud::CloudNodeConfig &config, uint32_t level);
+  void processScan(const pandar_pointcloud::msg::PandarScan::ConstPtr &scanMsg);
+  void processGps(const pandar_pointcloud::msg::PandarGps::ConstPtr &gpsMsg);
 
   int parseData(Pandar128PacketVersion13 &pkt, const uint8_t *buf, const int len);
-  void calcPointXYZIT(pandar_msgs::PandarPacket &pkt, int cursor);
-  void calcQT128PointXYZIT(pandar_msgs::PandarPacket &pkt, int cursor);
+  void calcPointXYZIT(pandar_pointcloud::msg::PandarPacket &pkt, int cursor);
+  void calcQT128PointXYZIT(pandar_pointcloud::msg::PandarPacket &pkt, int cursor);
   void doTaskFlow(int cursor);
   void loadOffsetFile(std::string file);
   int loadCorrectionFile(std::string correction_content);
@@ -372,15 +368,9 @@ class Convert {
   void SetEnvironmentVariableTZ();
   bool isNeedPublish();
 
-  /// Pointer to dynamic reconfigure service srv_
-  boost::shared_ptr<
-      dynamic_reconfigure::Server<pandar_pointcloud::CloudNodeConfig> >
-      srv_;
-
-  boost::shared_ptr<pandar_rawdata::RawData> data_;
-  ros::Subscriber pandar_scan_;
-  ros::Subscriber pandar_gps_;
-  ros::Publisher output_;
+  rclcpp::Subscription<pandar_pointcloud::msg::PandarScan>::SharedPtr pandar_scan_;
+  rclcpp::Subscription<pandar_pointcloud::msg::PandarGps>::SharedPtr pandar_gps_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr output_;
 
   /// configuration parameters
   typedef struct {
@@ -390,7 +380,6 @@ class Convert {
   Config config_;
 
   time_t gps1;
-  pandar_rawdata::gps_struct_t gps2;
   bool hasGps;
 
   unsigned int lastGPSSecond;
@@ -401,7 +390,6 @@ class Convert {
   pthread_mutex_t piclock;
   sem_t picsem;
   pthread_mutex_t m_RedundantPointLock;
-  // std::list<pandar_msgs::PandarPacket> LiDARDataSet;
 
   std::array<boost::shared_ptr<PPointCloud>, 2> m_OutMsgArray;
   std::vector<RedundantPoint> m_RedundantPointBuffer;

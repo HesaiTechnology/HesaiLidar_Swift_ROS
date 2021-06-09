@@ -201,7 +201,7 @@ int RawData::setupOffline(std::string calibration_file, double max_range_, doubl
 int RawData::parseRawData(raw_packet_t* packet, const uint8_t* buf, const int len)
 {
     if(len != PACKET_SIZE) {
-		ROS_WARN_STREAM("packet size mismatch!");
+		printf_STREAM("packet size mismatch!");
         return -1;
 	}
 
@@ -430,7 +430,7 @@ void RawData::toPointClouds (raw_packet_t* packet,int laser , int block,  PPoint
     }
 }
 
-int RawData::unpack(pandar_msgs::PandarPacket &packet, PPointCloud &pc, time_t& gps1 , 
+int RawData::unpack(pandar_pointcloud::msg::PandarPacket &packet, PPointCloud &pc, time_t& gps1 , 
                                             gps_struct_t &gps2 , double& firstStamp, int& lidarRotationStartAngle)
 {
     currentPacketStart = bufferPacketSize == 0 ? 0 :bufferPacketSize -1 ;
@@ -576,7 +576,7 @@ int RawData::unpack(pandar_msgs::PandarPacket &packet, PPointCloud &pc, time_t& 
     }
 }
 
-int RawData::unpack(const pandar_msgs::PandarScan::ConstPtr &scanMsg, PPointCloud &pc , time_t& gps1 , 
+int RawData::unpack(const pandar_pointcloud::msg::PandarScan::ConstPtr &scanMsg, PPointCloud &pc , time_t& gps1 , 
     gps_struct_t &gps2 , double& firstStamp, int& lidarRotationStartAngle)
 {
     currentPacketStart = bufferPacketSize == 0 ? 0 :bufferPacketSize -1 ;
@@ -945,7 +945,7 @@ int RawData::unpack(const pandar_msgs::PandarScan::ConstPtr &scanMsg, PPointClou
  *  @param pkt raw packet to unpack
  *  @param pc shared pointer to point cloud (points are appended)
  */
-void RawData::unpack(const pandar_msgs::PandarPacket &pkt, PPointCloud &pc)
+void RawData::unpack(const pandar_pointcloud::msg::PandarPacket &pkt, PPointCloud &pc)
 {
     ROS_DEBUG_STREAM("Received packet, time: " << pkt.stamp);
 

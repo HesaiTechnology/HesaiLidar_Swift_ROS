@@ -38,9 +38,11 @@
 #include <stdio.h>
 #include <pcap.h>
 #include <netinet/in.h>
+#include <map>
+#include <rclcpp/rclcpp.hpp>
 
-#include <ros/ros.h>
-#include <pandar_msgs/PandarPacket.h>
+// #include <ros/ros.h>
+// #include <pandar_pointcloud/msg/pandar_scan.hpp>
 #define UDP_VERSION_MAJOR_1 (1)
 #define UDP_VERSION_MINOR_3 (3)
 #define UDP_VERSION_MINOR_4 (4)
@@ -84,8 +86,7 @@
 #define PANDAR128_FUNCTION_SAFETY_SIZE (17)
 #define PANDAR128_IMU_SIZE (22)
 #define PANDAR128_SIGNATURE_SIZE (32)
-#define PANDAR128_SEQ_NUM_SIZE (4)
-
+#define PANDAR128_SEQ_NUM_SIZE (4) 
 enum enumIndex{
 	TIMESTAMP_INDEX,
 	UTC_INDEX,
@@ -115,7 +116,7 @@ static std::map<enumIndex, int> udpVersion32 = {
 };
 
 typedef struct PandarPacket_s {
-  ros::Time stamp;
+  double stamp;
   uint8_t data[1500];
   uint32_t size;
 } PandarPacket;
@@ -131,7 +132,7 @@ namespace pandar_pointcloud
   class Input
   {
   public:
-    Input(ros::NodeHandle private_nh, uint16_t port);
+    Input(rclcpp::Node::SharedPtr& private_nh, uint16_t port);
     virtual ~Input() {}
 
     /** @brief Read one pandar packet.
@@ -148,7 +149,7 @@ namespace pandar_pointcloud
     std::string getUdpVersion();
 
   protected:
-    ros::NodeHandle private_nh_;
+    rclcpp::Node::SharedPtr private_nh_;
     uint16_t port_;
     std::string devip_str_;
     std::string m_sUdpVresion;
@@ -163,7 +164,7 @@ namespace pandar_pointcloud
   class InputSocket: public Input
   {
   public:
-    InputSocket(ros::NodeHandle private_nh,
+    InputSocket(rclcpp::Node::SharedPtr& private_nh,
                 uint16_t port = DATA_PORT_NUMBER);
     virtual ~InputSocket();
 
@@ -191,7 +192,7 @@ namespace pandar_pointcloud
   class InputPCAP: public Input
   {
   public:
-    InputPCAP(ros::NodeHandle private_nh,
+    InputPCAP(rclcpp::Node::SharedPtr& private_nh,
               uint16_t port = DATA_PORT_NUMBER,
               double packet_rate = 0.0,
               std::string filename="",
@@ -204,7 +205,7 @@ namespace pandar_pointcloud
     void setDeviceIP( const std::string& ip );
 
   private:
-    ros::Rate packet_rate_;
+    double packet_rate_;
     std::string filename_;
     pcap_t *pcap_;
     bpf_program pcap_packet_filter_;

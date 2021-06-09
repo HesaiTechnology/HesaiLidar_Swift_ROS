@@ -1,78 +1,103 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 project(pandar_pointcloud)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-set(${PROJECT_NAME}_CATKIN_DEPS
-    angles
-    diagnostic_updater
-    dynamic_reconfigure
-    nodelet
-    pandar_msgs
-    pcl_ros
-    roscpp
-    roslib
-    sensor_msgs
-    tf
-)
-
-find_package(catkin REQUIRED COMPONENTS
-             ${${PROJECT_NAME}_CATKIN_DEPS} pcl_conversions)
+# Default to C++14
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+find_package( Boost REQUIRED  COMPONENTS thread)
+find_package(Boost REQUIRED COMPONENTS system)
+# find_package(PCL REQUIRED)
+find_package(ament_cmake REQUIRED)
+find_package(ament_index_cpp REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
+find_package(rosidl_typesupport_c REQUIRED) 
+find_package(rosidl_default_generators REQUIRED)
+find_package(builtin_interfaces REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(Boost COMPONENTS signals)
+find_package(OpenSSL REQUIRED)
+message("OpenSSL include dir: ${OPENSSL_INCLUDE_DIR}")
 
-# Resolve system dependency on yaml-cpp, which apparently does not
-# provide a CMake find_package() module.
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(YAML_CPP REQUIRED yaml-cpp)
-find_path(YAML_CPP_INCLUDE_DIR
-          NAMES yaml_cpp.h
-          PATHS ${YAML_CPP_INCLUDE_DIRS})
-find_library(YAML_CPP_LIBRARY
-             NAMES YAML_CPP
-             PATHS ${YAML_CPP_LIBRARY_DIRS})
-
-link_directories(${YAML_CPP_LIBRARY_DIRS})
-
-# libpcap provides no pkg-config or find_package module:
 set(libpcap_LIBRARIES -lpcap)
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/PandarPacket.msg"
+  "msg/PandarScan.msg"
+  "msg/PandarGps.msg"
+  DEPENDENCIES builtin_interfaces 
+)
+find_package(PCL REQUIRED COMPONENTS common)
+find_package(PCL REQUIRED COMPONENTS io)
+ament_export_dependencies(rosidl_default_runtime)
 
-generate_dynamic_reconfigure_options(
-  cfg/CloudNode.cfg cfg/TransformNode.cfg
+# add_subdirectory(src/lib)
+add_library(pandar_input src/lib/input.cc src/lib/platUtil.cc)
+target_include_directories(pandar_input PRIVATE
+    include
+)
+target_link_libraries(pandar_input
+  ${libpcap_LIBRARIES}
 )
 
-if(NOT ${YAML_CPP_VERSION} VERSION_LESS "0.5")
-add_definitions(-DHAVE_NEW_YAMLCPP)
-endif(NOT ${YAML_CPP_VERSION} VERSION_LESS "0.5")
-
-include_directories(include ${catkin_INCLUDE_DIRS} 
-  ${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake
+ament_target_dependencies(pandar_input
+  "geometry_msgs"  # maybe don't need this
+  "ament_index_cpp"
+  "pcl_conversions"
+  "rcl_interfaces"
+  "rclcpp"
+  "rcutils"
+  "sensor_msgs"
+  "std_msgs"
+  "tf2_geometry_msgs"
 )
-
-catkin_package(
-    CATKIN_DEPENDS ${${PROJECT_NAME}_CATKIN_DEPS}
-    INCLUDE_DIRS include
-    LIBRARIES pandar_rawdata)
-    
-#add_executable(dynamic_reconfigure_node src/dynamic_reconfigure_node.cpp)
-#target_link_libraries(dynamic_reconfigure_node
-#   ${catkin_LIBRARIES}
-# )
-
-add_subdirectory(src/lib)
-add_subdirectory(src/conversions)
+# add_subdirectory(src/conversions)
 
 include_directories(taskflow)
 
-install(DIRECTORY include/${PROJECT_NAME}/
-        DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
-install(FILES nodelets.xml
-        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
-install(DIRECTORY launch/
-        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
-install(DIRECTORY params/
-        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/params)
+include_directories(
+	${OPENSSL_INCLUDE_DIR}
+)
 
-#if (CATKIN_ENABLE_TESTING)
-  #add_subdirectory(tests)
-#endif()
+add_executable(pandar_cloud_node src/conversions/cloud_node.cc)
+# add_executable(pandar_cloud_node cloud_node.cc convert.cc driver.cc laser_ts.cpp tcp_command_client.c util.c)
+# add_dependencies(pandar_cloud_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
+target_link_libraries(pandar_cloud_node
+					  pandar_input
+					  pcap
+					  ${PCL_LIBRARIES}
+					  ${OPENSSL_LIBRARIES}
+            )
+target_include_directories(pandar_cloud_node PRIVATE
+            include
+            ${Boost_INCLUDE_DIRS}
+            ${PCL_INCLUDE_DIRS}
+        )            
+					  
+ament_target_dependencies(pandar_cloud_node
+            "geometry_msgs"  # maybe don't need this
+            "ament_index_cpp"
+            "pcl_conversions"
+            "rcl_interfaces"
+            "rclcpp"
+            "rcutils"
+            "sensor_msgs"
+            "std_msgs"
+            "tf2_geometry_msgs"
+          )
+rosidl_target_interfaces(pandar_cloud_node  ${PROJECT_NAME} "rosidl_typesupport_cpp")
+# add_executable(pandar_transform_node transform_node.cc transform.cc convert.cc driver.cc laser_ts.cpp tcp_command_client.c util.c)
+# add_dependencies(pandar_transform_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
+# target_link_libraries(pandar_transform_node pandar_rawdata
+# 						pandar_input
+# 						pcap
+# 						${PCL_INCLUDE_DIRS}
+# 						${OPENSSL_LIBRARIES}
+# 					  )
+
+ament_package()
+

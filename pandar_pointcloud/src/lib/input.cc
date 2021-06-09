@@ -38,7 +38,7 @@
 #include <string>
 
 namespace pandar_pointcloud {
-static const size_t packet_size = sizeof(pandar_msgs::PandarPacket().data);
+static const size_t packet_size = 1500;
 
 ////////////////////////////////////////////////////////////////////////
 // Input base class implementation
@@ -49,11 +49,11 @@ static const size_t packet_size = sizeof(pandar_msgs::PandarPacket().data);
  *  @param private_nh ROS private handle for calling node.
  *  @param port UDP port number.
  */
-Input::Input(ros::NodeHandle private_nh, uint16_t port)
+Input::Input(rclcpp::Node::SharedPtr& private_nh, uint16_t port)
     : private_nh_(private_nh), port_(port) {
-  private_nh.param("device_ip", devip_str_, std::string(""));
+  // private_nh.param("device_ip", devip_str_, std::string(""));
   if (!devip_str_.empty())
-    ROS_INFO_STREAM("Only accepting packets from IP address: " << devip_str_);
+    // ROS_INFO_STREAM("Only accepting packets from IP address: " << devip_str_);
   m_sUdpVresion = "";
 	m_bGetUdpVersion = false;
 	m_iTimestampIndex = 0;
@@ -66,7 +66,7 @@ bool Input::checkPacket(PandarPacket *pkt) {
   if(pkt->size < 100)
   return false;
   if (pkt->data[0] != 0xEE && pkt->data[1] != 0xFF) {    
-    ROS_WARN("Packet with invaild delimiter\n");
+    printf("Packet with invaild delimiter\n");
     return false;
   }
   if(m_sUdpVresion == UDP_VERSION_1_3){
@@ -113,7 +113,7 @@ bool Input::checkPacket(PandarPacket *pkt) {
     return true;
   }
   else{
-    ROS_WARN("Packet size mismatch.caculated size:%d, packet size:%d", size, pkt->size);
+    printf("Packet size mismatch.caculated size:%d, packet size:%d", size, pkt->size);
     return false;
   }
 }
@@ -187,7 +187,7 @@ std::string Input::getUdpVersion() {
  *  @param private_nh ROS private handle for calling node.
  *  @param port UDP port number
  */
-InputSocket::InputSocket(ros::NodeHandle private_nh, uint16_t port)
+InputSocket::InputSocket(rclcpp::Node::SharedPtr& private_nh, uint16_t port)
     : Input(private_nh, port) {
   sockfd_ = -1;
   m_u32Sequencenum = 0;
@@ -201,7 +201,7 @@ InputSocket::InputSocket(ros::NodeHandle private_nh, uint16_t port)
   }
 
   // connect to Pandar UDP port
-  ROS_INFO_STREAM("Opening UDP socket: port " << port);
+  // ROS_INFO_STREAM("Opening UDP socket: port " << port);
   sockfd_ = socket(PF_INET, SOCK_DGRAM, 0);
   if (sockfd_ == -1) {
     perror("socket");  // TODO: ROS_ERROR errno
@@ -231,7 +231,7 @@ InputSocket::InputSocket(ros::NodeHandle private_nh, uint16_t port)
   int nochecksum = 1;
   int set_error = setsockopt(sockfd_, SOL_SOCKET, SO_NO_CHECK, &nochecksum,
                              sizeof(nochecksum));
-  ROS_DEBUG("Pandar socket fd is %d\n", sockfd_);
+  printf("Pandar socket fd is %d\n", sockfd_);
   int nRecvBuf = 26214400;
 	setsockopt(sockfd_, SOL_SOCKET, SO_RCVBUF, (const char*)&nRecvBuf, sizeof(int));
 }
@@ -271,24 +271,24 @@ int InputSocket::getPacket(PandarPacket *pkt) {
   clock_gettime(CLOCK_REALTIME, &time);
   midTime2 = time.tv_nsec / 1000 + time.tv_sec * 1000000;
   if (midTime2 - startTime > 1000) {
-    // ROS_WARN("InputSocket::getPacket poll time:[%u]",midTime2-startTime);
+    // printf("InputSocket::getPacket poll time:[%u]",midTime2-startTime);
   }
 
-  //  ROS_WARN("InputSocket::getPacket retval[%d]",retval);
+  //  printf("InputSocket::getPacket retval[%d]",retval);
   if (retval < 0)  // poll() error?
   {
-    if (errno != EINTR) ROS_WARN("poll() error: %s", strerror(errno));
+    if (errno != EINTR) printf("poll() error: %s", strerror(errno));
     return 1;
   }
   if (retval == 0)  // poll() timeout?
   {
-    ROS_WARN("Pandar poll() timeout");
+    printf("Pandar poll() timeout");
     return 1;
   }
   if ((fds[0].revents & POLLERR) || (fds[0].revents & POLLHUP) ||
       (fds[0].revents & POLLNVAL))  // device error?
   {
-    ROS_WARN("poll() reports Pandar error");
+    printf("poll() reports Pandar error");
     return 1;
   }
   // } while ((fds[0].revents & POLLIN) == 0);
@@ -317,7 +317,7 @@ int InputSocket::getPacket(PandarPacket *pkt) {
       } else {
         uint32_t diff = seqnub - m_u32Sequencenum;
         if (diff > 1) {
-          ROS_WARN("seq diff: %x ", diff);
+          printf("seq diff: %x ", diff);
           dropped += diff - 1;
         }
       }
@@ -326,7 +326,7 @@ int InputSocket::getPacket(PandarPacket *pkt) {
       uint32_t endTick = GetTickCount();
 
       if (endTick - startTick >= 1000 && dropped > 0) {
-        ROS_WARN("!!!!!!!!!! dropped: %d, %d, percent, %f", dropped,
+        printf("!!!!!!!!!! dropped: %d, %d, percent, %f", dropped,
                 m_u32Sequencenum - u32StartSeq,
                 float(dropped) / float(m_u32Sequencenum - u32StartSeq) * 100.0);
         dropped = 0;
@@ -353,7 +353,7 @@ int InputSocket::getPacket(PandarPacket *pkt) {
  *  @param packet_rate expected device packet frequency (Hz)
  *  @param filename PCAP dump file name
  */
-InputPCAP::InputPCAP(ros::NodeHandle private_nh, uint16_t port,
+InputPCAP::InputPCAP(rclcpp::Node::SharedPtr& private_nh, uint16_t port,
                      double packet_rate, std::string filename, bool read_once,
                      bool read_fast, double repeat_delay)
     : Input(private_nh, port), packet_rate_(packet_rate), filename_(filename) {
@@ -361,19 +361,19 @@ InputPCAP::InputPCAP(ros::NodeHandle private_nh, uint16_t port,
   empty_ = true;
 
   // get parameters using private node handle
-  private_nh.param("read_once", read_once_, false);
-  private_nh.param("read_fast", read_fast_, false);
-  private_nh.param("repeat_delay", repeat_delay_, 0.0);
+  // private_nh.param("read_once", read_once_, false);
+  // private_nh.param("read_fast", read_fast_, false);
+  // private_nh.param("repeat_delay", repeat_delay_, 0.0);
 
-  if (read_once_) ROS_INFO("Read input file only once.");
-  if (read_fast_) ROS_INFO("Read input file as quickly as possible.");
-  if (repeat_delay_ > 0.0)
-    ROS_WARN("Delay %.3f seconds before repeating input file.", repeat_delay_);
+  // if (read_once_) ROS_INFO("Read input file only once.");
+  // if (read_fast_) ROS_INFO("Read input file as quickly as possible.");
+  // if (repeat_delay_ > 0.0)
+  //   printf("Delay %.3f seconds before repeating input file.", repeat_delay_);
 
   // Open the PCAP dump file
-  ROS_WARN("Opening PCAP file \"%s\"", filename_.c_str());
+  // printf("Opening PCAP file \"%s\"", filename_.c_str());
   if ((pcap_ = pcap_open_offline(filename_.c_str(), errbuf_)) == NULL) {
-    ROS_FATAL("Error opening Pandar socket dump file.");
+    // ROS_FATAL("Error opening Pandar socket dump file.");
     return;
   }
 
@@ -444,7 +444,7 @@ int InputPCAP::getPacket(PandarPacket *pkt) {
       } else {
         int64_t sleep_time = (pkt_ts - last_pkt_ts) - \
             (current_time - last_time);
-            // ROS_WARN("pkt time: %u,use time: %u,sleep time: %u",pkt_ts - last_pkt_ts,current_time - last_time, sleep_time);
+            // printf("pkt time: %u,use time: %u,sleep time: %u",pkt_ts - last_pkt_ts,current_time - last_time, sleep_time);
 
         if (sleep_time > 0) {
           struct timeval waitTime;
@@ -464,7 +464,7 @@ int InputPCAP::getPacket(PandarPacket *pkt) {
       }
     }
 
-    pkt->stamp = ros::Time::now();  // time_offset not considered here, as no
+    // pkt->stamp = ros::Time::now();  // time_offset not considered here, as no
                                       // synchronization required
     // if (pcapFile != NULL) {
     //   pcap_close(pcapFile);

@@ -57,7 +57,7 @@ namespace pandar_pointcloud
 
   private:
 
-    void processScan(const pandar_msgs::PandarScan::ConstPtr &scanMsg);
+    void processScan(const pandar_pointcloud::msg::PandarScan::ConstPtr &scanMsg);
 
     ///Pointer to dynamic reconfigure service srv_
     boost::shared_ptr<dynamic_reconfigure::Server<pandar_pointcloud::
@@ -68,8 +68,8 @@ namespace pandar_pointcloud
     const std::string tf_prefix_;
     boost::shared_ptr<pandar_rawdata::RawData> data_;
     boost::shared_ptr<Convert> m_spConver;
-    message_filters::Subscriber<pandar_msgs::PandarScan> pandar_scan_;
-    tf::MessageFilter<pandar_msgs::PandarScan> *tf_filter_;
+    message_filters::Subscriber<pandar_pointcloud::msg::PandarScan> pandar_scan_;
+    tf::MessageFilter<pandar_pointcloud::msg::PandarScan> *tf_filter_;
     ros::Publisher output_;
     tf::TransformListener listener_;
 

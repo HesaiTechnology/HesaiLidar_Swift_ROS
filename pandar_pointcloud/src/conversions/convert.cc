@@ -21,15 +21,14 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <ros/ros.h>
-#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sys/syscall.h>
 #include <time.h>
 #include <unistd.h>
 #include <fstream>
 #include <iostream>
 #include "taskflow.hpp"
-// #define PRINT_FLAG 
+#define PRINT_FLAG 
 // #define FIRETIME_CORRECTION_CHECK 
 
 namespace pandar_pointcloud {
@@ -82,24 +81,12 @@ static const float azimuth_offset[] = {
 /** @brief Constructor. */
 Convert::Convert(rclcpp::Node::SharedPtr& private_nh,
                  std::string node_type)
-    : drv(node, private_nh, node_type, this) {
+    : drv(private_nh, node_type, this) {
   
   m_sRosVersion = "PandarSwiftROS_1.0.17";
   printf("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
-  private_nh->declare_parameter<std::string>("pcap", "");
-  private_nh->declare_parameter<std::string>("device_ip", "");
-  private_nh->declare_parameter<std::string>("publish_model", "points");
-  private_nh->declare_parameter<double>("start_angle", 0.0);
-  private_nh->declare_parameter<std::string>("calibration", "");
-  private_nh->declare_parameter<std::string>("frame_id", "");
-  private_nh->declare_parameter<std::string>("firetime_file", "");
-  private_nh->declare_parameter<bool>("coordinate_correction_flag", false);
-  private_nh->declare_parameter<std::string>("cert_file", "");
-  private_nh->declare_parameter<std::string>("private_key_file", "");
-  private_nh->declare_parameter<std::string>("ca_file", "");
-  publishmodel = "";
   if (LIDAR_NODE_TYPE == node_type) {
-    this->get_parameter("pcap_file", pcapFile);
+    // this->get_parameter("pcap_file", pcapFile);
     private_nh->get_parameter("publish_model", publishmodel);
     double start_angle;
     private_nh->get_parameter("start_angle", start_angle);
@@ -120,10 +107,9 @@ Convert::Convert(rclcpp::Node::SharedPtr& private_nh,
   private_nh->get_parameter("ca_file", ca);
   private_nh->get_parameter("coordinate_correction_flag", m_bCoordinateCorrectionFlag);
   TcpCommandSetSsl(cert.c_str(), privateKey.c_str(), ca.c_str());
-  
-  printf("frame_id [%s]", m_sFrameId.c_str());
-  printf("lidarFiretimeFile [%s]", lidarFiretimeFile.c_str());
-  printf("lidarCorrectionFile [%s]", lidarCorrectionFile.c_str());
+  printf("frame_id [%s]\n", m_sFrameId.c_str());
+  printf("lidarFiretimeFile [%s]\n", lidarFiretimeFile.c_str());
+  printf("lidarCorrectionFile [%s]\n", lidarCorrectionFile.c_str());
 
   m_iWorkMode = 0;
   m_iReturnMode = 0;
@@ -179,15 +165,15 @@ Convert::Convert(rclcpp::Node::SharedPtr& private_nh,
       std::string correntionString;
       ret = TcpCommandGetLidarCalibration(m_pTcpCommandClient, &buffer, &len);
       if (ret == 0 && buffer) {
-        printf("Load correction file from lidar now!");
+        printf("Load correction file from lidar now!\n");
         correntionString = std::string(buffer);
         ret = loadCorrectionFile(correntionString);
           if (ret != 0) {
-            printf("Parse Lidar Correction Error");
+            printf("Parse Lidar Correction Error\n");
           } 
           else {
             loadCorrectionFileSuccess = true;
-            printf("Parse Lidar Correction Success!!!");
+            printf("Parse Lidar Correction Success!!!\n");
           }
         free(buffer);
       }
@@ -197,7 +183,7 @@ Convert::Convert(rclcpp::Node::SharedPtr& private_nh,
     }
   }
   if(!loadCorrectionFileSuccess) {
-    printf("load correction file from local correction.csv now!");
+    printf("load correction file from local correction.csv now!\n");
     std::ifstream fin(lidarCorrectionFile);
     if (fin.is_open()) {
       printf("Open correction file success\n");
@@ -212,10 +198,10 @@ Convert::Convert(rclcpp::Node::SharedPtr& private_nh,
       strlidarCalibration = buffer;
       ret = loadCorrectionFile(strlidarCalibration);
       if (ret != 0) {
-        printf("Parse local Correction file Error");
+        printf("Parse local Correction file Error\n");
       } 
       else {
-        printf("Parse local Correction file Success!!!");
+        printf("Parse local Correction file Success!!!\n");
       }
     }
     else{
@@ -225,7 +211,7 @@ Convert::Convert(rclcpp::Node::SharedPtr& private_nh,
 
   loadOffsetFile(
       lidarFiretimeFile);  // parameter is the path of lidarFiretimeFil
-  printf("node_type[%s]", node_type.c_str());
+  printf("node_type[%s]\n", node_type.c_str());
 
   SetEnvironmentVariableTZ();
 
@@ -235,7 +221,7 @@ Convert::Convert(rclcpp::Node::SharedPtr& private_nh,
 
   if (publishmodel == "both_point_raw" || publishmodel == "point" ||
       LIDAR_NODE_TYPE != node_type) {
-    printf("node.advertise pandar_points");
+    printf("node.advertise pandar_points\n");
     output_ = private_nh->create_publisher<sensor_msgs::msg::PointCloud2>("pandar_points");
     boost::thread processThr(boost::bind(&Convert::processLiDARData, this));
   }
@@ -256,7 +242,7 @@ int Convert::loadCorrectionFile(std::string correction_content) {
 
   std::string line;
   if (std::getline(ifs, line)) {  // first line "Laser id,Elevation,Azimuth"
-    printf("Parse Lidar Correction...");
+    printf("Parse Lidar Correction...\n");
   }
 
   float pitchList[PANDAR128_LASER_NUM];
@@ -283,7 +269,7 @@ int Convert::loadCorrectionFile(std::string correction_content) {
     std::stringstream(subline) >> azimuth;
 
     if (lineId != lineCounter) {
-      printf("laser id error %d %d", lineId, lineCounter);
+      printf("laser id error %d %d\n", lineId, lineCounter);
       return -1;
     }
 
@@ -304,7 +290,7 @@ void Convert::DriverReadThread() {
   param.sched_priority = 99;
   // SCHED_FIFO和SCHED_RR
   int rc = pthread_setschedparam(pthread_self(), SCHED_RR, &param);
-  printf("DriverReadThread:set result [%d]", rc);
+  printf("DriverReadThread:set result [%d]\n", rc);
   int ret_policy;
   pthread_getschedparam(pthread_self(), &ret_policy, &param);
   printf("DriverReadThread:get thead %lu, policy %d and priority %d\n",
@@ -320,7 +306,7 @@ void Convert::publishRawDataThread() {
   param.sched_priority = 90;
   // SCHED_FIFO和SCHED_RR
   int rc = pthread_setschedparam(pthread_self(), SCHED_FIFO, &param);
-  printf("publishRawDataThread:set result [%d]", rc);
+  printf("publishRawDataThread:set result [%d]\n", rc);
   int ret_policy;
   pthread_getschedparam(pthread_self(), &ret_policy, &param);
   printf("publishRawDataThread:get thead %lu, policy %d and priority %d\n",
@@ -344,13 +330,13 @@ void Convert::processGps(pandar_pointcloud::msg::PandarGps &gpsMsg) {
   t.tm_mon = gpsMsg.month - 1;
   t.tm_year = gpsMsg.year + 2000 - 1900;
   t.tm_isdst = 0;
-  if (lastGPSSecond != (mktime(&t) + 1)) {
-    lastGPSSecond = (mktime(&t) + 1);
-    gps2.gps = mktime(&t) + 1;  // the gps always is the last gps, the newest
-                                // GPS data is after the PPS(Serial port
-                                // transmition speed...)
-    gps2.used = 0;
-  }
+  // if (lastGPSSecond != (mktime(&t) + 1)) {
+  //   lastGPSSecond = (mktime(&t) + 1);
+  //   gps2.gps = mktime(&t) + 1;  // the gps always is the last gps, the newest
+  //                               // GPS data is after the PPS(Serial port
+  //                               // transmition speed...)
+  //   gps2.used = 0;
+  // }
   // ROS_ERROR("Got a gps data %d " ,gps2.gps);
 }
 
@@ -413,7 +399,7 @@ int Convert::processLiDARData() {
   param.sched_priority = 91;
   // SCHED_FIFO和SCHED_RR
   int rc = pthread_setschedparam(pthread_self(), SCHED_FIFO, &param);
-  printf("processLiDARData:pthread_setschedparam result [%d]", rc);
+  printf("processLiDARData:pthread_setschedparam result [%d]\n", rc);
   int ret_policy;
   pthread_getschedparam(pthread_self(), &ret_policy, &param);
   printf("processLiDARData:get thead %lu, policy %d and priority %d\n",
@@ -445,7 +431,8 @@ int Convert::processLiDARData() {
 				m_iPublishPointsIndex = cursor;
 				cursor = (cursor + 1) % 2;
 #ifdef PRINT_FLAG
-        printf("ts %lf cld size %u", m_dTimestamp, m_OutMsgArray[m_iPublishPointsIndex]->points.size());
+        std::cout.setf(std::ios::fixed);
+        std::cout << "ts " << std::setprecision(10) << m_dTimestamp <<", cld size " <<m_OutMsgArray[m_iPublishPointsIndex]->points.size() << std::endl;;
 #endif  
 			} 
 			else
@@ -515,7 +502,7 @@ void Convert::init() {
 		uint16_t lidarmotorspeed = 0;
     m_u8UdpVersionMajor = (m_PacketsBuffer.getTaskEnd() - 1)->data[2];
 		m_u8UdpVersionMinor = (m_PacketsBuffer.getTaskEnd() - 1)->data[3];
-    printf("UDP Version is:%d.%d", m_u8UdpVersionMajor, m_u8UdpVersionMinor);
+    printf("UDP Version is:%d.%d\n", m_u8UdpVersionMajor, m_u8UdpVersionMinor);
     switch (m_u8UdpVersionMajor){
       case 1:
         switch (m_u8UdpVersionMinor)
@@ -626,7 +613,7 @@ void Convert::publishPointsThread() {
   param.sched_priority = 90;
   // SCHED_FIFO和SCHED_RR
   int rc = pthread_setschedparam(pthread_self(), SCHED_FIFO, &param);
-  printf("publishPointsThread:set result [%d]", rc);
+  printf("publishPointsThread:set result [%d]\n", rc);
   int ret_policy;
   pthread_getschedparam(pthread_self(), &ret_policy, &param);
   printf("publishPointsThread:get thead %lu, policy %d and priority %d\n",
@@ -776,7 +763,7 @@ int Convert::checkLiadaMode() {
     m_iMotorSpeed = lidarmotorspeed;
     m_iLaserNum = laserNum;
     m_iBlockNum = blockNum;
-    printf("init mode: workermode: %x,return mode: %x,speed: %d,laser number: %d",m_iWorkMode, m_iReturnMode, m_iMotorSpeed, m_iLaserNum);
+    printf("init mode: workermode: %x,return mode: %x,speed: %d,laser number: %d\n",m_iWorkMode, m_iReturnMode, m_iMotorSpeed, m_iLaserNum);
     changeAngleSize();
     changeReturnBlockSize(); 
     checkClockwise();
@@ -790,14 +777,14 @@ int Convert::checkLiadaMode() {
   } 
   else { //mode change 
     if (m_iWorkMode != lidarworkmode) { //work mode change
-      printf("change work mode:  %x to %x ",m_iWorkMode, lidarworkmode);
+      printf("change work mode:  %x to %x \n",m_iWorkMode, lidarworkmode);
       m_iWorkMode = lidarworkmode;
       m_iMotorSpeed = lidarmotorspeed;
       changeAngleSize();
       return 0;
     }
     if (m_iReturnMode != lidarreturnmode) { //return mode change
-      printf("change return mode:  %x to %x ",m_iReturnMode, lidarreturnmode);
+      printf("change return mode:  %x to %x \n",m_iReturnMode, lidarreturnmode);
       m_iReturnMode = lidarreturnmode;
       changeReturnBlockSize();
       return 0;
@@ -901,7 +888,7 @@ void Convert::calcPointXYZIT(pandar_pointcloud::msg::PandarPacket &packet, int c
 				float offset = m_bClockwise ? m_objLaserOffset.getTSOffset(i, mode, state, distance, m_u8UdpVersionMajor) : -m_objLaserOffset.getTSOffset(i, mode, state, distance, m_u8UdpVersionMajor);
 				azimuth += m_objLaserOffset.getAngleOffset(offset, pkt.tail.nMotorSpeed, m_u8UdpVersionMajor);
 #ifdef FIRETIME_CORRECTION_CHECK 
-        printf("Laser ID = %d, speed = %d, origin azimuth = %f, azimuth = %f, delt = %f", i + 1, pkt.tail.nMotorSpeed, originAzimuth, azimuth, azimuth - originAzimuth);  
+        printf("Laser ID = %d, speed = %d, origin azimuth = %f, azimuth = %f, delt = %f\n", i + 1, pkt.tail.nMotorSpeed, originAzimuth, azimuth, azimuth - originAzimuth);  
 #endif     
         if(m_bCoordinateCorrectionFlag){
           pitch += m_objLaserOffset.getPitchOffset(m_sFrameId, pitch, distance);
@@ -1003,7 +990,7 @@ void Convert::calcPointXYZIT(pandar_pointcloud::msg::PandarPacket &packet, int c
 
         azimuth += m_objLaserOffset.getAngleOffset(offset, tail->nMotorSpeed, m_u8UdpVersionMajor);
 #ifdef FIRETIME_CORRECTION_CHECK 
-        printf("Laser ID = %d, speed = %d, origin azimuth = %f, azimuth = %f, delt = %f", i + 1, tail->nMotorSpeed, originAzimuth, azimuth, azimuth - originAzimuth);  
+        printf("Laser ID = %d, speed = %d, origin azimuth = %f, azimuth = %f, delt = %f\n", i + 1, tail->nMotorSpeed, originAzimuth, azimuth, azimuth - originAzimuth);  
 #endif  
         if(m_bCoordinateCorrectionFlag){
           pitch += m_objLaserOffset.getPitchOffset(m_sFrameId, pitch, distance);
@@ -1128,7 +1115,7 @@ void Convert::calcQT128PointXYZIT(pandar_pointcloud::msg::PandarPacket &packet, 
       float offset = m_bClockwise ? m_objLaserOffset.getTSOffset(i, firetimeCorrectionMode, state, distance, m_u8UdpVersionMajor) : -m_objLaserOffset.getTSOffset(i, firetimeCorrectionMode, state, distance, m_u8UdpVersionMajor);
       azimuth += m_objLaserOffset.getAngleOffset(offset, tail->nMotorSpeed, m_u8UdpVersionMajor);
 #ifdef FIRETIME_CORRECTION_CHECK 
-        printf("Laser ID = %d, speed = %d, correction mode = %d, block id = %d, origin azimuth = %f, azimuth = %f, delt = %f", i + 1, tail->nMotorSpeed, firetimeCorrectionMode, blockid, originAzimuth, azimuth, azimuth - originAzimuth);  
+        printf("Laser ID = %d, speed = %d, correction mode = %d, block id = %d, origin azimuth = %f, azimuth = %f, delt = %f\n", i + 1, tail->nMotorSpeed, firetimeCorrectionMode, blockid, originAzimuth, azimuth, azimuth - originAzimuth);  
 #endif  
       int pitchIdx = static_cast<int>(pitch * 100 + 0.5);
       if (pitchIdx  >= CIRCLE) {
@@ -1146,7 +1133,9 @@ void Convert::calcQT128PointXYZIT(pandar_pointcloud::msg::PandarPacket &packet, 
       } else if (azimuthIdx < 0) {
         azimuthIdx += CIRCLE;
       }
-
+      // printf("lll  %d, %d  ,%d, wasd %f\n",azimuthIdx, u16Azimuth, m_fHorizatalAzimuth[i], azimuth);
+      // printf("lll  %d, %d  ,%d, wasd 22   %f\n",azimuthIdx, u16Azimuth, m_fHorizatalAzimuth[i], azimuth);
+      //  printf("lll wasd %f\n",azimuth);
       point.x = xyDistance * m_fSinAllAngle[azimuthIdx];
       point.y = xyDistance * m_fCosAllAngle[azimuthIdx];
       point.z = distance * m_fSinAllAngle[pitchIdx];
@@ -1195,22 +1184,22 @@ void Convert::loadOffsetFile(std::string file) {
 }
 
 void Convert::processGps(const pandar_pointcloud::msg::PandarGps::ConstPtr &gpsMsg) {
-  hasGps = 1;
-  struct tm t;
-  t.tm_sec = gpsMsg->second;
-  t.tm_min = gpsMsg->minute;
-  t.tm_hour = gpsMsg->hour;
-  t.tm_mday = gpsMsg->day;
-  t.tm_mon = gpsMsg->month - 1;
-  t.tm_year = gpsMsg->year + 2000 - 1900;
-  t.tm_isdst = 0;
-  if (lastGPSSecond != (mktime(&t) + 1)) {
-    lastGPSSecond = (mktime(&t) + 1);
-    gps2.gps = mktime(&t) + 1;  // the gps always is the last gps, the newest
-                                // GPS data is after the PPS(Serial port
-                                // transmition speed...)
-    gps2.used = 0;
-  }
+  // hasGps = 1;
+  // struct tm t;
+  // t.tm_sec = gpsMsg->second;
+  // t.tm_min = gpsMsg->minute;
+  // t.tm_hour = gpsMsg->hour;
+  // t.tm_mday = gpsMsg->day;
+  // t.tm_mon = gpsMsg->month - 1;
+  // t.tm_year = gpsMsg->year + 2000 - 1900;
+  // t.tm_isdst = 0;
+  // if (lastGPSSecond != (mktime(&t) + 1)) {
+  //   lastGPSSecond = (mktime(&t) + 1);
+  //   gps2.gps = mktime(&t) + 1;  // the gps always is the last gps, the newest
+  //                               // GPS data is after the PPS(Serial port
+  //                               // transmition speed...)
+  //   gps2.used = 0;
+  // }
   // ROS_ERROR("Got data second : %f " ,(double)gps2.gps);
 }
 

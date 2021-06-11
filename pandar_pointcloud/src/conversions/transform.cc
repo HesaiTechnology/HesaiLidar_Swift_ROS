@@ -17,66 +17,35 @@
     @author Jack O'Quin
     @author Jesse Vera
     @author Yang Sheng
+    @author zhang Yu
 
 */
 
 #include "transform.h"
-
+#include <pandar_pointcloud/msg/pandar_scan.hpp>
+#include <pandar_pointcloud/msg/pandar_packet.hpp>
 #include <pcl_conversions/pcl_conversions.h>
 
 namespace pandar_pointcloud
 {
   /** @brief Constructor. */
-  Transform::Transform(ros::NodeHandle node, ros::NodeHandle private_nh):
-    tf_prefix_(tf::getPrefixParam(private_nh)),
-    data_(new pandar_rawdata::RawData()),
-    m_spConver(new Convert(node, private_nh,"transform"))
+  Transform::Transform(rclcpp::Node::SharedPtr& private_nh):
+    m_spConver(new Convert(private_nh,"transform"))
   {
     printf(" Transform::Transform");
-    private_nh.getParam("frame_id", config_.frame_id);
-    // Read calibration.
-    data_->setup(private_nh);
-
-    // advertise output point cloud (before subscribing to input data)
-    // output_ =
-    //   node.advertise<sensor_msgs::PointCloud2>("transform_pandar_points", 10);
-
-    srv_ = boost::make_shared <dynamic_reconfigure::Server<pandar_pointcloud::
-      TransformNodeConfig> > (private_nh);
-    dynamic_reconfigure::Server<pandar_pointcloud::TransformNodeConfig>::
-      CallbackType f;
-    f = boost::bind (&Transform::reconfigure_callback, this, _1, _2);
-    srv_->setCallback (f);
-    
     // subscribe to PandarScan packets using transform filter
-    
-    pandar_scan_.subscribe(node, "pandar_packets", 10);
-    tf_filter_ =
-      new tf::MessageFilter<pandar_pointcloud::msg::PandarScan>(pandar_scan_,
-                                                         listener_,
-                                                         config_.frame_id, 10);
-    tf_filter_->registerCallback(boost::bind(&Transform::processScan, this, _1));
-    printf(" Transform::processScan config[%s]",config_.frame_id.c_str());
+    pandar_scan_ = private_nh->create_subscription<pandar_pointcloud::msg::PandarScan>("pandar_packets", 10,\
+                       std::bind(&Transform::processScan, this, std::placeholders::_1));
     printf(" Transform::Transform finisher");
   }
   
-  void Transform::reconfigure_callback(
-      pandar_pointcloud::TransformNodeConfig &config, uint32_t level)
-  {
-    ROS_INFO_STREAM("Reconfigure request.");
-    data_->setParameters(config.min_range, config.max_range, 
-                         config.view_direction, config.view_width);
-    config_.frame_id = tf::resolve(tf_prefix_, config.frame_id);
-    ROS_INFO_STREAM("Target frame ID: " << config_.frame_id);
-  }
-
   /** @brief Callback for raw scan messages.
    *
    *  @pre TF message filter has already waited until the transform to
    *       the configured @c frame_id can succeed.
    */
   void
-    Transform::processScan(const pandar_pointcloud::msg::PandarScan::ConstPtr &scanMsg)
+    Transform::processScan(const pandar_pointcloud::msg::PandarScan::SharedPtr scanMsg)
   {
     // process each packet provided by the driver
     // printf(" Transform::processScan");

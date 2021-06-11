@@ -254,7 +254,7 @@ struct PandarGPS_s {
 typedef std::array<pandar_pointcloud::msg::PandarPacket, 36000> PktArray;
 
 typedef struct PacketsBuffer_s {
-  PktArray m_buffers{};
+  PktArray m_buffers;
   PktArray::iterator m_iterPush;
   PktArray::iterator m_iterTaskBegin;
   PktArray::iterator m_iterTaskEnd;
@@ -282,7 +282,7 @@ typedef struct PacketsBuffer_s {
       if (m_iterPush == m_iterTaskBegin) {
         static uint32_t tmp = m_iterTaskBegin - m_buffers.begin();
         if (m_iterTaskBegin - m_buffers.begin() != tmp) {
-          printf("buffer don't have space!,%d",
+          printf("buffer don't have space!,%d\n",
                    m_iterTaskBegin - m_buffers.begin());
           tmp = m_iterTaskBegin - m_buffers.begin();
         }
@@ -291,7 +291,7 @@ typedef struct PacketsBuffer_s {
       }
       if (lastOverflowed) {
         lastOverflowed = false;
-        printf("buffer recovered");
+        printf("buffer recovered\n");
       }
       *(m_iterPush++) = pkt;
       return 1;
@@ -308,7 +308,7 @@ typedef struct PacketsBuffer_s {
 	}
   inline void creatNewTask() {
     if (m_buffers.end() == m_iterTaskEnd) {
-      printf("creat new task end to start");
+      printf("creat new task end to start\n");
       m_iterTaskBegin = m_buffers.begin();
       m_iterTaskEnd = m_iterTaskBegin + m_stepSize;
     }

@@ -14,21 +14,16 @@
 
 */
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include "transform.h"
 
 /** Main node entry point. */
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "transform_node");
-  ros::NodeHandle node;
-  ros::NodeHandle priv_nh("~");
-
-  // create conversion class, which subscribes to raw data
-  pandar_pointcloud::Transform transform(node, priv_nh);
-
-  // handle callbacks until shut down
-  ros::spin();
-
+  rclcpp::init(argc, argv);
+  rclcpp::Node::SharedPtr nh_ = rclcpp::Node::make_shared("transform_node");
+  pandar_pointcloud::Transform transform(nh_);
+  rclcpp::spin(nh_);
+  rclcpp::shutdown();
   return 0;
 }

@@ -20,8 +20,7 @@
 #include <pandar_pointcloud/msg/pandar_gps.hpp>
 #include <pandar_pointcloud/msg/pandar_scan.hpp>
 #include <pandar_pointcloud/platUtil.h>
-#include <ros/ros.h>
-#include <tf/transform_listener.h>
+// #include <tf/transform_listener.h>
 
 #include "convert.h"
 #include "driver.h"
@@ -32,36 +31,29 @@ PandarDriver::PandarDriver(rclcpp::Node::SharedPtr& private_nh,
                            std::string nodetype,
                            pandar_pointcloud::Convert *cvt) {
   convert = cvt;
+  private_nh->declare_parameter<std::string>("pcap", "");
+  private_nh->declare_parameter<std::string>("device_ip", "");
+  private_nh->declare_parameter<std::string>("publish_model", "points");
+  private_nh->declare_parameter<double>("start_angle", 0.0);
+  private_nh->declare_parameter<std::string>("calibration", "");
+  private_nh->declare_parameter<std::string>("frame_id", "");
+  private_nh->declare_parameter<std::string>("firetime_file", "");
+  private_nh->declare_parameter<bool>("coordinate_correction_flag", false);
+  private_nh->declare_parameter<std::string>("cert_file", "");
+  private_nh->declare_parameter<std::string>("private_key_file", "");
+  private_nh->declare_parameter<std::string>("ca_file", "");
   // use private node handle to get parameters
-  private_nh.->get_parameter("frame_id", config_.frame_id);
-  private_nh.->get_parameter("publish_model", publishmodel);
+  private_nh->get_parameter("frame_id", config_.frame_id);
+  private_nh->get_parameter("publish_model", publishmodel);
   // std::string tf_prefix = tf::getPrefixParam(private_nh);
   // ROS_DEBUG_STREAM("tf_prefix: " << tf_prefix);
   // config_.frame_id = tf::resolve(tf_prefix, config_.frame_id);
   nodeType = nodetype;
-
-  // get model name, validate string, determine packet rate
-  // config_.model = "Pandar128";
-  // std::string model_full_name = std::string("Hesai") + config_.model;
   double packet_rate = 3000;  // packet frequency (Hz)
-  // std::string deviceName(model_full_name);
-
-  private_nh->get_parameter("rpm", config_.rpm, 600.0);
-  // ROS_INFO_STREAM(deviceName << " rotating at " << config_.rpm << " RPM");
-  // double frequency = (config_.rpm / 60.0);  // expected Hz rate
-
-  // default number of packets for each scan is a single revolution
-  // (fractions rounded up)
-  // config_.npackets = (int)ceil(packet_rate / frequency);
-  // private_nh.->get_parameter("npackets", config_.npackets);
-  // ROS_INFO_STREAM("publishing " << config_.npackets << " packets per scan");
-
   std::string dump_file;
-  private_nh->get_parameter("pcap", dump_file, std::string(""));
-
+  private_nh->get_parameter("pcap", dump_file);
   int udp_port;
-  private_nh->get_parameter("port", udp_port, (int)DATA_PORT_NUMBER);
-
+  private_nh->get_parameter("port", udp_port);
   pthread_mutex_init(&piclock, NULL);
 
   m_bNeedPublish = false;
@@ -76,17 +68,6 @@ PandarDriver::PandarDriver(rclcpp::Node::SharedPtr& private_nh,
 
   pandarScanArray[m_iScanPushIndex] = scan0;
   pandarScanArray[m_iScanPopIndex] = scan1;
-
-  // // Initialize dynamic reconfigure
-  // srv_ = boost::make_shared <dynamic_reconfigure::Server<pandar_pointcloud::
-  //   CloudNodeConfig> > (private_nh);
-  // dynamic_reconfigure::Server<pandar_pointcloud::CloudNodeConfig>::
-  //   CallbackType f;
-  // f = boost::bind (&PandarDriver::callback, this, _1, _2);
-  // srv_->setCallback (f); // Set callback function und call initially
-
-  // initialize diagnostics
-  diagnostics_.setHardwareID(deviceName);
   const double diag_freq = packet_rate / config_.npackets;
   diag_max_freq_ = diag_freq;
   diag_min_freq_ = diag_freq;
@@ -107,7 +88,8 @@ PandarDriver::PandarDriver(rclcpp::Node::SharedPtr& private_nh,
   if ((publishmodel == "both_point_raw" || publishmodel == "raw") &&
       (nodeType == LIDAR_NODE_TYPE)) {
     // printf("node.advertise pandar_packets");
-    output_ = private_nh->create_publisher<pandar_pointcloud::msg::PandarScan>("pandar_packets");
+    rclcpp::QoS qos(rclcpp::KeepLast(7));
+    output_ = private_nh->create_publisher<pandar_pointcloud::msg::PandarScan>("pandar_packets", qos);
   }
 
   // raw packet output topic
@@ -200,7 +182,7 @@ bool PandarDriver::poll(void) {
       if (parseGPS(&packet,
                    &pandarScanArray[m_iScanPushIndex]->packets[i].data[0],
                    GPS_PACKET_SIZE) == 0) {
-        pandar_pointcloud::msg::PandarGpsPtr gps(new pandar_pointcloud::msg::PandarGps);
+        pandar_pointcloud::msg::PandarGps::SharedPtr gps(new pandar_pointcloud::msg::PandarGps);
         gps->stamp = 0;
 
         gps->year = packet.year;
@@ -222,7 +204,7 @@ bool PandarDriver::poll(void) {
     }
     if (rc > 0) return false;  // end of file reached?
     // }
-
+publishmodel = "both_point_raw" ;
     if (publishmodel == "both_point_raw" || publishmodel == "point") {
       convert->pushLiDARData(pandarScanArray[m_iScanPushIndex]->packets[i]);
     }
@@ -237,7 +219,7 @@ bool PandarDriver::poll(void) {
   else
     printf(
         "CPU not fast enough, data not published yet, new data "
-        "comming!!!!!!!!!!!!!!");
+        "comming!!!!!!!!!!!!!!\n");
   return true;
 }
 
@@ -246,11 +228,10 @@ void PandarDriver::publishRawData() {
 
   if (m_bNeedPublish) {
     // printf("PandarDriver::publishRawData()[%d]", m_iScanPopIndex);
-    pandarScanArray[m_iScanPopIndex]->header.stamp =
-        pandarScanArray[m_iScanPopIndex]->packets[m_iPandarScanArraySize - 1].stamp;
-    pandarScanArray[m_iScanPopIndex]->header.frame_id = config_.frame_id;
+    // pandarScanArray[m_iScanPopIndex]->header.stamp =
+    //     pandarScanArray[m_iScanPopIndex]->packets[m_iPandarScanArraySize - 1].stamp;
+    // pandarScanArray[m_iScanPopIndex]->header.frame_id = config_.frame_id;
     output_->publish(pandarScanArray[m_iScanPopIndex]);
-
     m_bNeedPublish = false;
   } else {
     usleep(1000);

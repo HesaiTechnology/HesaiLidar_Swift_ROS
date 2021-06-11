@@ -9,11 +9,12 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>rosidl_default_generators</buildtool_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+  <depend>ament_index_cpp</depend>
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
   <!-- <depend>libpcl-all-dev</depend> -->
   <depend>pcl_conversions</depend>
-  <depend>ament_index_cpp</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_action</depend>
   <member_of_group>rosidl_interface_packages</member_of_group>

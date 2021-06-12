@@ -51,9 +51,9 @@ static const size_t packet_size = 1500;
  */
 Input::Input(rclcpp::Node::SharedPtr& private_nh, uint16_t port)
     : private_nh_(private_nh), port_(port) {
-  // private_nh.param("device_ip", devip_str_, std::string(""));
+  private_nh->get_parameter("device_ip", devip_str_);
   if (!devip_str_.empty())
-    // ROS_INFO_STREAM("Only accepting packets from IP address: " << devip_str_);
+    printf("Only accepting packets from IP address: %s\n", devip_str_.c_str());
   m_sUdpVresion = "";
 	m_bGetUdpVersion = false;
 	m_iTimestampIndex = 0;

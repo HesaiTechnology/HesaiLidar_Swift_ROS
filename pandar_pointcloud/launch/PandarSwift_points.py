@@ -11,8 +11,8 @@ def generate_launch_description():
             name ='pandar_pointcloud',
             output ="screen",
             parameters=[
-                {"pcap": "/home/hesai/Downloads/0058-dual.pcap"},
-                {"server_ip"  : "192.168.1.201"},
+                {"pcap": ""},
+                {"device_ip"  : "192.168.1.201"},
                 {"port"  : 2368},
                 {"start_angle"  : 0.0},
                 {"frame_id"  : "PandarSwift"},

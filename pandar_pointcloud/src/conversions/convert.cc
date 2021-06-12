@@ -28,7 +28,7 @@
 #include <fstream>
 #include <iostream>
 #include "taskflow.hpp"
-#define PRINT_FLAG 
+// #define PRINT_FLAG 
 // #define FIRETIME_CORRECTION_CHECK 
 
 namespace pandar_pointcloud {
@@ -82,7 +82,6 @@ static const float azimuth_offset[] = {
 Convert::Convert(rclcpp::Node::SharedPtr& private_nh,
                  std::string node_type)
     : drv(private_nh, node_type, this) {
-  
   m_sRosVersion = "PandarSwiftROS_1.0.17";
   printf("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
   if (LIDAR_NODE_TYPE == node_type) {
@@ -432,7 +431,7 @@ int Convert::processLiDARData() {
 				cursor = (cursor + 1) % 2;
 #ifdef PRINT_FLAG
         std::cout.setf(std::ios::fixed);
-        std::cout << "ts " << std::setprecision(10) << m_dTimestamp <<", cld size " <<m_OutMsgArray[m_iPublishPointsIndex]->points.size() << std::endl;;
+        std::cout << "ts " << std::setprecision(10) << m_dTimestamp <<", cld size " <<m_OutMsgArray[m_iPublishPointsIndex]->points.size() << std::endl;
 #endif  
 			} 
 			else

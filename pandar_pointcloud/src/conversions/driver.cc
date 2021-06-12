@@ -203,8 +203,7 @@ bool PandarDriver::poll(void) {
       }
     }
     if (rc > 0) return false;  // end of file reached?
-    // }
-publishmodel = "both_point_raw" ;
+
     if (publishmodel == "both_point_raw" || publishmodel == "point") {
       convert->pushLiDARData(pandarScanArray[m_iScanPushIndex]->packets[i]);
     }

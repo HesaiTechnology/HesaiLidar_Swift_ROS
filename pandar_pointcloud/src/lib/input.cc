@@ -373,7 +373,7 @@ InputPCAP::InputPCAP(rclcpp::Node::SharedPtr& private_nh, uint16_t port,
   // Open the PCAP dump file
   // printf("Opening PCAP file \"%s\"", filename_.c_str());
   if ((pcap_ = pcap_open_offline(filename_.c_str(), errbuf_)) == NULL) {
-    // ROS_FATAL("Error opening Pandar socket dump file.");
+    printf("Error opening Pandar socket dump file.");
     return;
   }
 

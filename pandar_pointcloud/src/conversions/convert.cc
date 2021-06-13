@@ -164,7 +164,7 @@ Convert::Convert(rclcpp::Node::SharedPtr& private_nh,
       std::string correntionString;
       ret = TcpCommandGetLidarCalibration(m_pTcpCommandClient, &buffer, &len);
       if (ret == 0 && buffer) {
-        printf("Load correction file from lidar now!\n");
+        std::cout << "Load correction file from lidar now!" << std::endl;
         correntionString = std::string(buffer);
         ret = loadCorrectionFile(correntionString);
           if (ret != 0) {
@@ -177,7 +177,7 @@ Convert::Convert(rclcpp::Node::SharedPtr& private_nh,
         free(buffer);
       }
       else{
-        printf("Get lidar calibration filed");
+        std::cout << "Get lidar calibration filed" << std::endl;
       }
     }
   }

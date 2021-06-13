@@ -85,7 +85,12 @@ Data source will be read from pcap file instead of LiDAR once "pcap_file" not em
 
 ### View the point clouds from connected LiDAR
 
-1. Make sure current path in the `rosworkspace` directoryas independent node
+1. Make sure current path in the `rosworkspace` directory
+```
+$ . install/local_setup.bash
+$ ros2 launch pandar_pointcloud PandarSwift_points.py
+```
+
 2. The driver will publish a PointCloud2 message in the topic.
 ```
 /hesai/pandar_points

@@ -8,7 +8,9 @@ Developed based on [HesaiLidar_Swift_SDK](https://github.com/HesaiTechnology/Hes
 ## Branches 
 ```
 * master: Pandar LiDAR ROS driver for Ubuntu 18.04 and Ubuntu20.04 supports the latest UDP protocol v1.4 v1.3 and v3.2 
+* master_ros2: Pandar LiDAR ROS2 driver for Ubuntu 18.04 and Ubuntu20.04 supports the latest UDP protocol v1.4 v1.3 and v3.2 
 * UDP1.4_ubuntu16.04: Pandar LiDAR ROS driver for Ubuntu 16.04 supports the latest UDP protocol v1.4
+* UDP1.4_ubuntu16.04_ros2: Pandar LiDAR ROS2 driver for Ubuntu 16.04 supports the latest UDP protocol v1.4
 * UDP1.3: Pandar LiDAR ROS driver for ubuntu16.04,ubuntu 18.04 and Ubuntu 20.04 supports UDP protocol v1.3 
 
 To get the UDP protocol version number of your device,  check the UDP package header field.
@@ -17,9 +19,9 @@ To get the UDP protocol version number of your device,  check the UDP package he
 **System environment requirement: Linux + ROS**  
 ```
 　Recommanded:  
-　Ubuntu 16.04 - with ROS kinetic desktop-full installed or  
-　Ubuntu 18.04 - with ROS melodic desktop-full installed or 
-  Ubuntu 20.04 - with ROS noetic desktop-full installed
+　Ubuntu 16.04 - with ROS kinetic desktop-full and ROS2 dashing desktop-full installed or  
+　Ubuntu 18.04 - with ROS melodic desktop-full and ROS2 dashing desktop-full installed or 
+  Ubuntu 20.04 - with ROS noetic desktop-full and ROS2 dashing desktop-full installed installed
 　Check resources on http://ros.org for installation guide 
 ```
 **Compiler version requirement**
@@ -35,11 +37,6 @@ $ sudo apt install libpcl-dev libpcap-dev libyaml-cpp-dev  libboost-dev
 ```
 ## Download and Build 
 
-**Install `catkin_tools`**
-```
-$ sudo apt-get update
-$ sudo apt-get install python-catkin-tools
-```
 **Download code**  
 ```
 $ mkdir -p rosworkspace/src
@@ -49,11 +46,12 @@ $ git clone https://github.com/HesaiTechnology/HesaiLidar_Swift_ROS.git --recurs
 **Install required dependencies with the help of `rosdep`**
 ```
 $ cd ..
-$ rosdep install -y --from-paths src --ignore-src --rosdistro $ROS_DISTRO
+$ rosdep install -y --from-paths src --ignore-src --rosdistro dashing
 ```
 **Build**
 ```
-$ catkin_make -DCMAKE_BUILD_TYPE=Release
+$ source /opt/ros/dashing/setup.bash
+$ colcon build --symlink-install
 ```
 
 
@@ -61,7 +59,7 @@ $ catkin_make -DCMAKE_BUILD_TYPE=Release
 ```
  $ cd src/HesaiLidar_Swift_ROS/pandar_pointcloud/launch
 ```
-open PandarSwift_points.launch to set configuration parameters
+open PandarSwift_points.py to set configuration parameters
 
 ### Reciving data from connected LiDAR: config LiDAR IP address & UDP port, and leave the pcap_file empty
 
@@ -87,15 +85,10 @@ Data source will be read from pcap file instead of LiDAR once "pcap_file" not em
 
 ### View the point clouds from connected LiDAR
 
-1. Make sure current path in the `rosworkspace` directory
-```
-$ source devel/setup.bash
-$ roslaunch pandar_pointcloud PandarSwift_points.launch
-```
-
+1. Make sure current path in the `rosworkspace` directoryas independent node
 2. The driver will publish a PointCloud2 message in the topic.
 ```
-/pandar_points
+/hesai/pandar_points
 ```
 
 3. Open Rviz and add display by topic.
@@ -106,31 +99,31 @@ $ roslaunch pandar_pointcloud PandarSwift_points.launch
 
 1. Make sure current path in the `rosworkspace` directory
 ```
-$ source devel/setup.bash
-$ roslaunch pandar_pointcloud PandarSwift_points.launch
+$ . install/local_setup.bash
+$ ros2 launch pandar_pointcloud PandarSwift_points.py
 ```
 
 2. The driver will publish a raw data packet message in the topic.
 ```
-/pandar_packets
+/hesai/pandar_packets
 ```
 3. record raw data rosbag
 ```
-$rosbag record -b 4096 /pandar_packets
+$ros2 bag record  /hesai/pandar_packets
 ```
 
-4. stop roslaunch and rosbag record by "Ctrl + C"
+4. stop ros2 launch and ros2 bag record by "Ctrl + C"
 
 5. play raw data rosbag
 ```
-$rosbag play <rosbagfile>
+$ros2 bag play <rosbagfile>
 ```
 
-6. launch transform_nodelet.launch
+6. launch transform.py
 ```
-$ roslaunch pandar_pointcloud transform_nodelet.launch data_type:=rosbag
+$ ros2 launch pandar_pointcloud transform.py
 ```
-7. Open Rviz and add display by topic.
+7. Open Rviz2 and add display by topic.
 8. Change fixed frame to "PandarSwift" to view published point clouds.
 
 ## Details of launch file parameters and utilities

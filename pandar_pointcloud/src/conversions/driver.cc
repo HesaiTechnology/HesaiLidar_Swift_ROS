@@ -202,7 +202,12 @@ bool PandarDriver::poll(void) {
         // gpsoutput_.publish(gps);
       }
     }
-    if (rc > 0) return false;  // end of file reached?
+    if (rc == 1) {
+      // invalid packet
+      i = i - 1;
+      continue;
+    }
+    if (rc > 2) return false;  // end of file reached?
 
     if (publishmodel == "both_point_raw" || publishmodel == "point") {
       convert->pushLiDARData(pandarScanArray[m_iScanPushIndex]->packets[i]);

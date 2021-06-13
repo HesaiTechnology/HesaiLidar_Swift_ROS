@@ -12,8 +12,8 @@ def generate_launch_description():
             output ="screen",
             parameters=[
                 {"frame_id"  : "PandarSwift"},
-                {"calibration"  : "./src/ROS_Swift/pandar_pointcloud/params/PandarQT128_Correction.csv"},
-                {"firetime_file"  : "./src/ROS_Swift/pandar_pointcloud/params/PandarQT128_Firetimes.csv"},
+                {"calibration"  : "./src/ROS_Swift/pandar_pointcloud/params/Pandar128_Correction.csv"},
+                {"firetime_file"  : "./src/ROS_Swift/pandar_pointcloud/params/Pandar128_Firetimes.csv"},
                 {"coordinate_correction_flag"  : False},
             ]
         )

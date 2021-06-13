@@ -472,7 +472,7 @@ int InputPCAP::getPacket(PandarPacket *pkt) {
     // }
     return 0;
   }
-  return 1;
+  return 3;
 }
 
 }  // pandar namespace

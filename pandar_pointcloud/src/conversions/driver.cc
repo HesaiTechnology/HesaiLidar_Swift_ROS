@@ -42,6 +42,7 @@ PandarDriver::PandarDriver(rclcpp::Node::SharedPtr& private_nh,
   private_nh->declare_parameter<std::string>("cert_file", "");
   private_nh->declare_parameter<std::string>("private_key_file", "");
   private_nh->declare_parameter<std::string>("ca_file", "");
+  private_nh->declare_parameter<int>("port", 2368);
   // use private node handle to get parameters
   private_nh->get_parameter("frame_id", config_.frame_id);
   private_nh->get_parameter("publish_model", publishmodel);

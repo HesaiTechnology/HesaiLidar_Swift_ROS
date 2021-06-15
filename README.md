@@ -114,7 +114,9 @@ $ ros2 launch pandar_pointcloud PandarSwift_points.py
 ```
 3. record raw data rosbag
 ```
-$ros2 bag record  /hesai/pandar_packets
+$ . install/local_setup.bash
+$ ros2 topic echo /hesai/pandar_packets
+$ ros2 bag record  /hesai/pandar_packets
 ```
 
 4. stop ros2 launch and ros2 bag record by "Ctrl + C"

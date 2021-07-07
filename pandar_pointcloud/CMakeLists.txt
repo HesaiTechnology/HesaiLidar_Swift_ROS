@@ -68,10 +68,12 @@ target_include_directories(PandarSwiftLib PRIVATE
     src/taskflow
     ${Boost_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
+    ${OPENSSL_INCLUDE_DIR}
 )
 target_link_libraries(PandarSwiftLib
     ${Boost_LIBRARIES}
     ${PCL_IO_LIBRARIES}
+    ${OPENSSL_LIBRARIES}
     Boost::thread
     pcap
     pandar_input

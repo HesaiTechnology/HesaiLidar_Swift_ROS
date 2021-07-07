@@ -106,3 +106,10 @@ PandarSwiftROS_1.0.18
 
 ##modify
 1. Support ROS2
+
+Sunday, July 7th, 2021 17:30
+##version
+PandarSwiftROS_1.0.19
+
+##modify
+1. Fix compile error in some PC

@@ -82,7 +82,7 @@ static const float azimuth_offset[] = {
 Convert::Convert(rclcpp::Node::SharedPtr& private_nh,
                  std::string node_type)
     : drv(private_nh, node_type, this) {
-  m_sRosVersion = "PandarSwiftROS_1.0.18";
+  m_sRosVersion = "PandarSwiftROS_1.0.19";
   printf("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
   if (LIDAR_NODE_TYPE == node_type) {
     // this->get_parameter("pcap_file", pcapFile);

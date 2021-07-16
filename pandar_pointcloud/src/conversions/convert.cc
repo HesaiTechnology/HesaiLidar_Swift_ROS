@@ -30,6 +30,7 @@
 #include "taskflow.hpp"
 // #define PRINT_FLAG 
 // #define FIRETIME_CORRECTION_CHECK 
+// #define COORDINATE_CORRECTION_CHECK
 
 namespace pandar_pointcloud {
 
@@ -1123,9 +1124,6 @@ void Convert::calcQT128PointXYZIT(pandar_pointcloud::msg::PandarPacket &packet, 
         pitchIdx  += CIRCLE;
       }
 
-      float xyDistance =
-          distance * m_fCosAllAngle[pitchIdx];
-
       int azimuthIdx = static_cast<int>(azimuth * 100 + 0.5);
       if (azimuthIdx >= CIRCLE) {
         azimuthIdx -= CIRCLE;
@@ -1135,9 +1133,69 @@ void Convert::calcQT128PointXYZIT(pandar_pointcloud::msg::PandarPacket &packet, 
       // printf("lll  %d, %d  ,%d, wasd %f\n",azimuthIdx, u16Azimuth, m_fHorizatalAzimuth[i], azimuth);
       // printf("lll  %d, %d  ,%d, wasd 22   %f\n",azimuthIdx, u16Azimuth, m_fHorizatalAzimuth[i], azimuth);
       //  printf("lll wasd %f\n",azimuth);
-      point.x = xyDistance * m_fSinAllAngle[azimuthIdx];
-      point.y = xyDistance * m_fCosAllAngle[azimuthIdx];
-      point.z = distance * m_fSinAllAngle[pitchIdx];
+      if(m_bCoordinateCorrectionFlag && distance > 0.1){
+				if (m_fSinAllAngle[pitchIdx] != 0){
+					float c = (HS_LIDAR_QT128_COORDINATE_CORRECTION_ODOG * HS_LIDAR_QT128_COORDINATE_CORRECTION_ODOG +
+							HS_LIDAR_QT128_COORDINATE_CORRECTION_OGOT * HS_LIDAR_QT128_COORDINATE_CORRECTION_OGOT - 
+							distance * distance ) * 
+							m_fSinAllAngle[pitchIdx] * m_fSinAllAngle[pitchIdx];
+					float b = 2 * m_fSinAllAngle[pitchIdx] * m_fCosAllAngle[pitchIdx] * (HS_LIDAR_QT128_COORDINATE_CORRECTION_ODOG * m_fCosAllAngle[azimuthIdx] - HS_LIDAR_QT128_COORDINATE_CORRECTION_OGOT * m_fSinAllAngle[azimuthIdx]);
+					point.z = (- b + sqrt(b * b - 4 * c)) / 2;
+					point.x = point.z * m_fSinAllAngle[azimuthIdx] * m_fCosAllAngle[pitchIdx] / m_fSinAllAngle[pitchIdx] - HS_LIDAR_QT128_COORDINATE_CORRECTION_OGOT;
+					point.y = point.z * m_fCosAllAngle[azimuthIdx] * m_fCosAllAngle[pitchIdx] / m_fSinAllAngle[pitchIdx] + HS_LIDAR_QT128_COORDINATE_CORRECTION_ODOG;
+					if(((point.x + HS_LIDAR_QT128_COORDINATE_CORRECTION_OGOT) * m_fCosAllAngle[pitchIdx] * m_fSinAllAngle[azimuthIdx] + 
+					(point.y - HS_LIDAR_QT128_COORDINATE_CORRECTION_ODOG) * m_fCosAllAngle[pitchIdx] * m_fCosAllAngle[azimuthIdx] + 
+						point.z * m_fSinAllAngle[pitchIdx]) <= 0){
+					point.z = (- b - sqrt(b * b - 4 * c)) / 2;
+					point.x = point.z * m_fSinAllAngle[azimuthIdx] * m_fCosAllAngle[pitchIdx] / m_fSinAllAngle[pitchIdx] - HS_LIDAR_QT128_COORDINATE_CORRECTION_OGOT;
+					point.y = point.z * m_fCosAllAngle[azimuthIdx] * m_fCosAllAngle[pitchIdx] / m_fSinAllAngle[pitchIdx] + HS_LIDAR_QT128_COORDINATE_CORRECTION_ODOG;
+					}
+				}
+				else if (m_fCosAllAngle[azimuthIdx] != 0){
+					float tan_azimuth = m_fSinAllAngle[azimuthIdx] / m_fCosAllAngle[azimuthIdx];
+					float c = (HS_LIDAR_QT128_COORDINATE_CORRECTION_ODOG * tan_azimuth + HS_LIDAR_QT128_COORDINATE_CORRECTION_OGOT) *
+							(HS_LIDAR_QT128_COORDINATE_CORRECTION_ODOG * tan_azimuth + HS_LIDAR_QT128_COORDINATE_CORRECTION_OGOT) - 
+							distance * distance ;
+					float a = 1 + tan_azimuth * tan_azimuth;
+					float b = - 2 * tan_azimuth * (HS_LIDAR_QT128_COORDINATE_CORRECTION_ODOG * tan_azimuth + HS_LIDAR_QT128_COORDINATE_CORRECTION_OGOT);
+					point.z = 0;
+					point.y = (- b + sqrt(b * b - 4 * a * c)) / (2 * a);
+					point.x = (point.y - HS_LIDAR_QT128_COORDINATE_CORRECTION_ODOG) * tan_azimuth - HS_LIDAR_QT128_COORDINATE_CORRECTION_OGOT;
+					if(((point.x + HS_LIDAR_QT128_COORDINATE_CORRECTION_OGOT) * m_fCosAllAngle[pitchIdx] * m_fSinAllAngle[azimuthIdx] + 
+					(point.y - HS_LIDAR_QT128_COORDINATE_CORRECTION_ODOG) * m_fCosAllAngle[pitchIdx] * m_fCosAllAngle[azimuthIdx] + 
+						point.z * m_fSinAllAngle[pitchIdx]) <= 0){
+					point.z = 0;
+					point.y = (- b - sqrt(b * b - 4 * a * c)) / (2 * a);
+					point.x = (point.y - HS_LIDAR_QT128_COORDINATE_CORRECTION_ODOG) * tan_azimuth - HS_LIDAR_QT128_COORDINATE_CORRECTION_OGOT;
+					}
+				}
+				else {
+					point.x = sqrt(distance * distance - HS_LIDAR_QT128_COORDINATE_CORRECTION_ODOG * HS_LIDAR_QT128_COORDINATE_CORRECTION_ODOG);
+					point.y = HS_LIDAR_QT128_COORDINATE_CORRECTION_ODOG;
+					point.z = 0;
+					if(((point.x + HS_LIDAR_QT128_COORDINATE_CORRECTION_OGOT) * m_fCosAllAngle[pitchIdx] * m_fSinAllAngle[azimuthIdx] + 
+					(point.y - HS_LIDAR_QT128_COORDINATE_CORRECTION_ODOG) * m_fCosAllAngle[pitchIdx] * m_fCosAllAngle[azimuthIdx] + 
+						point.z * m_fSinAllAngle[pitchIdx]) <= 0){
+					point.x = - sqrt(distance * distance - HS_LIDAR_QT128_COORDINATE_CORRECTION_ODOG * HS_LIDAR_QT128_COORDINATE_CORRECTION_ODOG);
+					point.y = HS_LIDAR_QT128_COORDINATE_CORRECTION_ODOG;
+					point.z = 0;
+					}
+				}
+#ifdef COORDINATE_CORRECTION_CHECK
+					float xyDistance = distance * m_fCosAllAngle[pitchIdx];
+					float point_x = static_cast<float>(xyDistance * m_fSinAllAngle[azimuthIdx]); // without coordinate correction 
+					float point_y = static_cast<float>(xyDistance * m_fCosAllAngle[azimuthIdx]);
+					float point_z = static_cast<float>(distance * m_fSinAllAngle[pitchIdx]);
+					printf("distance = %f; elevation = %f; azimuth = %f; delta X = %f; delta Y = %f; delta Z = %f; \n", 
+						distance , float(pitchIdx / 100), float(azimuthIdx / 100), point.x - point_x, point.y - point_y, point.z - point_z);
+#endif
+			}
+			else{
+				float xyDistance = distance * m_fCosAllAngle[pitchIdx];
+				point.x = static_cast<float>(xyDistance * m_fSinAllAngle[azimuthIdx]); // without coordinate correction 
+				point.y = static_cast<float>(xyDistance * m_fCosAllAngle[azimuthIdx]);
+				point.z = static_cast<float>(distance * m_fSinAllAngle[pitchIdx]);
+			}
 
       point.intensity = u8Intensity;
       point.timestamp =

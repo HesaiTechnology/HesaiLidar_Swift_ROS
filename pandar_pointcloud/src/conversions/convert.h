@@ -53,6 +53,8 @@
 #define LIDAR_ANGLE_SIZE_18 (18)
 #define LIDAR_ANGLE_SIZE_20 (20)
 #define LIDAR_ANGLE_SIZE_40 (40)
+#define LIDAR_ANGLE_SIZE_7_5 (7.5)
+#define LIDAR_ANGLE_SIZE_12_5 (12.5)
 #define LIDAR_RETURN_BLOCK_SIZE_1 (1)
 #define LIDAR_RETURN_BLOCK_SIZE_2 (2)
 
@@ -130,6 +132,7 @@
 
 #define CIRCLE_ANGLE (36000)
 #define MOTOR_SPEED_300 (300)
+#define MOTOR_SPEED_500 (500)
 #define MOTOR_SPEED_600 (600)
 #define MOTOR_SPEED_200 (200)
 #define MOTOR_SPEED_400 (400)
@@ -180,6 +183,9 @@
   (PANDAR_AT128_PACKET_SIZE + PANDAR_AT128_SEQ_NUM_SIZE)
 #define PANDAR_AT128_WITHOUT_CONF_UNIT_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
 #define PANDAR_AT128_FRAME_ANGLE_SIZE (6200)
+#define PANDAR_AT128_CRC_SIZE (4)  
+#define PANDAR_AT128_FUNCTION_SAFETY_SIZE (17)  
+#define PANDAR_AT128_SIGNATURE_SIZE (32)
 /************************************* AT 128 *********************************************/
 
 typedef struct __attribute__((__packed__)) Pandar128Unit_s {
@@ -310,7 +316,7 @@ public:
 typedef std::array<pandar_msgs::PandarPacket, 36000> PktArray;
 
 typedef struct PacketsBuffer_s {
-  PktArray m_buffers{};
+  PktArray m_buffers;
   PktArray::iterator m_iterPush;
   PktArray::iterator m_iterTaskBegin;
   PktArray::iterator m_iterTaskEnd;

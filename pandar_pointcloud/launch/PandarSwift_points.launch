@@ -9,7 +9,7 @@
   <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
   <arg name="max_range" default="130.0" />
   <arg name="min_range" default="0.5" />
-  <arg name="pcap" default="" />
+  <arg name="pcap" default="/home/hesai/Downloads/pcap/at.pcap" />
   <arg name="port" default="2368" />
   <arg name="read_fast" default="false" />
   <arg name="read_once" default="false" />

@@ -80,6 +80,16 @@
 
 /************************************* AT 128 *********************************************/
 #define PANDAR_AT128_SOB_SIZE (2)
+#define UDP_VERSION_MAJOR_1 (1)
+#define UDP_VERSION_MAJOR_4 (4)
+#define UDP_VERSION_MINOR_1 (1)
+#define UDP_VERSION_MINOR_2 (2)
+#define UDP_VERSION_MINOR_3 (3)
+#define UDP_VERSION_MINOR_4 (4)
+#define UDP_VERSION_1_3 "1.3"
+#define UDP_VERSION_1_4 "1.4"
+#define UDP_VERSION_4_1 "4.1"
+#define UDP_VERSION_4_2 "4.2"
 #define PANDAR_AT128_VERSION_MAJOR_SIZE (1)
 #define PANDAR_AT128_VERSION_MINOR_SIZE (1)
 #define PANDAR_AT128_HEAD_RESERVED1_SIZE (2)
@@ -121,6 +131,9 @@
   (PANDAR_AT128_HEAD_SIZE + PANDAR_AT128_BLOCK_SIZE * PANDAR_AT128_BLOCK_NUM + \
    PANDAR_AT128_TAIL_SIZE)
 #define PANDAR_AT128_SEQ_NUM_SIZE (4)
+#define PANDAR_AT128_CRC_SIZE (4)  
+#define PANDAR_AT128_FUNCTION_SAFETY_SIZE (17)  
+#define PANDAR_AT128_SIGNATURE_SIZE (32)
 #define PANDAR_AT128_PACKET_SEQ_NUM_SIZE \
   (PANDAR_AT128_PACKET_SIZE + PANDAR_AT128_SEQ_NUM_SIZE)
 #define PANDAR_AT128_WITHOUT_CONF_UNIT_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
@@ -156,14 +169,16 @@ namespace pandar_pointcloud
      */
     virtual int getPacket(PandarPacket *pkt) = 0;
     bool checkPacket(PandarPacket *pkt);
+    void setUdpVersion(uint8_t major, uint8_t minor);
 
   protected:
     ros::NodeHandle private_nh_;
     uint16_t port_;
     std::string devip_str_;
-    int ts_index;
-    int utc_index;
-    int seq_index;
+    std::string m_sUdpVresion;
+    int m_iTimestampIndex;
+    int m_iUtcIindex;
+    int m_iSequenceNumberIndex;
   };
 
   /** @brief Live pandar input from socket. */

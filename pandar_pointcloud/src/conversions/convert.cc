@@ -86,7 +86,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "PandarSwiftROS_1.0.17";
+  m_sRosVersion = "PandarSwiftROS_1.0.20";
   ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -1228,8 +1228,8 @@ void Convert::calcQT128PointXYZIT(pandar_msgs::PandarPacket &packet, int cursor)
 					float point_x = static_cast<float>(xyDistance * m_fSinAllAngle[azimuthIdx]); // without coordinate correction 
 					float point_y = static_cast<float>(xyDistance * m_fCosAllAngle[azimuthIdx]);
 					float point_z = static_cast<float>(distance * m_fSinAllAngle[pitchIdx]);
-					printf("distance = %f; elevation = %f; azimuth = %f; delta X = %f; delta Y = %f; delta Z = %f; \n", 
-						distance , float(pitchIdx / 100), float(azimuthIdx / 100), point.x - point_x, point.y - point_y, point.z - point_z);
+					ROS_WARN("distance = %f; elevation = %f; azimuth = %f; delta X = %f; delta Y = %f; delta Z = %f;", 
+						distance , float(pitchIdx) / 100, float(azimuthIdx) / 100, point.x - point_x, point.y - point_y, point.z - point_z);
 #endif
 
 			}

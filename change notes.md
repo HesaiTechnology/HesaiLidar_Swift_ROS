@@ -99,5 +99,12 @@ PandarSwiftROS_1.0.17
 1. Support ubuntu 20.04
 2. Update firetime correction of QT128
 
+Friday, July 23th, 2021 17:30
+##version
+PandarSwiftROS_1.0.20
+
+##modify
+1. Support coordinate correction of QT128 
+
 
 

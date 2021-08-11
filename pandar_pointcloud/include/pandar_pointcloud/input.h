@@ -41,6 +41,18 @@
 
 #include <ros/ros.h>
 #include <pandar_msgs/PandarPacket.h>
+#define ETHERNET_MTU (1500)
+#define UDP_VERSION_MAJOR_1 (1)
+#define UDP_VERSION_MAJOR_4 (4)
+#define UDP_VERSION_MINOR_1 (1)
+#define UDP_VERSION_MINOR_2 (2)
+#define UDP_VERSION_MINOR_3 (3)
+#define UDP_VERSION_MINOR_4 (4)
+#define UDP_VERSION_1_3 "1.3"
+#define UDP_VERSION_1_4 "1.4"
+#define UDP_VERSION_4_1 "4.1"
+#define UDP_VERSION_4_3 "4.3"
+#define GPS_PACKET_SIZE (512)
 #define PANDAR128_SOB_SIZE (2)
 #define PANDAR128_VERSION_MAJOR_SIZE (1)
 #define PANDAR128_VERSION_MINOR_SIZE (1)
@@ -80,16 +92,6 @@
 
 /************************************* AT 128 *********************************************/
 #define PANDAR_AT128_SOB_SIZE (2)
-#define UDP_VERSION_MAJOR_1 (1)
-#define UDP_VERSION_MAJOR_4 (4)
-#define UDP_VERSION_MINOR_1 (1)
-#define UDP_VERSION_MINOR_2 (2)
-#define UDP_VERSION_MINOR_3 (3)
-#define UDP_VERSION_MINOR_4 (4)
-#define UDP_VERSION_1_3 "1.3"
-#define UDP_VERSION_1_4 "1.4"
-#define UDP_VERSION_4_1 "4.1"
-#define UDP_VERSION_4_2 "4.2"
 #define PANDAR_AT128_VERSION_MAJOR_SIZE (1)
 #define PANDAR_AT128_VERSION_MINOR_SIZE (1)
 #define PANDAR_AT128_HEAD_RESERVED1_SIZE (2)
@@ -106,6 +108,7 @@
    PANDAR_AT128_ECHO_COUNT_SIZE + PANDAR_AT128_ECHO_NUM_SIZE +          \
    PANDAR_AT128_HEAD_RESERVED2_SIZE + PANDAR_AT128_DISTANCE_UNIT_SIZE)
 #define PANDAR_AT128_AZIMUTH_SIZE (2)
+#define PANDAR_AT128_FINE_AZIMUTH_SIZE (1)
 #define DISTANCE_SIZE (2)
 #define INTENSITY_SIZE (1)
 #define CONFIDENCE_SIZE (1)
@@ -113,10 +116,14 @@
 #define PANDAR_AT128_UNIT_WITH_CONFIDENCE_SIZE (DISTANCE_SIZE + INTENSITY_SIZE + CONFIDENCE_SIZE)
 #define PANDAR_AT128_BLOCK_SIZE \
   (PANDAR_AT128_UNIT_WITHOUT_CONFIDENCE_SIZE * PANDAR_AT128_LASER_NUM + PANDAR_AT128_AZIMUTH_SIZE)
+#define PANDAR_AT128_CRC_SIZE (4)  
+#define PANDAR_AT128_FUNCTION_SAFETY_SIZE (17)  
+#define PANDAR_AT128_SIGNATURE_SIZE (32)
 #define PANDAR_AT128_TAIL_RESERVED1_SIZE (3)
 #define PANDAR_AT128_TAIL_RESERVED2_SIZE (3)
 #define PANDAR_AT128_SHUTDOWN_FLAG_SIZE (1)
 #define PANDAR_AT128_TAIL_RESERVED3_SIZE (3)
+#define PANDAR_AT128_TAIL_RESERVED4_SIZE (8)
 #define PANDAR_AT128_MOTOR_SPEED_SIZE (2)
 #define PANDAR_AT128_TS_SIZE (4)
 #define PANDAR_AT128_RETURN_MODE_SIZE (1)
@@ -131,13 +138,30 @@
   (PANDAR_AT128_HEAD_SIZE + PANDAR_AT128_BLOCK_SIZE * PANDAR_AT128_BLOCK_NUM + \
    PANDAR_AT128_TAIL_SIZE)
 #define PANDAR_AT128_SEQ_NUM_SIZE (4)
-#define PANDAR_AT128_CRC_SIZE (4)  
-#define PANDAR_AT128_FUNCTION_SAFETY_SIZE (17)  
-#define PANDAR_AT128_SIGNATURE_SIZE (32)
 #define PANDAR_AT128_PACKET_SEQ_NUM_SIZE \
   (PANDAR_AT128_PACKET_SIZE + PANDAR_AT128_SEQ_NUM_SIZE)
 #define PANDAR_AT128_WITHOUT_CONF_UNIT_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
 /************************************* AT 128 *********************************************/
+enum enumIndex{
+	TIMESTAMP_INDEX,
+	UTC_INDEX,
+	SEQUENCE_NUMBER_INDEX,
+	PACKET_SIZE,
+};
+
+static std::map<enumIndex, int> udpVersion13 = {
+	{TIMESTAMP_INDEX, 796},
+	{UTC_INDEX, 802},
+	{SEQUENCE_NUMBER_INDEX, 817},
+	{PACKET_SIZE, 812},
+};
+
+static std::map<enumIndex, int> udpVersion14 = {
+	{TIMESTAMP_INDEX, 826},
+	{UTC_INDEX, 820},
+	{SEQUENCE_NUMBER_INDEX, 831},
+	{PACKET_SIZE, 893},
+};
 
 typedef struct PandarPacket_s {
   ros::Time stamp;
@@ -176,6 +200,7 @@ namespace pandar_pointcloud
     uint16_t port_;
     std::string devip_str_;
     std::string m_sUdpVresion;
+    bool m_bGetUdpVersion;
     int m_iTimestampIndex;
     int m_iUtcIindex;
     int m_iSequenceNumberIndex;

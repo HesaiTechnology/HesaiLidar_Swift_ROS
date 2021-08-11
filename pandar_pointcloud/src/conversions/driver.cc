@@ -247,6 +247,10 @@ bool PandarDriver::poll(void) {
   return true;
 }
 
+void PandarDriver::setUdpVersion(uint8_t major, uint8_t minor) {
+	input_->setUdpVersion(major, minor);
+}
+
 void PandarDriver::publishRawData() {
   uint32_t start = GetTickCount();
 

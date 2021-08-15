@@ -643,7 +643,8 @@ void Convert::init() {
 
 void Convert::publishPoints() {
   // uint32_t start = GetTickCount();
-
+  if(m_dTimestamp == 0)
+    return;
   pcl_conversions::toPCL(ros::Time(m_dTimestamp),
                          m_OutMsgArray[m_iPublishPointsIndex]->header.stamp);
   sensor_msgs::PointCloud2 output;

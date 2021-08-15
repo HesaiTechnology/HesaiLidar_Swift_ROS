@@ -49,10 +49,10 @@
 #define PANDARSDK_TCP_COMMAND_PORT (9347)
 #define LIDAR_NODE_TYPE "lidar"
 #define LIDAR_ANGLE_SIZE_5 (5)
-#define LIDAR_ANGLE_SIZE_7_5 (7.5)
-#define LIDAR_ANGLE_SIZE_12_5 (12.5)
-#define LIDAR_ANGLE_SIZE_18_75 (18.75)
-#define LIDAR_ANGLE_SIZE_3_75 (3.75)
+#define LIDAR_ANGLE_SIZE_7_5 (float(7.5))
+#define LIDAR_ANGLE_SIZE_12_5 (float(12.5))
+#define LIDAR_ANGLE_SIZE_18_75 (float(18.75))
+#define LIDAR_ANGLE_SIZE_3_75 (float(3.75))
 #define LIDAR_ANGLE_SIZE_15 (15)
 #define LIDAR_ANGLE_SIZE_10 (10)
 #define LIDAR_ANGLE_SIZE_18 (18)
@@ -542,7 +542,7 @@ class Convert {
   int m_iMotorSpeed;
   int m_iLaserNum;
   int m_iBlockNum;
-  int m_iAngleSize;  // 10->0.1degree,20->0.2degree
+  float m_iAngleSize;  // 10->0.1degree,20->0.2degree
   int m_iReturnBlockSize;
   bool m_bPublishPointsFlag;
   int m_iPublishPointsIndex;

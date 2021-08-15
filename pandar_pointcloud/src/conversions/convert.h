@@ -51,6 +51,8 @@
 #define LIDAR_ANGLE_SIZE_5 (5)
 #define LIDAR_ANGLE_SIZE_7_5 (7.5)
 #define LIDAR_ANGLE_SIZE_12_5 (12.5)
+#define LIDAR_ANGLE_SIZE_18_75 (18.75)
+#define LIDAR_ANGLE_SIZE_3_75 (3.75)
 #define LIDAR_ANGLE_SIZE_15 (15)
 #define LIDAR_ANGLE_SIZE_10 (10)
 #define LIDAR_ANGLE_SIZE_18 (18)
@@ -133,12 +135,14 @@
 
 #define CIRCLE_ANGLE (36000)
 #define MAX_AZI_LEN (36000 * 256)
+#define MOTOR_SPEED_750 (750)
 #define MOTOR_SPEED_600 (600)
 #define MOTOR_SPEED_500 (500)
 #define MOTOR_SPEED_400 (400)
 #define MOTOR_SPEED_200 (200)
 #define MOTOR_SPEED_900 (900)
 #define MOTOR_SPEED_300 (300)
+#define MOTOR_SPEED_150 (150)
 #define MOTOR_SPEED_1200 (1200)
 #define MAX_REDUNDANT_POINT_NUM (1000)
 /************************************* AT 128 *********************************************/
@@ -189,7 +193,7 @@
 #define PANDAR_AT128_PACKET_SEQ_NUM_SIZE \
   (PANDAR_AT128_PACKET_SIZE + PANDAR_AT128_SEQ_NUM_SIZE)
 #define PANDAR_AT128_WITHOUT_CONF_UNIT_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
-#define PANDAR_AT128_FRAME_ANGLE_SIZE (6200)
+#define PANDAR_AT128_FRAME_ANGLE_SIZE (6400)
 #define PANDAR_AT128_CRC_SIZE (4)  
 #define PANDAR_AT128_FUNCTION_SAFETY_SIZE (17)  
 #define PANDAR_AT128_SIGNATURE_SIZE (32)
@@ -312,6 +316,15 @@ struct PandarATCorrectionsHeader {
 static_assert(sizeof(PandarATCorrectionsHeader) == 16);
 #pragma pack(pop)
 
+struct PandarATFrameInfo {
+    uint32_t start_frame[8];
+    uint32_t end_frame[8];
+    int32_t azimuth[128];
+    int32_t elevation[128];
+    std::array<float, MAX_AZI_LEN> sin_map;
+    std::array<float, MAX_AZI_LEN> cos_map;
+};
+
 struct PandarATCorrections {
 public:
     PandarATCorrectionsHeader header;
@@ -322,6 +335,7 @@ public:
     int8_t azimuth_offset[36000];
     int8_t elevation_offset[36000];
     uint8_t SHA256[32];
+    PandarATFrameInfo l; // V1.5
     std::array<float, MAX_AZI_LEN> sin_map;
     std::array<float, MAX_AZI_LEN> cos_map;
     PandarATCorrections() {
@@ -335,26 +349,26 @@ public:
         unsigned int i = std::floor(1.f * azi / STEP);
         unsigned int l = azi - i * STEP;
         float k = 1.f * l / STEP;
-        return round((1-k) * azimuth_adjust[ch*180 + i] + k * azimuth_adjust[ch*180 + i+1]);
+        return round((1-k) * azimuth_offset[ch*180 + i] + k * azimuth_offset[ch*180 + i+1]);
     }
     int8_t getElevationAdjust(uint8_t ch, uint16_t azi) const{
         unsigned int i = std::floor(1.f * azi / STEP);
         unsigned int l = azi - i * STEP;
         float k = 1.f * l / STEP;
-        return round((1-k) * elevation_adjust[ch*180 + i] + k * elevation_adjust[ch*180 + i+1]);
+        return round((1-k) *elevation_offset[ch*180 + i] + k *elevation_offset[ch*180 + i+1]);
     }
     static const int STEP3 = 200 * 256;
     int8_t getAzimuthAdjustV3(uint8_t ch, uint32_t azi) const{
         unsigned int i = std::floor(1.f * azi / STEP3);
         unsigned int l = azi - i * STEP3;
         float k = 1.f * l / STEP3;
-        return round((1-k) * azimuth_adjust[ch*180 + i] + k * azimuth_adjust[ch*180 + i+1]);
+        return round((1-k) * azimuth_offset[ch*180 + i] + k * azimuth_offset[ch*180 + i+1]);
     }
     int8_t getElevationAdjustV3(uint8_t ch, uint32_t azi) const{
         unsigned int i = std::floor(1.f * azi / STEP3);
         unsigned int l = azi - i * STEP3;
         float k = 1.f * l / STEP3;
-        return round((1-k) * elevation_adjust[ch*180 + i] + k * elevation_adjust[ch*180 + i+1]);
+        return round((1-k) *elevation_offset[ch*180 + i] + k *elevation_offset[ch*180 + i+1]);
     }
 };
 

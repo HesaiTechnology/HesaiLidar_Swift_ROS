@@ -84,7 +84,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "PandarSwiftROS_1.0.17";
+  m_sRosVersion = "PandarSwiftROS_1.0.21";
   ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -255,35 +255,79 @@ int Convert::loadCorrectionFile(char * data) {
       PandarATCorrectionsHeader header = *(PandarATCorrectionsHeader *)p;
       if ( 0xee == header.delimiter[0] && 0xff == header.delimiter[1])
       {
-          m_PandarAT_corrections.header = header;
-          auto frame_num = m_PandarAT_corrections.header.frame_number;
-          auto channel_num = m_PandarAT_corrections.header.channel_number;
-          p += sizeof(PandarATCorrectionsHeader);
-          memcpy((void *)&m_PandarAT_corrections.start_frame, p, sizeof(uint16_t) * frame_num);
-          p += sizeof(uint16_t) * frame_num;
-          memcpy((void *)&m_PandarAT_corrections.end_frame, p, sizeof(uint16_t) * frame_num);
-          p += sizeof(uint16_t) * frame_num;
-          ROS_WARN( "frame_num: %d" ,frame_num);
-          ROS_WARN( "start_frame, end_frame: ");
-          for (int i = 0; i < frame_num; ++i) 
-              ROS_WARN("%lf,   %lf", m_PandarAT_corrections.start_frame[i] / 100.f , m_PandarAT_corrections.end_frame[i] / 100.f);
-          memcpy((void *)&m_PandarAT_corrections.azimuth, p, sizeof(int16_t) * channel_num);
-          p += sizeof(int16_t) * channel_num;
-          memcpy((void *)&m_PandarAT_corrections.elevation, p, sizeof(int16_t) * channel_num);
-          p += sizeof(int16_t) * channel_num;
-          memcpy((void *)&m_PandarAT_corrections.azimuth_offset, p, sizeof(int8_t) * 36000);
-          p += sizeof(int8_t) * 36000;
-          memcpy((void *)&m_PandarAT_corrections.elevation_offset, p, sizeof(int8_t) * 36000);
-          p += sizeof(int8_t) * 36000;
-          memcpy((void *)&m_PandarAT_corrections.SHA256, p, sizeof(uint8_t) * 32);
-          p += sizeof(uint8_t) * 32;
+        switch(header.version[1]){
+          case 3:
+          {
+            m_PandarAT_corrections.header = header;
+            auto frame_num = m_PandarAT_corrections.header.frame_number;
+            auto channel_num = m_PandarAT_corrections.header.channel_number;
+            p += sizeof(PandarATCorrectionsHeader);
+            memcpy((void *)&m_PandarAT_corrections.start_frame, p, sizeof(uint16_t) * frame_num);
+            p += sizeof(uint16_t) * frame_num;
+            memcpy((void *)&m_PandarAT_corrections.end_frame, p, sizeof(uint16_t) * frame_num);
+            p += sizeof(uint16_t) * frame_num;
+            ROS_WARN( "frame_num: %d" ,frame_num);
+            ROS_WARN( "start_frame, end_frame: ");
+            for (int i = 0; i < frame_num; ++i) 
+                ROS_WARN("%lf,   %lf", m_PandarAT_corrections.start_frame[i] / 100.f , m_PandarAT_corrections.end_frame[i] / 100.f);
+            memcpy((void *)&m_PandarAT_corrections.azimuth, p, sizeof(int16_t) * channel_num);
+            p += sizeof(int16_t) * channel_num;
+            memcpy((void *)&m_PandarAT_corrections.elevation, p, sizeof(int16_t) * channel_num);
+            p += sizeof(int16_t) * channel_num;
+            memcpy((void *)&m_PandarAT_corrections.azimuth_offset, p, sizeof(int8_t) * 36000);
+            p += sizeof(int8_t) * 36000;
+            memcpy((void *)&m_PandarAT_corrections.elevation_offset, p, sizeof(int8_t) * 36000);
+            p += sizeof(int8_t) * 36000;
+            memcpy((void *)&m_PandarAT_corrections.SHA256, p, sizeof(uint8_t) * 32);
+            p += sizeof(uint8_t) * 32;
 
-          for (int i = 0; i < channel_num; i++) {
-              horizatal_azimuth_[i] = m_PandarAT_corrections.azimuth[i] / 100.f;
-              elev_angle_[i] = m_PandarAT_corrections.elevation[i] / 100.f;
-              
-          }
-          return 0;
+            for (int i = 0; i < channel_num; i++) {
+                horizatal_azimuth_[i] = m_PandarAT_corrections.azimuth[i] / 100.f;
+                elev_angle_[i] = m_PandarAT_corrections.elevation[i] / 100.f;
+                
+            }
+            return 0;
+          }  
+          break;  
+          case 5:
+          {
+            m_PandarAT_corrections.header = header;
+            auto frame_num = m_PandarAT_corrections.header.frame_number;
+            auto channel_num = m_PandarAT_corrections.header.channel_number;
+            p += sizeof(PandarATCorrectionsHeader);
+            memcpy((void *)&m_PandarAT_corrections.l.start_frame, p, sizeof(uint32_t) * frame_num);
+            p += sizeof(uint32_t) * frame_num;
+            memcpy((void *)&m_PandarAT_corrections.l.end_frame, p, sizeof(uint32_t) * frame_num);
+            p += sizeof(uint32_t) * frame_num;
+            ROS_WARN( "frame_num: %d" ,frame_num);
+            ROS_WARN( "start_frame, end_frame: ");
+            for (int i = 0; i < frame_num; ++i) 
+                ROS_WARN("%lf,   %lf", m_PandarAT_corrections.l.start_frame[i] / 25600.f , m_PandarAT_corrections.l.end_frame[i] / 25600.f);
+            memcpy((void *)&m_PandarAT_corrections.l.azimuth, p, sizeof(int32_t) * channel_num);
+            p += sizeof(int32_t) * channel_num;
+            memcpy((void *)&m_PandarAT_corrections.l.elevation, p, sizeof(int32_t) * channel_num);
+            p += sizeof(int32_t) * channel_num;
+            auto adjust_length = channel_num * 180;
+            memcpy((void *)&m_PandarAT_corrections.azimuth_offset, p, sizeof(int8_t) * adjust_length);
+            p += sizeof(int8_t) * adjust_length;
+            memcpy((void *)&m_PandarAT_corrections.elevation_offset, p, sizeof(int8_t) * adjust_length);
+            p += sizeof(int8_t) * adjust_length;
+            memcpy((void *)&m_PandarAT_corrections.SHA256, p, sizeof(uint8_t) * 32);
+            p += sizeof(uint8_t) * 32;
+
+            for (int i = 0; i < channel_num; i++) {
+                horizatal_azimuth_[i] = m_PandarAT_corrections.azimuth[i] / 25600.f;
+                elev_angle_[i] = m_PandarAT_corrections.elevation[i] / 100.f;
+                
+            }
+            return 0;
+          }  
+          break;  
+          default:
+          break;
+
+        }
+          
       }
         
       return 1;
@@ -556,6 +600,7 @@ void Convert::init() {
 				m_u8UdpVersionMinor = header->u8VersionMinor;
 
 			}
+      break;
 			default:
 			continue;
 			break;
@@ -563,6 +608,9 @@ void Convert::init() {
 		if(abs(abs(lidarmotorspeed) - MOTOR_SPEED_600) < 30) { //ignore the speed gap of 600 rpm
 			lidarmotorspeed = MOTOR_SPEED_600;
 		}
+    else if(abs(abs(lidarmotorspeed) - MOTOR_SPEED_750) < 30) { //ignore the speed gap of 750 rpm
+      lidarmotorspeed = MOTOR_SPEED_750;
+    }
     else if(abs(abs(lidarmotorspeed) - MOTOR_SPEED_500) < 30) { //ignore the speed gap of 500 rpm
     lidarmotorspeed = MOTOR_SPEED_500;
     }
@@ -574,6 +622,9 @@ void Convert::init() {
     }
     else if(abs(abs(lidarmotorspeed) - MOTOR_SPEED_200) < 30) { //ignore the speed gap of 200 rpm
       lidarmotorspeed = MOTOR_SPEED_200;
+    }
+    else if(abs(abs(lidarmotorspeed) - MOTOR_SPEED_150) < 30) { //ignore the speed gap of 150 rpm
+      lidarmotorspeed = MOTOR_SPEED_150;
     }
 		else {
 			lidarmotorspeed = MOTOR_SPEED_200; //changing the speed,give enough size
@@ -667,11 +718,15 @@ int Convert::checkLiadaMode() {
                           PANDAR_AT128_AZIMUTH_SIZE * (header->u8BlockNum - 1) +
                           PANDAR_AT128_FINE_AZIMUTH_SIZE * (header->u8BlockNum - 1);
   }
+  break;
 	default:
 	break;
   }
   if(abs(abs(lidarmotorspeed) - MOTOR_SPEED_600) < 30) { //ignore the speed gap of 600 rpm
     lidarmotorspeed = MOTOR_SPEED_600;
+  }
+  else if(abs(abs(lidarmotorspeed) - MOTOR_SPEED_750) < 30) { //ignore the speed gap of 750 rpm
+    lidarmotorspeed = MOTOR_SPEED_750;
   }
   else if(abs(abs(lidarmotorspeed) - MOTOR_SPEED_500) < 30) { //ignore the speed gap of 500 rpm
     lidarmotorspeed = MOTOR_SPEED_500;
@@ -684,6 +739,9 @@ int Convert::checkLiadaMode() {
   }
   else if(abs(abs(lidarmotorspeed) - MOTOR_SPEED_200) < 30) { //ignore the speed gap of 200 rpm
     lidarmotorspeed = MOTOR_SPEED_200;
+  }
+  else if(abs(abs(lidarmotorspeed) - MOTOR_SPEED_150) < 30) { //ignore the speed gap of 150 rpm
+    lidarmotorspeed = MOTOR_SPEED_150;
   }
   else {
       lidarmotorspeed = MOTOR_SPEED_200; //changing the speed,give enough size
@@ -740,7 +798,10 @@ void Convert::changeAngleSize() {
     break;
     case 3:
     {
-      if (MOTOR_SPEED_600 == m_iMotorSpeed ) {
+      if(MOTOR_SPEED_750 == m_iMotorSpeed){
+        m_iAngleSize = LIDAR_ANGLE_SIZE_18_75;  // 10->0.15degree
+      }
+      else if (MOTOR_SPEED_600 == m_iMotorSpeed ) {
         m_iAngleSize = LIDAR_ANGLE_SIZE_15;  // 10->0.15degree
       }
       else if(MOTOR_SPEED_500 == m_iMotorSpeed){
@@ -754,6 +815,9 @@ void Convert::changeAngleSize() {
       }
       else if(MOTOR_SPEED_200 == m_iMotorSpeed){
         m_iAngleSize = LIDAR_ANGLE_SIZE_5;  // 5->0.05degree
+      }
+      else if(MOTOR_SPEED_150 == m_iMotorSpeed){
+        m_iAngleSize = LIDAR_ANGLE_SIZE_3_75;  // 5->0.05degree
       }
     }
     break;	
@@ -894,8 +958,8 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 			int count = 0, field = 0;
 			while ( count < m_PandarAT_corrections.header.frame_number
 					&& (
-					((Azimuth + MAX_AZI_LEN  - m_PandarAT_corrections.start_frame[field]) % MAX_AZI_LEN  + (m_PandarAT_corrections.end_frame[field] + MAX_AZI_LEN  - Azimuth) % MAX_AZI_LEN )
-						!= (m_PandarAT_corrections.end_frame[field] + MAX_AZI_LEN  - m_PandarAT_corrections.start_frame[field]) % MAX_AZI_LEN  )
+					((Azimuth + MAX_AZI_LEN  - m_PandarAT_corrections.l.start_frame[field]) % MAX_AZI_LEN  + (m_PandarAT_corrections.l.end_frame[field] + MAX_AZI_LEN  - Azimuth) % MAX_AZI_LEN )
+						!= (m_PandarAT_corrections.l.end_frame[field] + MAX_AZI_LEN  - m_PandarAT_corrections.l.start_frame[field]) % MAX_AZI_LEN  )
 			) {
 				field = (field + 1) % m_PandarAT_corrections.header.frame_number;
 				count++;
@@ -914,13 +978,13 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 				float distance =
 					static_cast<float>(u16Distance) * PANDAR128_DISTANCE_UNIT;
 				auto elevation = m_iViewMode == 0 ?
-							m_PandarAT_corrections.elevation[i] * m_PandarAT_corrections.header.resolution : 
-						(m_PandarAT_corrections.elevation[i] + m_PandarAT_corrections.getElevationAdjustV3(i, Azimuth) * 256) * m_PandarAT_corrections.header.resolution;
+							m_PandarAT_corrections.l.elevation[i] * m_PandarAT_corrections.header.resolution : 
+						(m_PandarAT_corrections.l.elevation[i] + m_PandarAT_corrections.getElevationAdjustV3(i, Azimuth) * 256) * m_PandarAT_corrections.header.resolution;
 				elevation = (MAX_AZI_LEN + elevation) % MAX_AZI_LEN;      
 				auto azimuth = m_iViewMode == 0 ?
-					(Azimuth + MAX_AZI_LEN  - m_PandarAT_corrections.azimuth[i] / 2) % MAX_AZI_LEN  * m_PandarAT_corrections.header.resolution : 
-					((Azimuth + MAX_AZI_LEN  - m_PandarAT_corrections.start_frame[field]) * 2
-					- m_PandarAT_corrections.azimuth[i]
+					(Azimuth + MAX_AZI_LEN  - m_PandarAT_corrections.l.azimuth[i] / 2) % MAX_AZI_LEN  * m_PandarAT_corrections.header.resolution : 
+					((Azimuth + MAX_AZI_LEN  - m_PandarAT_corrections.l.start_frame[field]) * 2
+					- m_PandarAT_corrections.l.azimuth[i]
 					+ m_PandarAT_corrections.getAzimuthAdjustV3(i, Azimuth) * 256) * m_PandarAT_corrections.header.resolution;
 				azimuth = (MAX_AZI_LEN  + azimuth) % MAX_AZI_LEN ;
 				float xyDistance =
@@ -984,21 +1048,21 @@ bool Convert::isNeedPublish(){
 		break;
 		case 3:
 		{
-			uint16_t beginAzimuth = *(uint16_t*)(&(m_PacketsBuffer.getTaskBegin()->data[0]) + m_iFirstAzimuthIndex) + *(uint8_t*)(&(m_PacketsBuffer.getTaskBegin()->data[0]) + m_iFirstAzimuthIndex + 1) / 256;
-			uint16_t endAzimuth = *(uint16_t*)(&((m_PacketsBuffer.getTaskEnd() - 1)->data[0]) + m_iLastAzimuthIndex) + *(uint8_t*)(&((m_PacketsBuffer.getTaskEnd() - 1)->data[0]) + m_iLastAzimuthIndex + 1) / 256;
+			uint32_t beginAzimuth = *(uint16_t*)(&(m_PacketsBuffer.getTaskBegin()->data[0]) + m_iFirstAzimuthIndex) * 256 + *(uint8_t*)(&(m_PacketsBuffer.getTaskBegin()->data[0]) + m_iFirstAzimuthIndex + 1);
+			uint32_t endAzimuth = *(uint16_t*)(&((m_PacketsBuffer.getTaskEnd() - 1)->data[0]) + m_iLastAzimuthIndex) * 256 + *(uint8_t*)(&((m_PacketsBuffer.getTaskEnd() - 1)->data[0]) + m_iLastAzimuthIndex + 1);
 			if(m_bClockwise){
 				if(m_iViewMode == 1){
 					for(int i = 0; i < m_PandarAT_corrections.header.frame_number; i++){
-					if((abs(endAzimuth - (m_PandarAT_corrections.start_frame[i])) <= m_iAngleSize) || 
-						(beginAzimuth < (m_PandarAT_corrections.start_frame[i])) && ((m_PandarAT_corrections.start_frame[i]) <= endAzimuth) ||
+					if((fabs(endAzimuth - (m_PandarAT_corrections.l.start_frame[i])) <= m_iAngleSize) || 
+						(beginAzimuth < (m_PandarAT_corrections.l.start_frame[i])) && ((m_PandarAT_corrections.l.start_frame[i]) <= endAzimuth) ||
 						(endAzimuth < beginAzimuth && (endAzimuth + CIRCLE_ANGLE - beginAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE))
 							return true;
 					}
 					return false;
 				}
 				else{
-					if((abs(endAzimuth - m_PandarAT_corrections.start_frame[0]) <= m_iAngleSize) || 
-						(beginAzimuth < m_PandarAT_corrections.start_frame[0]) && (m_PandarAT_corrections.start_frame[0] <= endAzimuth) ||
+					if((fabs(endAzimuth - m_PandarAT_corrections.l.start_frame[0]) <= m_iAngleSize) || 
+						(beginAzimuth < m_PandarAT_corrections.l.start_frame[0]) && (m_PandarAT_corrections.l.start_frame[0] <= endAzimuth) ||
 						(endAzimuth < beginAzimuth && (endAzimuth + CIRCLE_ANGLE - beginAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE)){
 						return true;
 					}
@@ -1008,16 +1072,16 @@ bool Convert::isNeedPublish(){
 			else{
 				if(m_iViewMode == 1){
 					for(int i = 0; i < m_PandarAT_corrections.header.frame_number; i++){
-					if((abs(beginAzimuth - (m_PandarAT_corrections.start_frame[i])) <= m_iAngleSize) || 
-						(endAzimuth < (m_PandarAT_corrections.start_frame[i])) && ((m_PandarAT_corrections.start_frame[i]) <= beginAzimuth) ||
+					if((fabs(beginAzimuth - (m_PandarAT_corrections.l.start_frame[i])) <= m_iAngleSize) || 
+						(endAzimuth < (m_PandarAT_corrections.l.start_frame[i])) && ((m_PandarAT_corrections.l.start_frame[i]) <= beginAzimuth) ||
 						(beginAzimuth < endAzimuth && (beginAzimuth + CIRCLE_ANGLE - endAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE))
 						return true;
 					}
 					return false;
 				}
 				else{
-					if((abs(beginAzimuth - m_PandarAT_corrections.start_frame[0]) <= m_iAngleSize) || 
-						(endAzimuth < m_PandarAT_corrections.start_frame[0]) && (m_PandarAT_corrections.start_frame[0] <= beginAzimuth) ||
+					if((fabs(beginAzimuth - m_PandarAT_corrections.l.start_frame[0]) <= m_iAngleSize) || 
+						(endAzimuth < m_PandarAT_corrections.l.start_frame[0]) && (m_PandarAT_corrections.l.start_frame[0] <= beginAzimuth) ||
 						(beginAzimuth < endAzimuth && (beginAzimuth + CIRCLE_ANGLE - endAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE)){
 						return true;
 					}

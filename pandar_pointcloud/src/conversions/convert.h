@@ -49,6 +49,11 @@
 #define PANDARSDK_TCP_COMMAND_PORT (9347)
 #define LIDAR_NODE_TYPE "lidar"
 #define LIDAR_ANGLE_SIZE_5 (5)
+#define LIDAR_ANGLE_SIZE_7_5 (float(7.5))
+#define LIDAR_ANGLE_SIZE_12_5 (float(12.5))
+#define LIDAR_ANGLE_SIZE_18_75 (float(18.75))
+#define LIDAR_ANGLE_SIZE_3_75 (float(3.75))
+#define LIDAR_ANGLE_SIZE_15 (15)
 #define LIDAR_ANGLE_SIZE_10 (10)
 #define LIDAR_ANGLE_SIZE_18 (18)
 #define LIDAR_ANGLE_SIZE_20 (20)
@@ -110,12 +115,12 @@
    PANDAR128_SHUTDOWN_FLAG_SIZE + PANDAR128_TAIL_RESERVED3_SIZE +  \
    PANDAR128_MOTOR_SPEED_SIZE + PANDAR128_TS_SIZE +                \
    PANDAR128_RETURN_MODE_SIZE + PANDAR128_FACTORY_INFO + PANDAR128_UTC_SIZE)
-#define PANDAR128_PACKET_SIZE                                         \
-  (PANDAR128_HEAD_SIZE + PANDAR128_BLOCK_SIZE * PANDAR128_BLOCK_NUM + \
-   PANDAR128_TAIL_SIZE)
+// #define PANDAR128_PACKET_SIZE                                         \
+//   (PANDAR128_HEAD_SIZE + PANDAR128_BLOCK_SIZE * PANDAR128_BLOCK_NUM + \
+//    PANDAR128_TAIL_SIZE)
 #define PANDAR128_SEQ_NUM_SIZE (4)
-#define PANDAR128_PACKET_SEQ_NUM_SIZE \
-  (PANDAR128_PACKET_SIZE + PANDAR128_SEQ_NUM_SIZE)
+// #define PANDAR128_PACKET_SEQ_NUM_SIZE \
+//   (PANDAR128_PACKET_SIZE + PANDAR128_SEQ_NUM_SIZE)
 #define PANDAR128_WITHOUT_CONF_UNIT_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
 
 #define PANDAR128_TASKFLOW_STEP_SIZE (225)
@@ -129,11 +134,15 @@
 #define ETHERNET_MTU (1500)
 
 #define CIRCLE_ANGLE (36000)
-#define MOTOR_SPEED_300 (300)
+#define MAX_AZI_LEN (36000 * 256)
+#define MOTOR_SPEED_750 (750)
 #define MOTOR_SPEED_600 (600)
-#define MOTOR_SPEED_200 (200)
+#define MOTOR_SPEED_500 (500)
 #define MOTOR_SPEED_400 (400)
+#define MOTOR_SPEED_200 (200)
 #define MOTOR_SPEED_900 (900)
+#define MOTOR_SPEED_300 (300)
+#define MOTOR_SPEED_150 (150)
 #define MOTOR_SPEED_1200 (1200)
 #define MAX_REDUNDANT_POINT_NUM (1000)
 /************************************* AT 128 *********************************************/
@@ -154,6 +163,10 @@
    PANDAR_AT128_ECHO_COUNT_SIZE + PANDAR_AT128_ECHO_NUM_SIZE +          \
    PANDAR_AT128_HEAD_RESERVED2_SIZE + PANDAR_AT128_DISTANCE_UNIT_SIZE)
 #define PANDAR_AT128_AZIMUTH_SIZE (2)
+#define PANDAR_AT128_FINE_AZIMUTH_SIZE (1)
+#define DISTANCE_SIZE (2)
+#define INTENSITY_SIZE (1)
+#define CONFIDENCE_SIZE (1)
 #define PANDAR_AT128_UNIT_WITHOUT_CONFIDENCE_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
 #define PANDAR_AT128_UNIT_WITH_CONFIDENCE_SIZE (DISTANCE_SIZE + INTENSITY_SIZE + CONFIDENCE_SIZE)
 #define PANDAR_AT128_BLOCK_SIZE \
@@ -162,6 +175,7 @@
 #define PANDAR_AT128_TAIL_RESERVED2_SIZE (3)
 #define PANDAR_AT128_SHUTDOWN_FLAG_SIZE (1)
 #define PANDAR_AT128_TAIL_RESERVED3_SIZE (3)
+#define PANDAR_AT128_TAIL_RESERVED4_SIZE (8)
 #define PANDAR_AT128_MOTOR_SPEED_SIZE (2)
 #define PANDAR_AT128_TS_SIZE (4)
 #define PANDAR_AT128_RETURN_MODE_SIZE (1)
@@ -179,7 +193,10 @@
 #define PANDAR_AT128_PACKET_SEQ_NUM_SIZE \
   (PANDAR_AT128_PACKET_SIZE + PANDAR_AT128_SEQ_NUM_SIZE)
 #define PANDAR_AT128_WITHOUT_CONF_UNIT_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
-#define PANDAR_AT128_FRAME_ANGLE_SIZE (6200)
+#define PANDAR_AT128_FRAME_ANGLE_SIZE (6400)
+#define PANDAR_AT128_CRC_SIZE (4)  
+#define PANDAR_AT128_FUNCTION_SAFETY_SIZE (17)  
+#define PANDAR_AT128_SIGNATURE_SIZE (32)
 /************************************* AT 128 *********************************************/
 
 typedef struct __attribute__((__packed__)) Pandar128Unit_s {
@@ -262,7 +279,7 @@ typedef struct PandarAT128Head_s {
 
 } PandarAT128Head;
 
-typedef struct PandarAT128Tail_s {
+typedef struct PandarAT128TailVersion41_s {
   uint8_t nReserved1[3];
   uint8_t nReserved2[3];
   uint8_t nShutdownFlag;
@@ -272,7 +289,20 @@ typedef struct PandarAT128Tail_s {
   uint8_t nReturnMode;
   uint8_t nFactoryInfo;
   uint8_t nUTCTime[6];
-} PandarAT128Tail;
+} PandarAT128TailVersion41;
+
+typedef struct PandarAT128TailVersion43_s {
+  uint8_t nReserved1[3];
+  uint8_t nReserved2[3];
+  uint8_t nShutdownFlag;
+  uint8_t nReserved3[3];
+  uint8_t nReserved4[8];
+  int16_t nMotorSpeed;;
+  uint32_t nTimestamp;
+  uint8_t nReturnMode;
+  uint8_t nFactoryInfo;
+  uint8_t nUTCTime[6];
+} PandarAT128TailVersion43;
 
 struct PandarATCorrectionsHeader {
     uint8_t delimiter[2];
@@ -286,6 +316,15 @@ struct PandarATCorrectionsHeader {
 static_assert(sizeof(PandarATCorrectionsHeader) == 16);
 #pragma pack(pop)
 
+struct PandarATFrameInfo {
+    uint32_t start_frame[8];
+    uint32_t end_frame[8];
+    int32_t azimuth[128];
+    int32_t elevation[128];
+    std::array<float, MAX_AZI_LEN> sin_map;
+    std::array<float, MAX_AZI_LEN> cos_map;
+};
+
 struct PandarATCorrections {
 public:
     PandarATCorrectionsHeader header;
@@ -296,13 +335,40 @@ public:
     int8_t azimuth_offset[36000];
     int8_t elevation_offset[36000];
     uint8_t SHA256[32];
-    std::array<float, 36000> sin_map;
-    std::array<float, 36000> cos_map;
+    PandarATFrameInfo l; // V1.5
+    std::array<float, MAX_AZI_LEN> sin_map;
+    std::array<float, MAX_AZI_LEN> cos_map;
     PandarATCorrections() {
-        for(int i = 0; i < 36000; ++i) {
-            sin_map[i] = std::sin(i * M_PI / 18000);
-            cos_map[i] = std::cos(i * M_PI / 18000);
+        for(int i = 0; i < MAX_AZI_LEN; ++i) {
+            sin_map[i] = std::sin(2 * i * M_PI / MAX_AZI_LEN );
+            cos_map[i] = std::cos(2 * i * M_PI / MAX_AZI_LEN);
         }
+    }
+    static const int STEP = 200;
+    int8_t getAzimuthAdjust(uint8_t ch, uint16_t azi) const{
+        unsigned int i = std::floor(1.f * azi / STEP);
+        unsigned int l = azi - i * STEP;
+        float k = 1.f * l / STEP;
+        return round((1-k) * azimuth_offset[ch*180 + i] + k * azimuth_offset[ch*180 + i+1]);
+    }
+    int8_t getElevationAdjust(uint8_t ch, uint16_t azi) const{
+        unsigned int i = std::floor(1.f * azi / STEP);
+        unsigned int l = azi - i * STEP;
+        float k = 1.f * l / STEP;
+        return round((1-k) *elevation_offset[ch*180 + i] + k *elevation_offset[ch*180 + i+1]);
+    }
+    static const int STEP3 = 200 * 256;
+    int8_t getAzimuthAdjustV3(uint8_t ch, uint32_t azi) const{
+        unsigned int i = std::floor(1.f * azi / STEP3);
+        unsigned int l = azi - i * STEP3;
+        float k = 1.f * l / STEP3;
+        return round((1-k) * azimuth_offset[ch*180 + i] + k * azimuth_offset[ch*180 + i+1]);
+    }
+    int8_t getElevationAdjustV3(uint8_t ch, uint32_t azi) const{
+        unsigned int i = std::floor(1.f * azi / STEP3);
+        unsigned int l = azi - i * STEP3;
+        float k = 1.f * l / STEP3;
+        return round((1-k) *elevation_offset[ch*180 + i] + k *elevation_offset[ch*180 + i+1]);
     }
 };
 
@@ -310,7 +376,7 @@ public:
 typedef std::array<pandar_msgs::PandarPacket, 36000> PktArray;
 
 typedef struct PacketsBuffer_s {
-  PktArray m_buffers{};
+  PktArray m_buffers;
   PktArray::iterator m_iterPush;
   PktArray::iterator m_iterTaskBegin;
   PktArray::iterator m_iterTaskEnd;
@@ -408,6 +474,7 @@ class Convert {
   void callback(pandar_pointcloud::CloudNodeConfig &config, uint32_t level);
   void processScan(const pandar_msgs::PandarScan::ConstPtr &scanMsg);
   void processGps(const pandar_msgs::PandarGps::ConstPtr &gpsMsg);
+  void checkClockwise(int16_t lidarmotorspeed);
 
   int parseData(Pandar128Packet &pkt, const uint8_t *buf, const int len);
   void calcPointXYZIT(pandar_msgs::PandarPacket &pkt, int cursor);
@@ -419,7 +486,6 @@ class Convert {
   void changeReturnBlockSize();
   void moveTaskEndToStartAngle();
   void init();
-  void checkClockwise();
   bool isNeedPublish();
   int calculatePointIndex(uint16_t azimuth, int blockId, int laserId);
   int calculatePointBufferSize();
@@ -459,14 +525,14 @@ class Convert {
   std::array<boost::shared_ptr<PPointCloud>, 2> m_OutMsgArray;
   std::vector<RedundantPoint> m_RedundantPointBuffer;
   PacketsBuffer m_PacketsBuffer;
-  double timestamp;
+  double m_dTimestamp;
   int start_angle_;
-  float cos_all_angle_[CIRCLE];
-  float sin_all_angle_[CIRCLE];
+  float m_fCosAllAngle[CIRCLE];
+  float m_fSinAllAngle[CIRCLE];
   float elev_angle_[PANDAR128_LASER_NUM];
   float horizatal_azimuth_[PANDAR128_LASER_NUM];
   LasersTSOffset laserOffset;
-  int tz_second_;
+  int m_iTimeZoneSecond;
   std::string m_sFrameId;
   std::string lidarFiretimeFile;
   std::string lidarCorrectionFile;
@@ -476,7 +542,7 @@ class Convert {
   int m_iMotorSpeed;
   int m_iLaserNum;
   int m_iBlockNum;
-  int m_iAngleSize;  // 10->0.1degree,20->0.2degree
+  float m_iAngleSize;  // 10->0.1degree,20->0.2degree
   int m_iReturnBlockSize;
   bool m_bPublishPointsFlag;
   int m_iPublishPointsIndex;
@@ -484,6 +550,8 @@ class Convert {
   std::string m_sDeviceIp;
   std::string m_sPcapFile;
   std::string m_sRosVersion;
+  uint8_t m_u8UdpVersionMajor;
+	uint8_t m_u8UdpVersionMinor;
   int m_iFirstAzimuthIndex;
   int m_iLastAzimuthIndex;
   int m_iTotalPointsNum;

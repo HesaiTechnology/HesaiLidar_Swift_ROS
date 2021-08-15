@@ -54,9 +54,10 @@ Input::Input(ros::NodeHandle private_nh, uint16_t port)
   private_nh.param("device_ip", devip_str_, std::string(""));
   if (!devip_str_.empty())
     ROS_INFO_STREAM("Only accepting packets from IP address: " << devip_str_);
-  ts_index = 0;
-  utc_index = 0;
-  seq_index = 0;
+  m_iTimestampIndex = 0;
+  m_iUtcIindex = 0;
+  m_iSequenceNumberIndex = 0;
+  m_bGetUdpVersion = false;
 }
 
 bool Input::checkPacket(PandarPacket *pkt) {
@@ -66,7 +67,7 @@ bool Input::checkPacket(PandarPacket *pkt) {
     ROS_WARN("Packet with invaild delimiter\n");
     return false;
   }
-  if (pkt->data[2] != 4 && pkt->data[3] != 1) {    
+  if (pkt->data[2] != 4 || (pkt->data[3] != 1 && pkt->data[3] != 3)) {    
     ROS_WARN("Packet with invaild lidar type\n");
     return false;
   }
@@ -74,22 +75,51 @@ bool Input::checkPacket(PandarPacket *pkt) {
   uint8_t blockNum = pkt->data[7];
   uint8_t flags = pkt->data[11];
 
+  uint8_t UDPMinorVersion = pkt->data[3];
+
   bool hasSeqNum = (flags & 1); 
+  bool hasImu = (flags & 2);
+  bool hasFunctionSafety = (flags & 4);
+  bool hasSignature = (flags & 8);
+  bool hasConfidence = (flags & 0x10);
 
-  ts_index = PANDAR_AT128_HEAD_SIZE +
-            PANDAR_AT128_UNIT_WITH_CONFIDENCE_SIZE * laserNum * blockNum + 
-            PANDAR_AT128_AZIMUTH_SIZE * blockNum +
-            PANDAR_AT128_TAIL_RESERVED1_SIZE + 
-            PANDAR_AT128_TAIL_RESERVED2_SIZE +
-            PANDAR_AT128_SHUTDOWN_FLAG_SIZE +
-            PANDAR_AT128_TAIL_RESERVED3_SIZE +
-            PANDAR_AT128_MOTOR_SPEED_SIZE;
-  utc_index = ts_index + PANDAR_AT128_TS_SIZE +
-              PANDAR_AT128_RETURN_MODE_SIZE +
-              PANDAR_AT128_FACTORY_INFO;
-  seq_index = utc_index + PANDAR_AT128_UTC_SIZE;
+  if(UDPMinorVersion == UDP_VERSION_MINOR_1){
+	m_iTimestampIndex = PANDAR_AT128_HEAD_SIZE +
+                      PANDAR_AT128_UNIT_WITH_CONFIDENCE_SIZE * laserNum * blockNum + 
+                      PANDAR_AT128_AZIMUTH_SIZE * blockNum +
+                      PANDAR_AT128_TAIL_RESERVED1_SIZE + 
+                      PANDAR_AT128_TAIL_RESERVED2_SIZE +
+                      PANDAR_AT128_SHUTDOWN_FLAG_SIZE +
+                      PANDAR_AT128_TAIL_RESERVED3_SIZE +
+                      PANDAR_AT128_MOTOR_SPEED_SIZE;
+	m_iUtcIindex = m_iTimestampIndex + PANDAR_AT128_TS_SIZE +
+                  PANDAR_AT128_RETURN_MODE_SIZE +
+                  PANDAR_AT128_FACTORY_INFO;
+	m_iSequenceNumberIndex = m_iUtcIindex + PANDAR_AT128_UTC_SIZE;
+  }
+  else{
+		m_iTimestampIndex = PANDAR_AT128_HEAD_SIZE +
+                        (hasConfidence ? PANDAR_AT128_UNIT_WITH_CONFIDENCE_SIZE * laserNum * blockNum : PANDAR_AT128_UNIT_WITHOUT_CONFIDENCE_SIZE * laserNum * blockNum)+ 
+                        PANDAR_AT128_AZIMUTH_SIZE * blockNum +
+                        PANDAR_AT128_FINE_AZIMUTH_SIZE * blockNum +
+                        (UDPMinorVersion == 3 ? PANDAR_AT128_CRC_SIZE : 0) +
+                        (hasFunctionSafety ? PANDAR_AT128_FUNCTION_SAFETY_SIZE : 0) + 
+                        PANDAR_AT128_TAIL_RESERVED1_SIZE + 
+                        PANDAR_AT128_TAIL_RESERVED2_SIZE +
+                        PANDAR_AT128_SHUTDOWN_FLAG_SIZE +
+                        PANDAR_AT128_TAIL_RESERVED3_SIZE +
+                        PANDAR_AT128_TAIL_RESERVED4_SIZE +
+                        PANDAR_AT128_MOTOR_SPEED_SIZE;
+		m_iUtcIindex = m_iTimestampIndex + PANDAR_AT128_TS_SIZE +
+                    PANDAR_AT128_RETURN_MODE_SIZE +
+                    PANDAR_AT128_FACTORY_INFO;
+		m_iSequenceNumberIndex = m_iUtcIindex + PANDAR_AT128_UTC_SIZE;
 
-  uint32_t size = seq_index + (hasSeqNum ? PANDAR_AT128_SEQ_NUM_SIZE  : 0);
+  }
+
+  uint32_t size = m_iSequenceNumberIndex + (hasSeqNum ? PANDAR_AT128_SEQ_NUM_SIZE  : 0) +
+                (UDPMinorVersion == 3 ? PANDAR_AT128_CRC_SIZE : 0)+
+                (hasSignature ? PANDAR_AT128_SIGNATURE_SIZE : 0);
   if(pkt->size == size){
     return true;
   }
@@ -99,6 +129,48 @@ bool Input::checkPacket(PandarPacket *pkt) {
   }
 }
 
+void Input::setUdpVersion(uint8_t major, uint8_t minor) {
+	if(UDP_VERSION_MAJOR_1 == major) {
+		if(UDP_VERSION_MINOR_3 == minor) {
+			m_sUdpVresion = UDP_VERSION_1_3;
+			m_iTimestampIndex = udpVersion13[TIMESTAMP_INDEX];
+			m_iUtcIindex = udpVersion13[UTC_INDEX];
+			m_iSequenceNumberIndex = udpVersion13[SEQUENCE_NUMBER_INDEX];
+			// m_iPacketSize = udpVersion13[PACKET_SIZE];
+			m_bGetUdpVersion = true;
+			return;
+		}
+		if(UDP_VERSION_MINOR_4 == minor) {
+			m_sUdpVresion = UDP_VERSION_1_4;
+			m_iTimestampIndex = udpVersion14[TIMESTAMP_INDEX];
+			m_iUtcIindex = udpVersion14[UTC_INDEX];
+			m_iSequenceNumberIndex = udpVersion14[SEQUENCE_NUMBER_INDEX];
+			// m_iPacketSize = udpVersion14[PACKET_SIZE];
+			m_bGetUdpVersion = true;
+			return;
+		}
+		printf("error udp version minor: %d\n", minor);
+	}
+	else if(UDP_VERSION_MAJOR_4 == major){
+		if(UDP_VERSION_MINOR_1 == minor) {
+			m_sUdpVresion = UDP_VERSION_4_1;
+			m_bGetUdpVersion = true;
+			printf("UDP version is : %d.%d\n", major, minor);
+			return;
+		}
+		if(UDP_VERSION_MINOR_3 == minor) {
+			m_sUdpVresion = UDP_VERSION_4_3;
+			m_bGetUdpVersion = true;
+			printf("UDP version is : %d.%d\n", major, minor);
+			return;
+		}
+		printf("error udp version minor: %d\n", minor);
+
+	}
+	else{
+		printf("error udp version major: %d\n", major);
+	}	
+}
 ////////////////////////////////////////////////////////////////////////
 // InputSocket class implementation
 ////////////////////////////////////////////////////////////////////////
@@ -217,6 +289,8 @@ int InputSocket::getPacket(PandarPacket *pkt) {
   ssize_t nbytes = recvfrom(sockfd_, &pkt->data[0], 10000, 0,
                             (sockaddr *)&sender_address, &sender_address_len);
   pkt->size = nbytes;
+  if(!m_bGetUdpVersion) 
+      return 0;
   if (pkt->size == 512) {
     // ROS_ERROR("GPS");
     return 2;
@@ -228,7 +302,7 @@ int InputSocket::getPacket(PandarPacket *pkt) {
   static uint32_t dropped = 0, u32StartSeq = 0;
   static uint32_t startTick = GetTickCount();
   if(pkt->data[11]& 1){    //Packet has UDP sequence number
-    uint32_t *pSeq = (uint32_t *)&pkt->data[seq_index];
+    uint32_t *pSeq = (uint32_t *)&pkt->data[m_iSequenceNumberIndex];
     seqnub = *pSeq;
 
     if (m_u32Sequencenum == 0) {
@@ -329,6 +403,8 @@ int InputPCAP::getPacket(PandarPacket *pkt) {
     memcpy(&pkt->data[0], packetBuf + 42, pktHeader->caplen -42);
     pkt->size = pktHeader->caplen -42;
     count++;
+    if(!m_bGetUdpVersion) 
+      return 0;
     if (pktHeader->caplen == (512 + 42)) {
       // ROS_ERROR("GPS");
       return 2;
@@ -339,18 +415,18 @@ int InputPCAP::getPacket(PandarPacket *pkt) {
     if (count >= gap) {
       count = 0;
 
-      t.tm_year  = packet[utc_index];
-      t.tm_mon   = packet[utc_index+1] - 1;
-      t.tm_mday  = packet[utc_index+2];
-      t.tm_hour  = packet[utc_index+3];
-      t.tm_min   = packet[utc_index+4];
-      t.tm_sec   = packet[utc_index+5];
+      t.tm_year  = packet[m_iUtcIindex];
+      t.tm_mon   = packet[m_iUtcIindex+1] - 1;
+      t.tm_mday  = packet[m_iUtcIindex+2];
+      t.tm_hour  = packet[m_iUtcIindex+3];
+      t.tm_min   = packet[m_iUtcIindex+4];
+      t.tm_sec   = packet[m_iUtcIindex+5];
       t.tm_isdst = 0;
 
-      pkt_ts = mktime(&t) * 1000000 + ((packet[ts_index]& 0xff) | \
-          (packet[ts_index+1]& 0xff) << 8 | \
-          ((packet[ts_index+2]& 0xff) << 16) | \
-          ((packet[ts_index+3]& 0xff) << 24));
+      pkt_ts = mktime(&t) * 1000000 + ((packet[m_iTimestampIndex]& 0xff) | \
+          (packet[m_iTimestampIndex+1]& 0xff) << 8 | \
+          ((packet[m_iTimestampIndex+2]& 0xff) << 16) | \
+          ((packet[m_iTimestampIndex+3]& 0xff) << 24));
       struct timeval sys_time;
       gettimeofday(&sys_time, NULL);
       current_time = sys_time.tv_sec * 1000000 + sys_time.tv_usec;

@@ -43,6 +43,7 @@ class PandarDriver {
 
   bool poll(void);
   void publishRawData();
+  void setUdpVersion(uint8_t major, uint8_t minor);
   int getPandarScanArraySize(boost::shared_ptr<Input>);
 
  private:

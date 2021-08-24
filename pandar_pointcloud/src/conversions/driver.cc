@@ -227,6 +227,8 @@ bool PandarDriver::poll(void) {
         convert->processGps(*gps);
         // gpsoutput_.publish(gps);
       }
+      i--;
+      continue;
     }
     if (rc > 0) return false;  // end of file reached?
     // }

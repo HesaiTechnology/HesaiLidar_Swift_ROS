@@ -296,6 +296,8 @@ int InputSocket::getPacket(PandarPacket *pkt) {
   ssize_t nbytes = recvfrom(sockfd_, &pkt->data[0], 10000, 0,
                             (sockaddr *)&sender_address, &sender_address_len);
   pkt->size = nbytes;
+  if(!m_bGetUdpVersion)
+			return 0;
   if (pkt->size == 512) {
     // ROS_ERROR("GPS");
     return 2;

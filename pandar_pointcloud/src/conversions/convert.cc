@@ -86,7 +86,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "PandarSwiftROS_1.0.20";
+  m_sRosVersion = "PandarSwiftROS_1.0.22";
   ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -698,7 +698,7 @@ void Convert::doTaskFlow(int cursor) {
     case 1:
     {
       taskFlow.parallel_for(m_PacketsBuffer.getTaskBegin(),
-                            m_PacketsBuffer.getTaskEnd(),
+                            m_PacketsBuffer.getTaskEnd() -  1,
                             [this, &cursor](auto &taskpkt) {
                               calcPointXYZIT(taskpkt,cursor);
                             });
@@ -707,7 +707,7 @@ void Convert::doTaskFlow(int cursor) {
     case 3:
     {
       taskFlow.parallel_for(m_PacketsBuffer.getTaskBegin(),
-                            m_PacketsBuffer.getTaskEnd(),
+                            m_PacketsBuffer.getTaskEnd() - 1,
                             [this, &cursor](auto &taskpkt) {
                               calcQT128PointXYZIT(taskpkt,cursor);
                             });

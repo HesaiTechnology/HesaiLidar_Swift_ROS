@@ -125,3 +125,10 @@ PandarSwiftROS_1.0.21
 
 ##modify
 1. Support UDP4.3
+
+Thursday, September 9th, 2021 17:30
+##version
+PandarSwiftROS_1.0.23
+
+##modify
+1. Support to accept lidar fault message

@@ -226,7 +226,11 @@ bool PandarDriver::poll(void) {
         // gpsoutput_.publish(gps);
       }
     }
-    if (rc > 0) return false;  // end of file reached?
+    if (rc == 3){
+      i--;
+      continue;
+    }
+    if (rc == 1) return false;  // end of file reached?
     // }
 
     if (publishmodel == "both_point_raw" || publishmodel == "point") {

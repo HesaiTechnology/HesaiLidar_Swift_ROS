@@ -84,7 +84,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "PandarSwiftROS_1.0.21";
+  m_sRosVersion = "PandarSwiftROS_1.0.23";
   ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -954,7 +954,7 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 			index += PANDAR_AT128_AZIMUTH_SIZE;
 			uint8_t u8FineAzimuth = *(uint8_t*)(&packet.data[0] + index);
 			index += PANDAR_AT128_FINE_AZIMUTH_SIZE;
-			int Azimuth = u16Azimuth * 256 + u8FineAzimuth;
+			int Azimuth = u16Azimuth * LIDAR_AZIMUTH_UNIT + u8FineAzimuth;
 			// ROS_WARN("#####block.fAzimuth[%u]",u16Azimuth);
 			int count = 0, field = 0;
 			while ( count < m_PandarAT_corrections.header.frame_number
@@ -980,13 +980,13 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 					static_cast<float>(u16Distance) * PANDAR128_DISTANCE_UNIT;
 				auto elevation = m_iViewMode == 0 ?
 							m_PandarAT_corrections.l.elevation[i] * m_PandarAT_corrections.header.resolution : 
-						(m_PandarAT_corrections.l.elevation[i] + m_PandarAT_corrections.getElevationAdjustV3(i, Azimuth) * 256) * m_PandarAT_corrections.header.resolution;
+						(m_PandarAT_corrections.l.elevation[i] + m_PandarAT_corrections.getElevationAdjustV3(i, Azimuth) * LIDAR_AZIMUTH_UNIT) * m_PandarAT_corrections.header.resolution;
 				elevation = (MAX_AZI_LEN + elevation) % MAX_AZI_LEN;      
 				auto azimuth = m_iViewMode == 0 ?
 					(Azimuth + MAX_AZI_LEN  - m_PandarAT_corrections.l.azimuth[i] / 2) % MAX_AZI_LEN  * m_PandarAT_corrections.header.resolution : 
 					((Azimuth + MAX_AZI_LEN  - m_PandarAT_corrections.l.start_frame[field]) * 2
 					- m_PandarAT_corrections.l.azimuth[i]
-					+ m_PandarAT_corrections.getAzimuthAdjustV3(i, Azimuth) * 256) * m_PandarAT_corrections.header.resolution;
+					+ m_PandarAT_corrections.getAzimuthAdjustV3(i, Azimuth) * LIDAR_AZIMUTH_UNIT) * m_PandarAT_corrections.header.resolution;
 				azimuth = (MAX_AZI_LEN  + azimuth) % MAX_AZI_LEN ;
 				float xyDistance =
 					distance * m_PandarAT_corrections.cos_map[(elevation)];
@@ -1049,22 +1049,22 @@ bool Convert::isNeedPublish(){
 		break;
 		case 3:
 		{
-			uint32_t beginAzimuth = *(uint16_t*)(&(m_PacketsBuffer.getTaskBegin()->data[0]) + m_iFirstAzimuthIndex) * 256 + *(uint8_t*)(&(m_PacketsBuffer.getTaskBegin()->data[0]) + m_iFirstAzimuthIndex + 1);
-			uint32_t endAzimuth = *(uint16_t*)(&((m_PacketsBuffer.getTaskEnd() - 1)->data[0]) + m_iLastAzimuthIndex) * 256 + *(uint8_t*)(&((m_PacketsBuffer.getTaskEnd() - 1)->data[0]) + m_iLastAzimuthIndex + 1);
+			uint32_t beginAzimuth = *(uint16_t*)(&(m_PacketsBuffer.getTaskBegin()->data[0]) + m_iFirstAzimuthIndex) * LIDAR_AZIMUTH_UNIT + *(uint8_t*)(&(m_PacketsBuffer.getTaskBegin()->data[0]) + m_iFirstAzimuthIndex + 1);
+			uint32_t endAzimuth = *(uint16_t*)(&((m_PacketsBuffer.getTaskEnd() - 1)->data[0]) + m_iLastAzimuthIndex) * LIDAR_AZIMUTH_UNIT + *(uint8_t*)(&((m_PacketsBuffer.getTaskEnd() - 1)->data[0]) + m_iLastAzimuthIndex + 1);
 			if(m_bClockwise){
 				if(m_iViewMode == 1){
 					for(int i = 0; i < m_PandarAT_corrections.header.frame_number; i++){
-					if((fabs(endAzimuth - (m_PandarAT_corrections.l.start_frame[i])) <= m_iAngleSize) || 
+					if((fabs(float(endAzimuth - (m_PandarAT_corrections.l.start_frame[i]))) <= m_iAngleSize * LIDAR_AZIMUTH_UNIT) || 
 						(beginAzimuth < (m_PandarAT_corrections.l.start_frame[i])) && ((m_PandarAT_corrections.l.start_frame[i]) <= endAzimuth) ||
-						(endAzimuth < beginAzimuth && (endAzimuth + CIRCLE_ANGLE - beginAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE))
+						(endAzimuth < beginAzimuth && (endAzimuth + CIRCLE_ANGLE * LIDAR_AZIMUTH_UNIT - beginAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE * LIDAR_AZIMUTH_UNIT))
 							return true;
 					}
 					return false;
 				}
 				else{
-					if((fabs(endAzimuth - m_PandarAT_corrections.l.start_frame[0]) <= m_iAngleSize) || 
+					if((fabs(float(endAzimuth - m_PandarAT_corrections.l.start_frame[0])) <= m_iAngleSize * LIDAR_AZIMUTH_UNIT) || 
 						(beginAzimuth < m_PandarAT_corrections.l.start_frame[0]) && (m_PandarAT_corrections.l.start_frame[0] <= endAzimuth) ||
-						(endAzimuth < beginAzimuth && (endAzimuth + CIRCLE_ANGLE - beginAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE)){
+						(endAzimuth < beginAzimuth && (endAzimuth + CIRCLE_ANGLE * LIDAR_AZIMUTH_UNIT - beginAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE * LIDAR_AZIMUTH_UNIT)){
 						return true;
 					}
 					return false;
@@ -1073,17 +1073,17 @@ bool Convert::isNeedPublish(){
 			else{
 				if(m_iViewMode == 1){
 					for(int i = 0; i < m_PandarAT_corrections.header.frame_number; i++){
-					if((fabs(beginAzimuth - (m_PandarAT_corrections.l.start_frame[i])) <= m_iAngleSize) || 
+					if((fabs(float(beginAzimuth - (m_PandarAT_corrections.l.start_frame[i]))) <= m_iAngleSize * LIDAR_AZIMUTH_UNIT) || 
 						(endAzimuth < (m_PandarAT_corrections.l.start_frame[i])) && ((m_PandarAT_corrections.l.start_frame[i]) <= beginAzimuth) ||
-						(beginAzimuth < endAzimuth && (beginAzimuth + CIRCLE_ANGLE - endAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE))
+						(beginAzimuth < endAzimuth && (beginAzimuth + CIRCLE_ANGLE * LIDAR_AZIMUTH_UNIT - endAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE * LIDAR_AZIMUTH_UNIT))
 						return true;
 					}
 					return false;
 				}
 				else{
-					if((fabs(beginAzimuth - m_PandarAT_corrections.l.start_frame[0]) <= m_iAngleSize) || 
+					if((fabs(float(beginAzimuth - m_PandarAT_corrections.l.start_frame[0])) <= m_iAngleSize * LIDAR_AZIMUTH_UNIT) || 
 						(endAzimuth < m_PandarAT_corrections.l.start_frame[0]) && (m_PandarAT_corrections.l.start_frame[0] <= beginAzimuth) ||
-						(beginAzimuth < endAzimuth && (beginAzimuth + CIRCLE_ANGLE - endAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE)){
+						(beginAzimuth < endAzimuth && (beginAzimuth + CIRCLE_ANGLE * LIDAR_AZIMUTH_UNIT - endAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE * LIDAR_AZIMUTH_UNIT)){
 						return true;
 					}
 					return false;

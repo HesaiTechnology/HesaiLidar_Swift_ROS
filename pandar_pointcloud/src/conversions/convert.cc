@@ -544,7 +544,8 @@ int Convert::processLiDARData() {
 void Convert::moveTaskEndToStartAngle() {
 	uint32_t startTick = GetTickCount();
   for(PktArray::iterator iter = m_PacketsBuffer.m_iterTaskBegin; iter < m_PacketsBuffer.m_iterTaskEnd; iter++) {
-		if(abs(*(uint16_t*)(&((iter)->data[0]) + m_iFirstAzimuthIndex) - *(uint16_t*)(&((iter + 1)->data[0]) + m_iFirstAzimuthIndex)) > 1000){
+		if(abs(*(uint16_t*)(&((iter)->data[0]) + m_iFirstAzimuthIndex) - *(uint16_t*)(&((iter + 1)->data[0]) + m_iFirstAzimuthIndex)) > 1000 &&
+    abs(abs(*(uint16_t*)(&((iter)->data[0]) + m_iFirstAzimuthIndex) - *(uint16_t*)(&((iter + 1)->data[0]) + m_iFirstAzimuthIndex)) - CIRCLE_ANGLE) > m_iAngleSize * 3){
 			m_PacketsBuffer.moveTaskEnd(iter+ 1);
 			break;
 		}
@@ -1031,7 +1032,7 @@ bool Convert::isNeedPublish(){
 				for(int i = 0; i < m_PandarAT_corrections.header.frame_number; i++){
 				if((abs(endAzimuth - (m_PandarAT_corrections.start_frame[i])) <= m_iAngleSize) || 
 					(beginAzimuth < (m_PandarAT_corrections.start_frame[i])) && ((m_PandarAT_corrections.start_frame[i]) <= endAzimuth) ||
-					(endAzimuth < beginAzimuth && (endAzimuth + CIRCLE_ANGLE - beginAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE))
+					(endAzimuth < beginAzimuth && (endAzimuth + CIRCLE_ANGLE - beginAzimuth) > PANDAR_AT128_FRAME_ANGLE_INTERVAL_SIZE))
 						return true;
 				}
 				return false;
@@ -1039,7 +1040,7 @@ bool Convert::isNeedPublish(){
 			else{
 				if((abs(endAzimuth - m_PandarAT_corrections.start_frame[0]) <= m_iAngleSize) || 
 					(beginAzimuth < m_PandarAT_corrections.start_frame[0]) && (m_PandarAT_corrections.start_frame[0] <= endAzimuth) ||
-					(endAzimuth < beginAzimuth && (endAzimuth + CIRCLE_ANGLE - beginAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE)){
+					(endAzimuth < beginAzimuth && (endAzimuth + CIRCLE_ANGLE - beginAzimuth) > PANDAR_AT128_FRAME_ANGLE_INTERVAL_SIZE)){
 				return true;
 				}
 				return false;
@@ -1056,7 +1057,7 @@ bool Convert::isNeedPublish(){
 					for(int i = 0; i < m_PandarAT_corrections.header.frame_number; i++){
 					if((fabs(float(endAzimuth - (m_PandarAT_corrections.l.start_frame[i]))) <= m_iAngleSize * LIDAR_AZIMUTH_UNIT) || 
 						(beginAzimuth < (m_PandarAT_corrections.l.start_frame[i])) && ((m_PandarAT_corrections.l.start_frame[i]) <= endAzimuth) ||
-						(endAzimuth < beginAzimuth && (endAzimuth + CIRCLE_ANGLE * LIDAR_AZIMUTH_UNIT - beginAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE * LIDAR_AZIMUTH_UNIT))
+						(endAzimuth < beginAzimuth && (endAzimuth + CIRCLE_ANGLE * LIDAR_AZIMUTH_UNIT - beginAzimuth) > PANDAR_AT128_FRAME_ANGLE_INTERVAL_SIZE * LIDAR_AZIMUTH_UNIT))
 							return true;
 					}
 					return false;
@@ -1064,7 +1065,7 @@ bool Convert::isNeedPublish(){
 				else{
 					if((fabs(float(endAzimuth - m_PandarAT_corrections.l.start_frame[0])) <= m_iAngleSize * LIDAR_AZIMUTH_UNIT) || 
 						(beginAzimuth < m_PandarAT_corrections.l.start_frame[0]) && (m_PandarAT_corrections.l.start_frame[0] <= endAzimuth) ||
-						(endAzimuth < beginAzimuth && (endAzimuth + CIRCLE_ANGLE * LIDAR_AZIMUTH_UNIT - beginAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE * LIDAR_AZIMUTH_UNIT)){
+						(endAzimuth < beginAzimuth && (endAzimuth + CIRCLE_ANGLE * LIDAR_AZIMUTH_UNIT - beginAzimuth) > PANDAR_AT128_FRAME_ANGLE_INTERVAL_SIZE * LIDAR_AZIMUTH_UNIT)){
 						return true;
 					}
 					return false;
@@ -1075,7 +1076,7 @@ bool Convert::isNeedPublish(){
 					for(int i = 0; i < m_PandarAT_corrections.header.frame_number; i++){
 					if((fabs(float(beginAzimuth - (m_PandarAT_corrections.l.start_frame[i]))) <= m_iAngleSize * LIDAR_AZIMUTH_UNIT) || 
 						(endAzimuth < (m_PandarAT_corrections.l.start_frame[i])) && ((m_PandarAT_corrections.l.start_frame[i]) <= beginAzimuth) ||
-						(beginAzimuth < endAzimuth && (beginAzimuth + CIRCLE_ANGLE * LIDAR_AZIMUTH_UNIT - endAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE * LIDAR_AZIMUTH_UNIT))
+						(beginAzimuth < endAzimuth && (beginAzimuth + CIRCLE_ANGLE * LIDAR_AZIMUTH_UNIT - endAzimuth) > PANDAR_AT128_FRAME_ANGLE_INTERVAL_SIZE * LIDAR_AZIMUTH_UNIT))
 						return true;
 					}
 					return false;
@@ -1083,7 +1084,7 @@ bool Convert::isNeedPublish(){
 				else{
 					if((fabs(float(beginAzimuth - m_PandarAT_corrections.l.start_frame[0])) <= m_iAngleSize * LIDAR_AZIMUTH_UNIT) || 
 						(endAzimuth < m_PandarAT_corrections.l.start_frame[0]) && (m_PandarAT_corrections.l.start_frame[0] <= beginAzimuth) ||
-						(beginAzimuth < endAzimuth && (beginAzimuth + CIRCLE_ANGLE * LIDAR_AZIMUTH_UNIT - endAzimuth) > PANDAR_AT128_FRAME_ANGLE_SIZE * LIDAR_AZIMUTH_UNIT)){
+						(beginAzimuth < endAzimuth && (beginAzimuth + CIRCLE_ANGLE * LIDAR_AZIMUTH_UNIT - endAzimuth) > PANDAR_AT128_FRAME_ANGLE_INTERVAL_SIZE * LIDAR_AZIMUTH_UNIT)){
 						return true;
 					}
 					return false;
@@ -1145,7 +1146,7 @@ int Convert::calculatePointIndex(uint16_t u16Azimuth, int blockid, int laserid){
         }
         else{
           if(Azimuth >= 0 && Azimuth <= (PANDAR_AT128_FRAME_ANGLE_SIZE * 2)){
-            point_index =  Azimuth / m_iAngleSize * m_iLaserNum *
+            point_index =  (Azimuth % PANDAR_AT128_FRAME_ANGLE_SIZE) / m_iAngleSize * m_iLaserNum *
                       m_iReturnBlockSize +
                   m_iLaserNum * (blockid % 2) + laserid;
           }
@@ -1167,7 +1168,7 @@ int Convert::calculatePointIndex(uint16_t u16Azimuth, int blockid, int laserid){
         }
         else {
           if(Azimuth >= 0 && Azimuth <= (PANDAR_AT128_FRAME_ANGLE_SIZE * 2)){
-            point_index = (Azimuth)/ m_iAngleSize * m_iLaserNum + laserid;
+            point_index = (Azimuth % PANDAR_AT128_FRAME_ANGLE_SIZE) / m_iAngleSize * m_iLaserNum + laserid;
           }
           else if (Azimuth > (PANDAR_AT128_FRAME_ANGLE_SIZE) && Azimuth <= (PANDAR_AT128_FRAME_ANGLE_SIZE * 4)){
             point_index = (Azimuth % PANDAR_AT128_FRAME_ANGLE_SIZE + PANDAR_AT128_FRAME_ANGLE_SIZE) / m_iAngleSize * m_iLaserNum + laserid;

@@ -410,7 +410,7 @@ int InputPCAP::getPacket(PandarPacket *pkt) {
       return 2;
     }
     else if(!checkPacket(pkt)){
-      return 1;  // Packet size not match
+      return 3;  // Packet size not match
     }
     if (count >= gap) {
       count = 0;

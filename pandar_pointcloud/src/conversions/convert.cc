@@ -559,11 +559,11 @@ void Convert::init() {
 			continue;
 		}
 		int16_t lidarmotorspeed = 0;
-    auto header = (PandarAT128Head*)(&((m_PacketsBuffer.getTaskEnd() - 1)->data[0]));
+    auto header = (PandarAT128Head*)(&((m_PacketsBuffer.getTaskBegin())->data[0]));
     switch(header->u8VersionMinor){
 			case 1:
 			{
-				auto tail = (PandarAT128TailVersion41*)(&((m_PacketsBuffer.getTaskEnd() - 1)->data[0]) + PANDAR_AT128_HEAD_SIZE +
+				auto tail = (PandarAT128TailVersion41*)(&((m_PacketsBuffer.getTaskBegin())->data[0]) + PANDAR_AT128_HEAD_SIZE +
 							PANDAR_AT128_UNIT_WITH_CONFIDENCE_SIZE * header->u8LaserNum * header->u8BlockNum + 
 							PANDAR_AT128_AZIMUTH_SIZE * header->u8BlockNum );
 				m_iWorkMode = tail->nShutdownFlag & 0x03;
@@ -580,7 +580,7 @@ void Convert::init() {
 			break;
 			case 3:
 			{
-				auto tail = (PandarAT128TailVersion43*)(&((m_PacketsBuffer.getTaskEnd() - 1)->data[0]) + PANDAR_AT128_HEAD_SIZE +
+				auto tail = (PandarAT128TailVersion43*)(&((m_PacketsBuffer.getTaskBegin())->data[0]) + PANDAR_AT128_HEAD_SIZE +
 							(header->hasConfidence() ? PANDAR_AT128_UNIT_WITH_CONFIDENCE_SIZE * header->u8LaserNum * header->u8BlockNum : PANDAR_AT128_UNIT_WITHOUT_CONFIDENCE_SIZE * header->u8LaserNum * header->u8BlockNum) +
 							PANDAR_AT128_CRC_SIZE + 
 							PANDAR_AT128_AZIMUTH_SIZE * header->u8BlockNum +

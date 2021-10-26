@@ -192,7 +192,9 @@ bool PandarDriver::poll(void) {
     // {
     // keep reading until full packet received
     PandarPacket packet;
-    int rc = input_->getPacket(&packet);
+    bool isSocketTimeout = false;
+    int rc = input_->getPacket(&packet, isSocketTimeout);
+    convert->setIsSocketTimeout(isSocketTimeout);
     pandarScanArray[m_iScanPushIndex]->packets[i].stamp = packet.stamp;
     pandarScanArray[m_iScanPushIndex]->packets[i].size = packet.size;
     pandarScanArray[m_iScanPushIndex]->packets[i].data.resize(packet.size);
@@ -284,7 +286,8 @@ void PandarDriver::callback(pandar_pointcloud::CloudNodeConfig &config,
 int PandarDriver::getPandarScanArraySize(boost::shared_ptr<Input> input_){
   for (int i = 0; i < 256; ++i) {
     PandarPacket packet;
-    int rc = input_->getPacket(&packet);
+    bool isTimeout = false;
+    int rc = input_->getPacket(&packet, isTimeout);
     switch (packet.data[PANDAR_LASER_NUMBER_INDEX]){
     case PANDAR128_LASER_NUM:
       return PANDAR128_READ_PACKET_SIZE;

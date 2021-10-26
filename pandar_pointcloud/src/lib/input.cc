@@ -236,7 +236,7 @@ InputSocket::~InputSocket(void) { (void)close(sockfd_); }
 //          2 - gps
 //          1 - error
 /** @brief Get one pandar packet. */
-int InputSocket::getPacket(PandarPacket *pkt) {
+int InputSocket::getPacket(PandarPacket *pkt, bool &isTimeout) {
   // double time1 = ros::Time::now().toSec();
 
   uint64_t startTime = 0;
@@ -250,7 +250,7 @@ int InputSocket::getPacket(PandarPacket *pkt) {
   struct pollfd fds[1];
   fds[0].fd = sockfd_;
   fds[0].events = POLLIN;
-  static const int POLL_TIMEOUT = 1000;  // one second (in msec)
+  static const int POLL_TIMEOUT = 1;  // one second (in msec)
 
   sockaddr_in sender_address;
   socklen_t sender_address_len = sizeof(sender_address);
@@ -275,7 +275,8 @@ int InputSocket::getPacket(PandarPacket *pkt) {
   }
   if (retval == 0)  // poll() timeout?
   {
-    ROS_WARN("Pandar poll() timeout");
+    isTimeout = true;
+    // ROS_WARN("Pandar poll() timeout");
     return 1;
   }
   if ((fds[0].revents & POLLERR) || (fds[0].revents & POLLHUP) ||
@@ -285,7 +286,7 @@ int InputSocket::getPacket(PandarPacket *pkt) {
     return 1;
   }
   // } while ((fds[0].revents & POLLIN) == 0);
-
+  isTimeout = false;
   ssize_t nbytes = recvfrom(sockfd_, &pkt->data[0], 10000, 0,
                             (sockaddr *)&sender_address, &sender_address_len);
   pkt->size = nbytes;
@@ -378,7 +379,7 @@ InputPCAP::InputPCAP(ros::NodeHandle private_nh, uint16_t port,
   filter << "udp dst port " << port;
   pcap_compile(pcap_, &pcap_packet_filter_, filter.str().c_str(), 1,
                PCAP_NETMASK_UNKNOWN);
-  gap = 100;
+  gap = 0;
   last_pkt_ts = 0;
   count;
   last_time = 0;
@@ -393,7 +394,7 @@ InputPCAP::~InputPCAP(void) { pcap_close(pcap_); }
 //          2 - gps
 //          1 - error
 /** @brief Get one pandar packet. */
-int InputPCAP::getPacket(PandarPacket *pkt) {
+int InputPCAP::getPacket(PandarPacket *pkt, bool &isTimeout) {
   pcap_pkthdr *pktHeader;
   const unsigned char *packetBuf;
   struct tm t;
@@ -412,6 +413,7 @@ int InputPCAP::getPacket(PandarPacket *pkt) {
     else if(!checkPacket(pkt)){
       return 3;  // Packet size not match
     }
+    static int sleep_count = 0;
     if (count >= gap) {
       count = 0;
 
@@ -443,6 +445,18 @@ int InputPCAP::getPacket(PandarPacket *pkt) {
           struct timeval waitTime;
           waitTime.tv_sec = sleep_time / 1000000;
           waitTime.tv_usec = sleep_time % 1000000;
+          if((sleep_time % 1000000) > 1000 && (sleep_count == 0)){
+            sleep_count += 1;
+            isTimeout  = true;
+            // ROS_WARN("pkt time: %u,use time: %u,sleep time: %u",pkt_ts - last_pkt_ts,current_time - last_time, sleep_time);
+            return 0;
+          }
+          else{
+            if(sleep_count != 1)
+              isTimeout  = false;
+            sleep_count = 0;
+            
+          }
 
           int err;
 

@@ -448,6 +448,7 @@ typedef struct PacketsBuffer_s {
       m_iterTaskBegin = m_iterTaskEnd;
       m_iterTaskEnd = m_iterTaskBegin + m_stepSize;
     }
+    // ROS_WARN("%d %d %d",m_iterTaskBegin - m_buffers.begin(),m_iterTaskEnd - m_buffers.begin(), m_iterPush - m_buffers.begin());
   }
   inline void moveTaskEnd(int moveStep){
     m_iterTaskEnd = m_iterTaskEnd + moveStep;

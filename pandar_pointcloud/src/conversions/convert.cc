@@ -506,7 +506,7 @@ int Convert::processLiDARData() {
       // ROS_WARN("checkLiadaMode now!!");
       m_OutMsgArray[cursor]->clear();
       m_OutMsgArray[cursor]->resize(calculatePointBufferSize());
-      m_PacketsBuffer.creatNewTask();
+      // m_PacketsBuffer.creatNewTask();
       pktCount = 0;
       continue;
     }
@@ -559,6 +559,9 @@ void Convert::init() {
 			continue;
 		}
 		int16_t lidarmotorspeed = 0;
+    if(m_PacketsBuffer.getTaskBegin()->data[0] != 0xEE){
+			m_PacketsBuffer.m_iterTaskBegin++;
+		}
     auto header = (PandarAT128Head*)(&((m_PacketsBuffer.getTaskBegin())->data[0]));
     switch(header->u8VersionMinor){
 			case 1:
@@ -1051,6 +1054,7 @@ bool Convert::isNeedPublish(){
 		{
 			uint32_t beginAzimuth = *(uint16_t*)(&(m_PacketsBuffer.getTaskBegin()->data[0]) + m_iFirstAzimuthIndex) * LIDAR_AZIMUTH_UNIT + *(uint8_t*)(&(m_PacketsBuffer.getTaskBegin()->data[0]) + m_iFirstAzimuthIndex + 1);
 			uint32_t endAzimuth = *(uint16_t*)(&((m_PacketsBuffer.m_iterPush - 2)->data[0]) + m_iFirstAzimuthIndex) * LIDAR_AZIMUTH_UNIT + *(uint8_t*)(&((m_PacketsBuffer.m_iterPush - 2)->data[0]) + m_iLastAzimuthIndex + 1);
+      // ROS_WARN("%u %u %d %d",beginAzimuth, endAzimuth, m_PacketsBuffer.m_iterPush - m_PacketsBuffer.getTaskBegin(), m_PacketsBuffer.m_iterPush- m_PacketsBuffer.m_buffers.begin());
 			if(m_bClockwise){
 				if(m_iViewMode == 1){
           if((m_bIsSocketTimeout || !m_PacketsBuffer.hasEnoughPackets()) && !m_PacketsBuffer.empty()){

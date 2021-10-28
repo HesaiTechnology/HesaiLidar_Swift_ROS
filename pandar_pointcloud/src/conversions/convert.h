@@ -196,6 +196,8 @@
 #define PANDAR_AT128_WITHOUT_CONF_UNIT_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
 #define PANDAR_AT128_FRAME_ANGLE_SIZE (6400)
 #define PANDAR_AT128_FRAME_ANGLE_INTERVAL_SIZE (5600)
+#define PANDAR_AT128_EDGE_AZIMUTH_OFFSET (7500)
+#define PANDAR_AT128_EDGE_AZIMUTH_SIZE (800)
 #define PANDAR_AT128_CRC_SIZE (4)  
 #define PANDAR_AT128_FUNCTION_SAFETY_SIZE (17)  
 #define PANDAR_AT128_SIGNATURE_SIZE (32)
@@ -425,6 +427,9 @@ typedef struct PacketsBuffer_s {
     return ((m_iterPush > m_iterTaskBegin && m_iterPush > m_iterTaskEnd) ||
             (m_iterPush < m_iterTaskBegin && m_iterPush < m_iterTaskEnd));
   }
+  inline bool empty() {
+    return (abs(m_iterPush - m_iterTaskBegin) <= 1);
+  }
   inline PktArray::iterator getTaskBegin() { return m_iterTaskBegin; }
   inline PktArray::iterator getTaskEnd() { return m_iterTaskEnd; }
   inline void moveTaskEnd(PktArray::iterator iter) {
@@ -443,6 +448,7 @@ typedef struct PacketsBuffer_s {
       m_iterTaskBegin = m_iterTaskEnd;
       m_iterTaskEnd = m_iterTaskBegin + m_stepSize;
     }
+    // ROS_WARN("%d %d %d",m_iterTaskBegin - m_buffers.begin(),m_iterTaskEnd - m_buffers.begin(), m_iterPush - m_buffers.begin());
   }
   inline void moveTaskEnd(int moveStep){
     m_iterTaskEnd = m_iterTaskEnd + moveStep;
@@ -471,6 +477,8 @@ class Convert {
   int processLiDARData();
   void publishPointsThread();
   void publishPoints();
+  void setIsSocketTimeout(bool isSocketTimeout);
+  bool getIsSocketTimeout();
 
  private:
   void callback(pandar_pointcloud::CloudNodeConfig &config, uint32_t level);
@@ -564,6 +572,7 @@ class Convert {
   std::vector<float> m_cos_elevation_map_;
   PandarATCorrections m_PandarAT_corrections;
   int m_iViewMode;
+  bool m_bIsSocketTimeout;
 
 };
 

@@ -132,3 +132,10 @@ PandarSwiftROS_1.0.23
 
 ##modify
 1. Support to accept lidar fault message
+
+Tuesday, October 26th, 2021 17:30
+##version
+PandarSwiftROS_1.0.24
+
+##modify
+1. Optimize the point to switch frame

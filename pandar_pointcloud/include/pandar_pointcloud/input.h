@@ -191,7 +191,7 @@ namespace pandar_pointcloud
      *          -1 if end of file
      *          > 0 if incomplete packet (is this possible?)
      */
-    virtual int getPacket(PandarPacket *pkt) = 0;
+    virtual int getPacket(PandarPacket *pkt, bool &isTimeout) = 0;
     bool checkPacket(PandarPacket *pkt);
     void setUdpVersion(uint8_t major, uint8_t minor);
 
@@ -214,7 +214,7 @@ namespace pandar_pointcloud
                 uint16_t port = DATA_PORT_NUMBER);
     virtual ~InputSocket();
 
-    virtual int getPacket(PandarPacket *pkt);
+    virtual int getPacket(PandarPacket *pkt, bool &isTimeout);
     void setDeviceIP( const std::string& ip );
   private:
 
@@ -247,7 +247,7 @@ namespace pandar_pointcloud
               double repeat_delay=0.0);
     virtual ~InputPCAP();
 
-    virtual int getPacket(PandarPacket *pkt);
+    virtual int getPacket(PandarPacket *pkt, bool &isTimeout);
     void setDeviceIP( const std::string& ip );
 
   private:

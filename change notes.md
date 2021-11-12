@@ -116,4 +116,12 @@ PandarSwiftROS_1.0.22
 3. Fix bug in calculate taskflow end  
 
 
+Friday, November 12th, 2021 17:30
+##version
+PandarSwiftROS_1.0.25
+
+##modify
+1. Support BD90 first time
+
+
 

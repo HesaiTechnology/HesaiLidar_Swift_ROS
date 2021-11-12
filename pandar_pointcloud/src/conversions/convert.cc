@@ -698,7 +698,7 @@ void Convert::doTaskFlow(int cursor) {
     case 1:
     {
       taskFlow.parallel_for(m_PacketsBuffer.getTaskBegin(),
-                            m_PacketsBuffer.getTaskEnd() -  1,
+                            m_PacketsBuffer.getTaskEnd(),
                             [this, &cursor](auto &taskpkt) {
                               calcPointXYZIT(taskpkt,cursor);
                             });
@@ -707,7 +707,7 @@ void Convert::doTaskFlow(int cursor) {
     case 3:
     {
       taskFlow.parallel_for(m_PacketsBuffer.getTaskBegin(),
-                            m_PacketsBuffer.getTaskEnd() - 1,
+                            m_PacketsBuffer.getTaskEnd(),
                             [this, &cursor](auto &taskpkt) {
                               calcQT128PointXYZIT(taskpkt,cursor);
                             });

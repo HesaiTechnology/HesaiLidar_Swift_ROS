@@ -86,7 +86,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "PandarSwiftROS_1.0.22";
+  m_sRosVersion = "PandarSwiftROS_1.0.25";
   ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -857,7 +857,7 @@ void Convert::changeAngleSize() {
         m_iAngleSize = LIDAR_ANGLE_SIZE_18;  // 18->0.18degree
         return;
       } 
-      if (m_iLaserNum == PANDAR64S_LASER_NUM || m_iLaserNum == PANDAR40S_LASER_NUM) {
+      if (m_iLaserNum == PANDAR64S_LASER_NUM || m_iLaserNum == PANDAR40S_LASER_NUM || m_iLaserNum == PANDAR90_LASER_NUM) {
         m_iAngleSize = LIDAR_ANGLE_SIZE_20 * m_iMotorSpeed / MOTOR_SPEED_600;  // 20->0.2degree
         return;
       } 

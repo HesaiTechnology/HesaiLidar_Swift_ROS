@@ -194,6 +194,9 @@ namespace pandar_pointcloud
     virtual int getPacket(PandarPacket *pkt, bool &isTimeout) = 0;
     bool checkPacket(PandarPacket *pkt);
     void setUdpVersion(uint8_t major, uint8_t minor);
+    int m_iTimestampIndex;
+    int m_iUtcIindex;
+    int m_iSequenceNumberIndex;
 
   protected:
     ros::NodeHandle private_nh_;
@@ -201,9 +204,6 @@ namespace pandar_pointcloud
     std::string devip_str_;
     std::string m_sUdpVresion;
     bool m_bGetUdpVersion;
-    int m_iTimestampIndex;
-    int m_iUtcIindex;
-    int m_iSequenceNumberIndex;
   };
 
   /** @brief Live pandar input from socket. */

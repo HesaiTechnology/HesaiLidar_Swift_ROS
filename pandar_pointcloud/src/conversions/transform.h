@@ -34,6 +34,8 @@
 // include template implementations to transform a custom point cloud
 #include <pcl_ros/impl/transforms.hpp>
 #include "convert.h"
+#include <pandar_pointcloud/input.h>
+#include <queue>
 
 /** types of point and cloud to work with */
 typedef pandar_rawdata::PPoint PPoint;
@@ -84,6 +86,10 @@ namespace pandar_pointcloud
     // every message.
     PPointCloud inPc_;              ///< input packet point cloud
     PPointCloud tfPc_;              ///< transformed packet point cloud
+    std::queue<pandar_msgs::PandarPacket> m_packetBuffer;
+    boost::thread *m_driverReadThread;
+    void driverReadThread();
+    boost::shared_ptr<Input> m_input;
   };
 
 } // namespace pandar_pointcloud

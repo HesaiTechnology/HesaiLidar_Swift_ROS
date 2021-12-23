@@ -105,9 +105,11 @@ PandarDriver::PandarDriver(ros::NodeHandle node, ros::NodeHandle private_nh,
     // read data from packet capture file
     input_.reset(new pandar_pointcloud::InputPCAP(private_nh, udp_port,
                                                   packet_rate, dump_file));
+    m_bPaserPacp = true;                                              
   } else {
     // read data from live socket
     input_.reset(new pandar_pointcloud::InputSocket(private_nh, udp_port));
+    m_bPaserPacp = false;   
   }
   // ROS_WARN("drive nodeType[%s]", nodeType.c_str());
   // ROS_WARN("drive publishmodel[%s]", publishmodel.c_str());
@@ -192,13 +194,25 @@ bool PandarDriver::poll(void) {
     // {
     // keep reading until full packet received
     PandarPacket packet;
-    bool isSocketTimeout = false;
-    int rc = input_->getPacket(&packet, isSocketTimeout);
+    bool isSocketTimeout = convert->getIsSocketTimeout();
+    int rc = 0;
+    if (m_bPaserPacp)  // have PCAP file?
+    {
+      while(convert->getIsSocketTimeout()){
+        usleep(10000);
+      }
+    }
+    rc = input_->getPacket(&packet, isSocketTimeout);
     convert->setIsSocketTimeout(isSocketTimeout);
     pandarScanArray[m_iScanPushIndex]->packets[i].stamp = packet.stamp;
     pandarScanArray[m_iScanPushIndex]->packets[i].size = packet.size;
     pandarScanArray[m_iScanPushIndex]->packets[i].data.resize(packet.size);
     memcpy(&pandarScanArray[m_iScanPushIndex]->packets[i].data[0], &packet.data[0], packet.size);
+    if(packet.size < 100)
+    {
+      i--;
+      continue;
+    }
 
     // ROS_WARN("PandarDriver::poll(void),rc[%d]",rc);
     // if (rc == 0) break;       // got a full packet?
@@ -246,10 +260,10 @@ bool PandarDriver::poll(void) {
   m_iScanPopIndex = temp;
   if (m_bNeedPublish == false)
     m_bNeedPublish = true;
-  else
-    ROS_WARN(
-        "CPU not fast enough, data not published yet, new data "
-        "comming!!!!!!!!!!!!!!");
+  // else
+  //   ROS_WARN(
+  //       "CPU not fast enough, data not published yet, new data "
+  //       "comming!!!!!!!!!!!!!!");
   return true;
 }
 

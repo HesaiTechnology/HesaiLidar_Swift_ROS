@@ -440,24 +440,19 @@ int InputPCAP::getPacket(PandarPacket *pkt, bool &isTimeout) {
         int64_t sleep_time = (pkt_ts - last_pkt_ts) - \
             (current_time - last_time);
             // ROS_WARN("pkt time: %u,use time: %u,sleep time: %u",pkt_ts - last_pkt_ts,current_time - last_time, sleep_time);
+        if(((pkt_ts - last_pkt_ts) % 1000000) > 1000 && (sleep_count == 0)){
+          sleep_count += 1;
+          isTimeout  = true;
+          // ROS_WARN("pkt time: %u,use time: %u,sleep time: %u",pkt_ts - last_pkt_ts,current_time - last_time, sleep_time);
+          return 0;
+        }
+        isTimeout  = false;
+        sleep_count = 0;
 
         if (sleep_time > 0) {
           struct timeval waitTime;
           waitTime.tv_sec = sleep_time / 1000000;
           waitTime.tv_usec = sleep_time % 1000000;
-          if((sleep_time % 1000000) > 1000 && (sleep_count == 0)){
-            sleep_count += 1;
-            isTimeout  = true;
-            // ROS_WARN("pkt time: %u,use time: %u,sleep time: %u",pkt_ts - last_pkt_ts,current_time - last_time, sleep_time);
-            return 0;
-          }
-          else{
-            if(sleep_count != 1)
-              isTimeout  = false;
-            sleep_count = 0;
-            
-          }
-
           int err;
 
           do {

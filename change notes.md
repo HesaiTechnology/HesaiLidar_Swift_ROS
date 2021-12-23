@@ -139,3 +139,11 @@ PandarSwiftROS_1.0.24
 
 ##modify
 1. Optimize the point to switch frame
+
+Tuesday,December 23th, 2021 17:30
+##version
+PandarSwiftROS_1.0.25
+
+##modify
+1. Fix bug in calculate point index
+2, fix bug in play rosbag

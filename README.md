@@ -112,11 +112,11 @@ $ roslaunch pandar_pointcloud PandarSwift_points.launch
 
 2. The driver will publish a raw data packet message in the topic.
 ```
-/pandar_packets
+/hesai/pandar_packets
 ```
 3. record raw data rosbag
 ```
-$rosbag record -b 4096 /pandar_packets
+$rosbag record -b 4096 /hesai/pandar_packets
 ```
 
 4. stop roslaunch and rosbag record by "Ctrl + C"

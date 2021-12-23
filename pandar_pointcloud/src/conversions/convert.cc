@@ -729,6 +729,8 @@ int Convert::checkLiadaMode() {
   uint8_t laserNum = 0;
   uint8_t blockNum = 0;
   int Azimuth = 0;
+  if((m_PacketsBuffer.getTaskBegin() - m_PacketsBuffer.m_buffers.begin()) < 4)
+    m_iField = -1;
   if(((m_PacketsBuffer.m_buffers.end() - m_PacketsBuffer.getTaskBegin()) <= 2) ||
    ((m_PacketsBuffer.m_iterPush - m_PacketsBuffer.getTaskBegin()) <= 2) ||
    ((m_PacketsBuffer.getTaskBegin() + 1)->data[0] != 0xEE))
@@ -779,8 +781,10 @@ int Convert::checkLiadaMode() {
       m_iField = (m_iField + 1) % m_PandarAT_corrections.header.frame_number;
       field_count++;
     }
-    if (field_count >= m_PandarAT_corrections.header.frame_number)
+    if (field_count >= m_PandarAT_corrections.header.frame_number){
+      m_iField = -1;
       return 1;
+    }    
                           
   }
   break;
@@ -1071,7 +1075,7 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 				point.ring = i + 1;
 				int point_index;
 				point_index = calculatePointIndex(u16Azimuth, blockid, i);
-				if(field == m_iField){
+				if(field == m_iField || m_iField == -1){
 					m_OutMsgArray[cursor]->points[point_index] = point;
 				}
 				// else{

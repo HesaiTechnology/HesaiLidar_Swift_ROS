@@ -197,7 +197,7 @@
 #define PANDAR_AT128_FRAME_ANGLE_SIZE (6800)
 #define PANDAR_AT128_FRAME_ANGLE_INTERVAL_SIZE (5600)
 #define PANDAR_AT128_EDGE_AZIMUTH_OFFSET (7500)
-#define PANDAR_AT128_EDGE_AZIMUTH_SIZE (800)
+#define PANDAR_AT128_EDGE_AZIMUTH_SIZE (1600)
 #define PANDAR_AT128_CRC_SIZE (4)  
 #define PANDAR_AT128_FUNCTION_SAFETY_SIZE (17)  
 #define PANDAR_AT128_SIGNATURE_SIZE (32)
@@ -424,8 +424,8 @@ typedef struct PacketsBuffer_s {
     }
   }
   inline bool hasEnoughPackets() {
-    return ((m_iterPush > m_iterTaskBegin && m_iterPush > m_iterTaskEnd) ||
-            (m_iterPush < m_iterTaskBegin && m_iterPush < m_iterTaskEnd));
+    return (((m_iterPush > m_iterTaskBegin && m_iterPush > m_iterTaskEnd) ||
+            (m_iterPush < m_iterTaskBegin && m_iterPush < m_iterTaskEnd)) && ((m_iterPush - m_buffers.begin()) > 2));
   }
   inline bool empty() {
     return (abs(m_iterPush - m_iterTaskBegin) <= 1 || abs(m_iterTaskEnd - m_iterTaskBegin) <= 1);

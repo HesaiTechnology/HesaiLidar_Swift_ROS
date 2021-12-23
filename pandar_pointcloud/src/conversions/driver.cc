@@ -211,7 +211,7 @@ bool PandarDriver::poll(void) {
     pandarScanArray[m_iScanPushIndex]->packets[i].size = packet.size;
     pandarScanArray[m_iScanPushIndex]->packets[i].data.resize(packet.size);
     memcpy(&pandarScanArray[m_iScanPushIndex]->packets[i].data[0], &packet.data[0], packet.size);
-    if(packet.size < 100)
+    if(packet.size < 500)
     {
       i--;
       continue;

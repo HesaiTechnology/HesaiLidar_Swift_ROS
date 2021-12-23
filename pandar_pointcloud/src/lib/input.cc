@@ -61,7 +61,7 @@ Input::Input(ros::NodeHandle private_nh, uint16_t port)
 }
 
 bool Input::checkPacket(PandarPacket *pkt) {
-  if(pkt->size < 100)
+  if(pkt->size < 500)
   return false;
   if (pkt->data[0] != 0xEE && pkt->data[1] != 0xFF) {    
     ROS_WARN("Packet with invaild delimiter %x %x %d\n", pkt->data[0], pkt->data[1], pkt->size);
@@ -250,7 +250,7 @@ int InputSocket::getPacket(PandarPacket *pkt, bool &isTimeout) {
   struct pollfd fds[1];
   fds[0].fd = sockfd_;
   fds[0].events = POLLIN;
-  static const int POLL_TIMEOUT = 1;  // one second (in msec)
+  static const int POLL_TIMEOUT = 3;  // one second (in msec)
 
   sockaddr_in sender_address;
   socklen_t sender_address_len = sizeof(sender_address);

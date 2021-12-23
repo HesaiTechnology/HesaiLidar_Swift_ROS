@@ -84,7 +84,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "PandarSwiftROS_1.0.25";
+  m_sRosVersion = "PandarSwiftROS_1.0.26";
   ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -553,12 +553,14 @@ int Convert::processLiDARData() {
 
 void Convert::moveTaskEndToStartAngle() {
 	uint32_t startTick = GetTickCount();
-  if(m_sPcapFile != "" || m_sNodeType != LIDAR_NODE_TYPE){
-    m_PacketsBuffer.moveTaskEnd(m_PacketsBuffer.m_iterPush - 1);
-  }
-  else{
-    m_PacketsBuffer.moveTaskEnd(m_PacketsBuffer.m_iterPush );
-  }
+  if((m_PacketsBuffer.m_iterPush - m_PacketsBuffer.m_buffers.begin()) > 2){
+    if(m_sPcapFile != "" || m_sNodeType != LIDAR_NODE_TYPE){
+      m_PacketsBuffer.moveTaskEnd(m_PacketsBuffer.m_iterPush - 1);
+    }
+    else{
+      m_PacketsBuffer.moveTaskEnd(m_PacketsBuffer.m_iterPush );
+    }
+  }  
   
 	uint32_t endTick = GetTickCount();
 	// printf("moveTaskEndToStartAngle time: %d\n", endTick - startTick);
@@ -628,7 +630,7 @@ void Convert::init() {
           field_count++;
         }
         if (field_count >= m_PandarAT_corrections.header.frame_number)
-          continue;
+          ROS_WARN("Correction file or azimuth is wrong ");
         }
       break;
 			default:
@@ -716,6 +718,10 @@ int Convert::checkLiadaMode() {
   uint8_t laserNum = 0;
   uint8_t blockNum = 0;
   int Azimuth = 0;
+  if(((m_PacketsBuffer.m_buffers.end() - m_PacketsBuffer.getTaskBegin()) <= 2) ||
+   ((m_PacketsBuffer.m_iterPush - m_PacketsBuffer.getTaskBegin()) <= 2) ||
+   ((m_PacketsBuffer.getTaskBegin() + 1)->data[0] != 0xEE))
+    return 1;
   auto header = (PandarAT128Head*)(&((m_PacketsBuffer.getTaskBegin() + 1)->data[0]));
 	switch(header->u8VersionMinor){
 	case 1:
@@ -763,7 +769,7 @@ int Convert::checkLiadaMode() {
       field_count++;
     }
     if (field_count >= m_PandarAT_corrections.header.frame_number)
-      return 0;
+      return 1;
                           
   }
   break;
@@ -1098,16 +1104,20 @@ bool Convert::isNeedPublish(){
 		case 3:
 		{
       if(m_PacketsBuffer.hasEnoughPackets()){
-        return false;
-      }
-      uint32_t beginAzimuth = *(uint16_t*)(&(m_PacketsBuffer.getTaskBegin()->data[0]) + m_iFirstAzimuthIndex) * LIDAR_AZIMUTH_UNIT + *(uint8_t*)(&(m_PacketsBuffer.getTaskBegin()->data[0]) + m_iFirstAzimuthIndex + 1);
-			uint32_t endAzimuth = *(uint16_t*)(&((m_PacketsBuffer.m_iterPush - 2)->data[0]) + m_iFirstAzimuthIndex) * LIDAR_AZIMUTH_UNIT + *(uint8_t*)(&((m_PacketsBuffer.m_iterPush - 2)->data[0]) + m_iLastAzimuthIndex + 1);
+				return false;
+			}
+			uint32_t beginAzimuth = *(uint16_t*)(&(m_PacketsBuffer.getTaskBegin()->data[0]) + m_iFirstAzimuthIndex) * LIDAR_AZIMUTH_UNIT + *(uint8_t*)(&(m_PacketsBuffer.getTaskBegin()->data[0]) + m_iFirstAzimuthIndex + 1);
+			uint32_t endAzimuth = 0; 
+			if((m_PacketsBuffer.m_iterPush - m_PacketsBuffer.m_buffers.begin()) > 2)
+				endAzimuth = *(uint16_t*)(&((m_PacketsBuffer.m_iterPush - 2)->data[0]) + m_iFirstAzimuthIndex) * LIDAR_AZIMUTH_UNIT + *(uint8_t*)(&((m_PacketsBuffer.m_iterPush - 2)->data[0]) + m_iLastAzimuthIndex + 1);
+			else
+				endAzimuth = *(uint16_t*)(&((m_PacketsBuffer.getTaskEnd())->data[0]) + m_iFirstAzimuthIndex) * LIDAR_AZIMUTH_UNIT + *(uint8_t*)(&((m_PacketsBuffer.getTaskEnd())->data[0]) + m_iLastAzimuthIndex + 1);
 			if(m_bClockwise){
 				if(m_iViewMode == 1){
           if((m_bIsSocketTimeout || !m_PacketsBuffer.hasEnoughPackets()) && !m_PacketsBuffer.empty()){
             for(int i = 0; i < m_PandarAT_corrections.header.frame_number; i++){
-              if((float(endAzimuth - (m_PandarAT_corrections.l.start_frame[i] + PANDAR_AT128_EDGE_AZIMUTH_OFFSET * LIDAR_AZIMUTH_UNIT)) <= PANDAR_AT128_EDGE_AZIMUTH_SIZE * LIDAR_AZIMUTH_UNIT) && 
-                (float(endAzimuth - (m_PandarAT_corrections.l.start_frame[i] + PANDAR_AT128_EDGE_AZIMUTH_OFFSET * LIDAR_AZIMUTH_UNIT)) > 0))
+              if((float(endAzimuth - (m_PandarAT_corrections.l.start_frame[i] + PANDAR_AT128_EDGE_AZIMUTH_OFFSET * LIDAR_AZIMUTH_UNIT) % MAX_AZI_LEN) <= PANDAR_AT128_EDGE_AZIMUTH_SIZE * LIDAR_AZIMUTH_UNIT) && 
+                (float(endAzimuth - (m_PandarAT_corrections.l.start_frame[i] + PANDAR_AT128_EDGE_AZIMUTH_OFFSET * LIDAR_AZIMUTH_UNIT) % MAX_AZI_LEN) > 0))
                 {
                 return true;
                 }
@@ -1118,8 +1128,8 @@ bool Convert::isNeedPublish(){
 				}
 				else{
 					if((m_bIsSocketTimeout || !m_PacketsBuffer.hasEnoughPackets()) && !m_PacketsBuffer.empty()){
-            if((float(endAzimuth - (m_PandarAT_corrections.l.start_frame[0] + PANDAR_AT128_EDGE_AZIMUTH_OFFSET * LIDAR_AZIMUTH_UNIT)) <= PANDAR_AT128_EDGE_AZIMUTH_SIZE * LIDAR_AZIMUTH_UNIT) && 
-              (float(endAzimuth - (m_PandarAT_corrections.l.start_frame[0] + PANDAR_AT128_EDGE_AZIMUTH_OFFSET * LIDAR_AZIMUTH_UNIT)) > 0))
+            if((float(endAzimuth - (m_PandarAT_corrections.l.start_frame[0] + PANDAR_AT128_EDGE_AZIMUTH_OFFSET * LIDAR_AZIMUTH_UNIT) % MAX_AZI_LEN) <= PANDAR_AT128_EDGE_AZIMUTH_SIZE * LIDAR_AZIMUTH_UNIT) && 
+              (float(endAzimuth - (m_PandarAT_corrections.l.start_frame[0] + PANDAR_AT128_EDGE_AZIMUTH_OFFSET * LIDAR_AZIMUTH_UNIT) % MAX_AZI_LEN) > 0))
               return true;
             return false;
 

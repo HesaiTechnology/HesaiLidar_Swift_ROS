@@ -84,6 +84,7 @@ class PandarDriver {
   std::string nodeType;
 
   pandar_pointcloud::Convert *convert;
+  bool m_bPaserPacp;
 };
 
 }  // namespace pandar_driver

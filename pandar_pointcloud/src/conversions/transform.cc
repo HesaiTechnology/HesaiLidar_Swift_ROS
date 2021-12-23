@@ -24,6 +24,7 @@
 
 #include <pcl_conversions/pcl_conversions.h>
 
+
 namespace pandar_pointcloud
 {
   /** @brief Constructor. */
@@ -32,6 +33,7 @@ namespace pandar_pointcloud
     data_(new pandar_rawdata::RawData()),
     m_spConver(new Convert(node, private_nh,"transform"))
   {
+    m_input.reset(new pandar_pointcloud::InputSocket(private_nh, 2368));
     ROS_WARN(" Transform::Transform");
     private_nh.getParam("frame_id", config_.frame_id);
     // Read calibration.
@@ -58,6 +60,8 @@ namespace pandar_pointcloud
     tf_filter_->registerCallback(boost::bind(&Transform::processScan, this, _1));
     ROS_WARN(" Transform::processScan config[%s]",config_.frame_id.c_str());
     ROS_WARN(" Transform::Transform finisher");
+    m_driverReadThread = new boost::thread(boost::bind(&Transform::driverReadThread, this));
+    
   }
   
   void Transform::reconfigure_callback(
@@ -81,7 +85,91 @@ namespace pandar_pointcloud
     // process each packet provided by the driver
     // ROS_WARN(" Transform::processScan");
     for (size_t next = 0; next < scanMsg->packets.size(); ++next) {
-        m_spConver->pushLiDARData(scanMsg->packets[next]);
+        m_packetBuffer.push(scanMsg->packets[next]);
+        
         }
+  }
+
+  void Transform::driverReadThread(){
+    pandar_msgs::PandarPacket raw_packet;
+    struct tm t;
+    int64_t last_pkt_ts = 0;
+    int64_t last_time = 0;
+    int64_t current_time = 0;
+    int64_t pkt_ts = 0;
+    int sleep_count = 0;
+    while(1){
+      if(m_packetBuffer.size() > 0){
+        raw_packet = m_packetBuffer.front();
+        m_packetBuffer.pop();
+        PandarPacket packet;
+        while(m_spConver->getIsSocketTimeout()){
+          usleep(10000);
+        }
+        packet.stamp = raw_packet.stamp;
+        packet.size = raw_packet.size;
+        memcpy(&packet.data[0], &raw_packet.data[0], raw_packet.size);
+        if(m_input->checkPacket(&packet)){
+          m_spConver->pushLiDARData(raw_packet);
+        }
+        
+
+        t.tm_year  = raw_packet.data[m_input->m_iUtcIindex];
+        t.tm_mon   = raw_packet.data[m_input->m_iUtcIindex + 1] - 1;
+        t.tm_mday  = raw_packet.data[m_input->m_iUtcIindex + 2];
+        t.tm_hour  = raw_packet.data[m_input->m_iUtcIindex + 3];
+        t.tm_min   = raw_packet.data[m_input->m_iUtcIindex + 4];
+        t.tm_sec   = raw_packet.data[m_input->m_iUtcIindex + 5];
+        t.tm_isdst = 0;
+
+        pkt_ts = mktime(&t) * 1000000 + ((raw_packet.data[m_input->m_iTimestampIndex]& 0xff) | \
+            (raw_packet.data[m_input->m_iTimestampIndex + 1]& 0xff) << 8 | \
+            ((raw_packet.data[m_input->m_iTimestampIndex + 2]& 0xff) << 16) | \
+            ((raw_packet.data[m_input->m_iTimestampIndex + 3]& 0xff) << 24));
+        struct timeval sys_time;
+        gettimeofday(&sys_time, NULL);
+        current_time = sys_time.tv_sec * 1000000 + sys_time.tv_usec;
+
+        if (0 == last_pkt_ts) {
+          last_pkt_ts = pkt_ts;
+          last_time = current_time;
+        } else {
+          int64_t sleep_time = (pkt_ts - last_pkt_ts) - \
+              (current_time - last_time);
+              // ROS_WARN("pkt time: %u,use time: %u,sleep time: %d",pkt_ts - last_pkt_ts,current_time - last_time, sleep_time);
+          if(((pkt_ts - last_pkt_ts) % 1000000) > 10000 && (sleep_count == 0)){
+              sleep_count += 1;
+              m_spConver->setIsSocketTimeout(true);
+            }
+            else{
+              if(sleep_count != 1)
+                m_spConver->setIsSocketTimeout(false);
+              sleep_count = 0;
+              
+            }
+          if (sleep_time > 0) {
+            struct timeval waitTime;
+            waitTime.tv_sec = sleep_time / 1000000;
+            waitTime.tv_usec = sleep_time % 1000000;
+            
+            
+
+            int err;
+
+            do {
+              err = select(0, NULL, NULL, NULL, &waitTime);
+            } while (err < 0 && errno != EINTR);
+          }
+
+          last_pkt_ts = pkt_ts;
+          last_time = current_time;
+          last_time += sleep_time;
+        }
+      }
+      else{
+        // ROS_WARN("%d   %d",m_spConver->getIsSocketTimeout(), m_packetBuffer.size());
+        usleep(1000);
+      }
+    }
   }
 } // namespace pandar_pointcloud

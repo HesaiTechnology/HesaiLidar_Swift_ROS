@@ -194,7 +194,7 @@
 #define PANDAR_AT128_PACKET_SEQ_NUM_SIZE \
   (PANDAR_AT128_PACKET_SIZE + PANDAR_AT128_SEQ_NUM_SIZE)
 #define PANDAR_AT128_WITHOUT_CONF_UNIT_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
-#define PANDAR_AT128_FRAME_ANGLE_SIZE (6400)
+#define PANDAR_AT128_FRAME_ANGLE_SIZE (6800)
 #define PANDAR_AT128_FRAME_ANGLE_INTERVAL_SIZE (5600)
 #define PANDAR_AT128_EDGE_AZIMUTH_OFFSET (7500)
 #define PANDAR_AT128_EDGE_AZIMUTH_SIZE (800)
@@ -403,22 +403,22 @@ typedef struct PacketsBuffer_s {
         m_iterPush = m_buffers.begin();
       }
 
-      static bool lastOverflowed = false;
+      // static bool lastOverflowed = false;
 
-      if (m_iterPush == m_iterTaskBegin) {
-        static uint32_t tmp = m_iterTaskBegin - m_buffers.begin();
-        if (m_iterTaskBegin - m_buffers.begin() != tmp) {
-          ROS_WARN("buffer don't have space!,%d",
-                   m_iterTaskBegin - m_buffers.begin());
-          tmp = m_iterTaskBegin - m_buffers.begin();
-        }
-        lastOverflowed = true;
-        return 0;
-      }
-      if (lastOverflowed) {
-        lastOverflowed = false;
-        ROS_WARN("buffer recovered");
-      }
+      // if (m_iterPush == m_iterTaskBegin) {
+      //   static uint32_t tmp = m_iterTaskBegin - m_buffers.begin();
+      //   if (m_iterTaskBegin - m_buffers.begin() != tmp) {
+      //     ROS_WARN("buffer don't have space!,%d",
+      //              m_iterTaskBegin - m_buffers.begin());
+      //     tmp = m_iterTaskBegin - m_buffers.begin();
+      //   }
+      //   lastOverflowed = true;
+      //   return 0;
+      // }
+      // if (lastOverflowed) {
+      //   lastOverflowed = false;
+      //   ROS_WARN("buffer recovered");
+      // }
       *(m_iterPush++) = pkt;
       return 1;
     }
@@ -428,7 +428,7 @@ typedef struct PacketsBuffer_s {
             (m_iterPush < m_iterTaskBegin && m_iterPush < m_iterTaskEnd));
   }
   inline bool empty() {
-    return (abs(m_iterPush - m_iterTaskBegin) <= 1);
+    return (abs(m_iterPush - m_iterTaskBegin) <= 1 || abs(m_iterTaskEnd - m_iterTaskBegin) <= 1);
   }
   inline PktArray::iterator getTaskBegin() { return m_iterTaskBegin; }
   inline PktArray::iterator getTaskEnd() { return m_iterTaskEnd; }
@@ -573,6 +573,8 @@ class Convert {
   PandarATCorrections m_PandarAT_corrections;
   int m_iViewMode;
   bool m_bIsSocketTimeout;
+  std::string m_sNodeType;
+  int m_iField;
 
 };
 

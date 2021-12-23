@@ -194,14 +194,17 @@ bool PandarDriver::poll(void) {
     // {
     // keep reading until full packet received
     PandarPacket packet;
-    bool isSocketTimeout = convert->getIsSocketTimeout();
     int rc = 0;
     if (m_bPaserPacp)  // have PCAP file?
     {
-      while(convert->getIsSocketTimeout()){
-        usleep(10000);
+      int count = 0;
+      while(convert->getIsSocketTimeout()&& count < 2000){
+        // ROS_WARN("timeout %d", convert->getIsSocketTimeout());
+        usleep(1000);
+        count++;
       }
     }
+    bool isSocketTimeout = convert->getIsSocketTimeout();
     rc = input_->getPacket(&packet, isSocketTimeout);
     convert->setIsSocketTimeout(isSocketTimeout);
     pandarScanArray[m_iScanPushIndex]->packets[i].stamp = packet.stamp;

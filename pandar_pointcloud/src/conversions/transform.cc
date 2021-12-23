@@ -99,7 +99,6 @@ namespace pandar_pointcloud
     int64_t pkt_ts = 0;
     int sleep_count = 0;
     while(1){
-      // ROS_WARN("???");
       if(m_packetBuffer.size() > 0){
         raw_packet = m_packetBuffer.front();
         m_packetBuffer.pop();
@@ -138,9 +137,8 @@ namespace pandar_pointcloud
           int64_t sleep_time = (pkt_ts - last_pkt_ts) - \
               (current_time - last_time);
               // ROS_WARN("pkt time: %u,use time: %u,sleep time: %d",pkt_ts - last_pkt_ts,current_time - last_time, sleep_time);
-          if(((pkt_ts - last_pkt_ts) % 1000000) > 1000 && (sleep_count == 0)){
+          if(((pkt_ts - last_pkt_ts) % 1000000) > 10000 && (sleep_count == 0)){
               sleep_count += 1;
-              ROS_WARN("sfsafasfas");
               m_spConver->setIsSocketTimeout(true);
             }
             else{

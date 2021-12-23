@@ -138,7 +138,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
   m_bClockwise == true;
   m_bIsSocketTimeout = false;
   m_sNodeType = node_type;
-  m_iFiled = 0;
+  m_iField = 0;
 
   hasGps = 0;
   // subscribe to PandarScan packets
@@ -525,13 +525,12 @@ int Convert::processLiDARData() {
 			m_OutMsgArray[cursor]->clear();
 			m_OutMsgArray[cursor]->resize(calculatePointBufferSize());
       if(m_RedundantPointBuffer.size() < MAX_REDUNDANT_POINT_NUM){
-        // ROS_WARN("field is %d %d", m_iFiled, m_RedundantPointBuffer.size());
         for(int i = 0; i < m_RedundantPointBuffer.size(); i++){
           m_OutMsgArray[cursor]->points[m_RedundantPointBuffer[i].index] = m_RedundantPointBuffer[i].point;
         }
       }
       else{
-        ROS_WARN("field is wrong %d %d", m_iFiled, m_RedundantPointBuffer.size());
+        ROS_WARN("field is wrong %d %d", m_iField, m_RedundantPointBuffer.size());
       }
       m_RedundantPointBuffer.clear();
 			uint32_t endTick2 = GetTickCount();
@@ -619,13 +618,13 @@ void Convert::init() {
 				m_u8UdpVersionMinor = header->u8VersionMinor;
         Azimuth = *(uint16_t*)(&((m_PacketsBuffer.getTaskBegin() + count)->data[0]) + m_iFirstAzimuthIndex) * LIDAR_AZIMUTH_UNIT;
         int field_count = 0;
-        m_iFiled = 0;
+        m_iField = 0;
         while ( field_count < m_PandarAT_corrections.header.frame_number
 					&& (
-					((Azimuth + MAX_AZI_LEN  - m_PandarAT_corrections.l.start_frame[m_iFiled]) % MAX_AZI_LEN  + (m_PandarAT_corrections.l.end_frame[m_iFiled] + MAX_AZI_LEN  - Azimuth) % MAX_AZI_LEN )
-						!= (m_PandarAT_corrections.l.end_frame[m_iFiled] + MAX_AZI_LEN  - m_PandarAT_corrections.l.start_frame[m_iFiled]) % MAX_AZI_LEN  )
+					((Azimuth + MAX_AZI_LEN  - m_PandarAT_corrections.l.start_frame[m_iField]) % MAX_AZI_LEN  + (m_PandarAT_corrections.l.end_frame[m_iField] + MAX_AZI_LEN  - Azimuth) % MAX_AZI_LEN )
+						!= (m_PandarAT_corrections.l.end_frame[m_iField] + MAX_AZI_LEN  - m_PandarAT_corrections.l.start_frame[m_iField]) % MAX_AZI_LEN  )
         ) {
-          m_iFiled = (m_iFiled + 1) % m_PandarAT_corrections.header.frame_number;
+          m_iField = (m_iField + 1) % m_PandarAT_corrections.header.frame_number;
           field_count++;
         }
         if (field_count >= m_PandarAT_corrections.header.frame_number)
@@ -757,10 +756,10 @@ int Convert::checkLiadaMode() {
     int field_count = 0;
     while ( field_count < m_PandarAT_corrections.header.frame_number
       && (
-      ((Azimuth + MAX_AZI_LEN  - m_PandarAT_corrections.l.start_frame[m_iFiled]) % MAX_AZI_LEN  + (m_PandarAT_corrections.l.end_frame[m_iFiled] + MAX_AZI_LEN  - Azimuth) % MAX_AZI_LEN )
-        != (m_PandarAT_corrections.l.end_frame[m_iFiled] + MAX_AZI_LEN  - m_PandarAT_corrections.l.start_frame[m_iFiled]) % MAX_AZI_LEN  )
+      ((Azimuth + MAX_AZI_LEN  - m_PandarAT_corrections.l.start_frame[m_iField]) % MAX_AZI_LEN  + (m_PandarAT_corrections.l.end_frame[m_iField] + MAX_AZI_LEN  - Azimuth) % MAX_AZI_LEN )
+        != (m_PandarAT_corrections.l.end_frame[m_iField] + MAX_AZI_LEN  - m_PandarAT_corrections.l.start_frame[m_iField]) % MAX_AZI_LEN  )
     ) {
-      m_iFiled = (m_iFiled + 1) % m_PandarAT_corrections.header.frame_number;
+      m_iField = (m_iField + 1) % m_PandarAT_corrections.header.frame_number;
       field_count++;
     }
     if (field_count >= m_PandarAT_corrections.header.frame_number)
@@ -1055,11 +1054,11 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 				point.ring = i + 1;
 				int point_index;
 				point_index = calculatePointIndex(u16Azimuth, blockid, i);
-				if(field == m_iFiled){
+				if(field == m_iField){
 					m_OutMsgArray[cursor]->points[point_index] = point;
 				}
 				// else{
-        //   // ROS_WARN("%d %d", field, m_iFiled);
+        //   // ROS_WARN("%d %d", field, m_iField);
 				// 	pthread_mutex_lock(&m_RedundantPointLock);
 				// 	m_RedundantPointBuffer.push_back(RedundantPoint{point_index, point});
 				// 	pthread_mutex_unlock(&m_RedundantPointLock);

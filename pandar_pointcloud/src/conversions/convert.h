@@ -197,7 +197,7 @@
 #define PANDAR_AT128_FRAME_ANGLE_SIZE (6800)
 #define PANDAR_AT128_FRAME_ANGLE_INTERVAL_SIZE (5600)
 #define PANDAR_AT128_EDGE_AZIMUTH_OFFSET (7500)
-#define PANDAR_AT128_EDGE_AZIMUTH_SIZE (1600)
+#define PANDAR_AT128_EDGE_AZIMUTH_SIZE (400)
 #define PANDAR_AT128_CRC_SIZE (4)  
 #define PANDAR_AT128_FUNCTION_SAFETY_SIZE (17)  
 #define PANDAR_AT128_SIGNATURE_SIZE (32)
@@ -386,12 +386,14 @@ typedef struct PacketsBuffer_s {
   PktArray::iterator m_iterTaskEnd;
   int m_stepSize;
   bool m_startFlag;
+  int m_pcapFlag;
   inline PacketsBuffer_s() {
     m_stepSize = PANDAR128_TASKFLOW_STEP_SIZE;
     m_iterPush = m_buffers.begin();
     m_iterTaskBegin = m_buffers.begin();
     m_iterTaskEnd = m_iterTaskBegin + m_stepSize;
     m_startFlag = false;
+    m_pcapFlag = 0;
   }
   inline int push_back(pandar_msgs::PandarPacket pkt) {
     if (!m_startFlag) {
@@ -424,11 +426,26 @@ typedef struct PacketsBuffer_s {
     }
   }
   inline bool hasEnoughPackets() {
-    return (((m_iterPush > m_iterTaskBegin && m_iterPush > m_iterTaskEnd) ||
-            (m_iterPush < m_iterTaskBegin && m_iterPush < m_iterTaskEnd)) && ((m_iterPush - m_buffers.begin()) > 2));
+    // ROS_WARN("%d %d %d",m_iterPush - m_buffers.begin(), m_iterTaskBegin - m_buffers.begin(), m_iterTaskEnd - m_buffers.begin());
+    return ((m_iterPush > m_buffers.begin()) && 
+            (((m_iterPush - m_pcapFlag) > m_iterTaskBegin && (m_iterPush - m_pcapFlag) > m_iterTaskEnd) ||
+            ((m_iterPush - m_pcapFlag) < m_iterTaskBegin && (m_iterPush - m_pcapFlag) < m_iterTaskEnd)) && 
+            ((m_iterPush - m_buffers.begin()) > 2));
   }
   inline bool empty() {
-    return (abs(m_iterPush - m_iterTaskBegin) <= 1 || abs(m_iterTaskEnd - m_iterTaskBegin) <= 1);
+    static int count = 0;
+    if((abs(m_iterPush - m_iterTaskBegin) <= 1 || abs(m_iterTaskEnd - m_iterTaskBegin) <= 1)){
+      if(count > 0){
+        count = 0;
+        return true;
+      }
+      else{
+        count++;
+        return false;
+      }
+    }
+    return false;
+    // return (abs(m_iterPush - m_iterTaskBegin) <= 1 || abs(m_iterTaskEnd - m_iterTaskBegin) <= 1);
   }
   inline PktArray::iterator getTaskBegin() { return m_iterTaskBegin; }
   inline PktArray::iterator getTaskEnd() { return m_iterTaskEnd; }
@@ -575,6 +592,7 @@ class Convert {
   bool m_bIsSocketTimeout;
   std::string m_sNodeType;
   int m_iField;
+  int m_iEdgeAzimuthSize;
 
 };
 

@@ -982,7 +982,7 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 
 				point.ring = i + 1;
 				int point_index;
-				point_index = calculatePointIndex(u16Azimuth, blockid, i);
+				point_index = calculatePointIndex(u16Azimuth, blockid, i, field);
 				if(m_OutMsgArray[cursor]->points[point_index].ring == 0){
 					m_OutMsgArray[cursor]->points[point_index] = point;
 				}
@@ -1074,7 +1074,7 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 
 				point.ring = i + 1;
 				int point_index;
-				point_index = calculatePointIndex(u16Azimuth, blockid, i);
+				point_index = calculatePointIndex(u16Azimuth, blockid, i, field);
 				if(field == m_iField || m_iField == -1){
 					m_OutMsgArray[cursor]->points[point_index] = point;
 				}
@@ -1181,7 +1181,7 @@ bool Convert::isNeedPublish(){
 }
 
 
-int Convert::calculatePointIndex(uint16_t u16Azimuth, int blockid, int laserid){
+int Convert::calculatePointIndex(uint16_t u16Azimuth, int blockid, int laserid, int field){
   int point_index = 0;
   switch(m_PandarAT_corrections.header.frame_number){
     case 4: // two mirror case
@@ -1220,6 +1220,8 @@ int Convert::calculatePointIndex(uint16_t u16Azimuth, int blockid, int laserid){
     break;
     case 3: // three mirror case
       uint16_t Azimuth = (u16Azimuth) % CIRCLE_ANGLE;
+      if(field == 2 && Azimuth < PANDAR_AT128_FRAME_ANGLE_SIZE)
+        Azimuth = Azimuth + CIRCLE_ANGLE;
       if (LIDAR_RETURN_BLOCK_SIZE_2 == m_iReturnBlockSize) {
         if(m_iViewMode == 1){
           point_index = (Azimuth) % PANDAR_AT128_FRAME_ANGLE_SIZE / m_iAngleSize * m_iLaserNum *

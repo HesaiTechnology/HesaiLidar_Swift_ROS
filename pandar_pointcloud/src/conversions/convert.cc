@@ -698,7 +698,7 @@ void Convert::publishPoints() {
   sensor_msgs::PointCloud2 output;
   pcl::toROSMsg(*m_OutMsgArray[m_iPublishPointsIndex], output);
   output_.publish(output);
-  usleep(1000000);
+  // usleep(1000000);
   
 
   // uint32_t end = GetTickCount();

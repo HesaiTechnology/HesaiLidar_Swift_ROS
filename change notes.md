@@ -147,3 +147,10 @@ PandarSwiftROS_1.0.26
 ##modify
 1. Fix bug in calculate point index
 2, fix bug in play rosbag
+
+Friday,January 14th, 2022 17:30
+##version
+PandarSwiftROS_1.0.27
+
+##modify
+1. Support LTS lidar 

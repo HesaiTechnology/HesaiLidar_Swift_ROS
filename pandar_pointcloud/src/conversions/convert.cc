@@ -84,7 +84,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "PandarSwiftROS_1.0.26";
+  m_sRosVersion = "PandarSwiftROS_1.0.27";
   ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -1008,19 +1008,30 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 					PANDAR_AT128_CRC_SIZE + 
 					PANDAR_AT128_AZIMUTH_SIZE * header->u8BlockNum +
 					PANDAR_AT128_FINE_AZIMUTH_SIZE * header->u8BlockNum);
-		struct tm t = {0};
-		t.tm_year = tail->nUTCTime[0];
-		if (t.tm_year >= 200) {
-			t.tm_year -= 100;
-		}
-		t.tm_mon = tail->nUTCTime[1] - 1;
-		t.tm_mday = tail->nUTCTime[2];
-		t.tm_hour = tail->nUTCTime[3];
-		t.tm_min = tail->nUTCTime[4];
-		t.tm_sec = tail->nUTCTime[5];
-		t.tm_isdst = 0;
+    double unix_second = 0;      
+    if(tail->nUTCTime[0] != 0){
+      struct tm t = {0};
+      t.tm_year = tail->nUTCTime[0];
+      if (t.tm_year >= 200) {
+        t.tm_year -= 100;
+      }
+      t.tm_mon = tail->nUTCTime[1] - 1;
+      t.tm_mday = tail->nUTCTime[2];
+      t.tm_hour = tail->nUTCTime[3];
+      t.tm_min = tail->nUTCTime[4];
+      t.tm_sec = tail->nUTCTime[5];
+      t.tm_isdst = 0;
 
-		double unix_second = static_cast<double>(mktime(&t) + m_iTimeZoneSecond);
+      unix_second = static_cast<double>(mktime(&t) + m_iTimeZoneSecond);
+    }
+    else{
+      uint32_t utc_time_big = *(uint32_t*)(&tail->nUTCTime[0] + 2);
+      unix_second = ((utc_time_big >> 24) & 0xff) |
+                    ((utc_time_big >> 8) & 0xff00) |
+                    ((utc_time_big << 8) & 0xff0000) |
+                    ((utc_time_big << 24));
+    }
+		
 		int index = 0;
 		index += PANDAR_AT128_HEAD_SIZE;
 		for (int blockid = 0; blockid < header->u8BlockNum; blockid++) {

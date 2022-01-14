@@ -114,18 +114,34 @@ namespace pandar_pointcloud
         }
         
 
-        t.tm_year  = raw_packet.data[m_input->m_iUtcIindex];
-        t.tm_mon   = raw_packet.data[m_input->m_iUtcIindex + 1] - 1;
-        t.tm_mday  = raw_packet.data[m_input->m_iUtcIindex + 2];
-        t.tm_hour  = raw_packet.data[m_input->m_iUtcIindex + 3];
-        t.tm_min   = raw_packet.data[m_input->m_iUtcIindex + 4];
-        t.tm_sec   = raw_packet.data[m_input->m_iUtcIindex + 5];
-        t.tm_isdst = 0;
 
-        pkt_ts = mktime(&t) * 1000000 + ((raw_packet.data[m_input->m_iTimestampIndex]& 0xff) | \
+        uint32_t unix_second = 0;      
+        if(raw_packet.data[m_input->m_iUtcIindex] != 0){
+          struct tm t = {0};
+          t.tm_year  = raw_packet.data[m_input->m_iUtcIindex];
+          if (t.tm_year >= 200) {
+            t.tm_year -= 100;
+          }
+          t.tm_mon   = raw_packet.data[m_input->m_iUtcIindex + 1] - 1;
+          t.tm_mday  = raw_packet.data[m_input->m_iUtcIindex + 2];
+          t.tm_hour  = raw_packet.data[m_input->m_iUtcIindex + 3];
+          t.tm_min   = raw_packet.data[m_input->m_iUtcIindex + 4];
+          t.tm_sec   = raw_packet.data[m_input->m_iUtcIindex + 5];
+          t.tm_isdst = 0;
+
+          unix_second = mktime(&t);
+        }
+        else{
+          uint32_t utc_time_big = *(uint32_t*)(&raw_packet.data[m_input->m_iUtcIindex] + 2);
+          unix_second = ((utc_time_big >> 24) & 0xff) |
+                        ((utc_time_big >> 8) & 0xff00) |
+                        ((utc_time_big << 8) & 0xff0000) |
+                        ((utc_time_big << 24));
+        }
+        pkt_ts = unix_second * 1000000 + ((raw_packet.data[m_input->m_iTimestampIndex]& 0xff) | \
             (raw_packet.data[m_input->m_iTimestampIndex + 1]& 0xff) << 8 | \
             ((raw_packet.data[m_input->m_iTimestampIndex + 2]& 0xff) << 16) | \
-            ((raw_packet.data[m_input->m_iTimestampIndex + 3]& 0xff) << 24));
+            ((raw_packet.data[m_input->m_iTimestampIndex + 3]& 0xff) << 24)); 
         struct timeval sys_time;
         gettimeofday(&sys_time, NULL);
         current_time = sys_time.tv_sec * 1000000 + sys_time.tv_usec;

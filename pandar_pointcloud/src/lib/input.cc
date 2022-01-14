@@ -417,15 +417,31 @@ int InputPCAP::getPacket(PandarPacket *pkt, bool &isTimeout) {
     if (count >= gap) {
       count = 0;
 
-      t.tm_year  = packet[m_iUtcIindex];
-      t.tm_mon   = packet[m_iUtcIindex+1] - 1;
-      t.tm_mday  = packet[m_iUtcIindex+2];
-      t.tm_hour  = packet[m_iUtcIindex+3];
-      t.tm_min   = packet[m_iUtcIindex+4];
-      t.tm_sec   = packet[m_iUtcIindex+5];
-      t.tm_isdst = 0;
+      uint32_t unix_second = 0;      
+      if(packet[m_iUtcIindex] != 0){
+        struct tm t = {0};
+        t.tm_year  = packet[m_iUtcIindex];
+        if (t.tm_year >= 200) {
+          t.tm_year -= 100;
+        }
+        t.tm_mon   = packet[m_iUtcIindex+1] - 1;
+        t.tm_mday  = packet[m_iUtcIindex+2];
+        t.tm_hour  = packet[m_iUtcIindex+3];
+        t.tm_min   = packet[m_iUtcIindex+4];
+        t.tm_sec   = packet[m_iUtcIindex+5];
+        t.tm_isdst = 0;
 
-      pkt_ts = mktime(&t) * 1000000 + ((packet[m_iTimestampIndex]& 0xff) | \
+        unix_second = mktime(&t);
+      }
+      else{
+        
+        uint32_t utc_time_big = *(uint32_t*)(&packet[m_iUtcIindex] + 2);
+        unix_second = ((utc_time_big >> 24) & 0xff) |
+                      ((utc_time_big >> 8) & 0xff00) |
+                      ((utc_time_big << 8) & 0xff0000) |
+                      ((utc_time_big << 24));            
+      }
+      pkt_ts = unix_second * 1000000 + ((packet[m_iTimestampIndex]& 0xff) | \
           (packet[m_iTimestampIndex+1]& 0xff) << 8 | \
           ((packet[m_iTimestampIndex+2]& 0xff) << 16) | \
           ((packet[m_iTimestampIndex+3]& 0xff) << 24));

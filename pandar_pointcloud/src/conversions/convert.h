@@ -433,19 +433,19 @@ typedef struct PacketsBuffer_s {
             ((m_iterPush - m_buffers.begin()) > 2));
   }
   inline bool empty() {
-    static int count = 0;
-    if((abs(m_iterPush - m_iterTaskBegin) <= 1 || abs(m_iterTaskEnd - m_iterTaskBegin) <= 1)){
-      if(count > 0){
-        count = 0;
-        return true;
-      }
-      else{
-        count++;
-        return false;
-      }
-    }
-    return false;
-    // return (abs(m_iterPush - m_iterTaskBegin) <= 1 || abs(m_iterTaskEnd - m_iterTaskBegin) <= 1);
+    // static int count = 0;
+    // if((abs(m_iterPush - m_iterTaskBegin) <= 1 || abs(m_iterTaskEnd - m_iterTaskBegin) <= 1)){
+    //   if(count > 0){
+    //     count = 0;
+    //     return true;
+    //   }
+    //   else{
+    //     count++;
+    //     return false;
+    //   }
+    // }
+    // return false;
+    return (abs(m_iterPush - m_iterTaskBegin) <= 1 || abs(m_iterTaskEnd - m_iterTaskBegin) <= 1);
   }
   inline PktArray::iterator getTaskBegin() { return m_iterTaskBegin; }
   inline PktArray::iterator getTaskEnd() { return m_iterTaskEnd; }

@@ -84,7 +84,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "PandarSwiftROS_1.0.27";
+  m_sRosVersion = "PandarSwiftROS_1.0.28";
   ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -311,10 +311,6 @@ int Convert::loadCorrectionFile(char * data) {
             p += sizeof(uint32_t) * frame_num;
             memcpy((void *)&m_PandarAT_corrections.l.end_frame, p, sizeof(uint32_t) * frame_num);
             p += sizeof(uint32_t) * frame_num;
-            ROS_WARN( "frame_num: %d" ,frame_num);
-            ROS_WARN( "start_frame, end_frame: ");
-            for (int i = 0; i < frame_num; ++i) 
-                ROS_WARN("%lf,   %lf", m_PandarAT_corrections.l.start_frame[i] / 25600.f , m_PandarAT_corrections.l.end_frame[i] / 25600.f);
             memcpy((void *)&m_PandarAT_corrections.l.azimuth, p, sizeof(int32_t) * channel_num);
             p += sizeof(int32_t) * channel_num;
             memcpy((void *)&m_PandarAT_corrections.l.elevation, p, sizeof(int32_t) * channel_num);
@@ -326,11 +322,20 @@ int Convert::loadCorrectionFile(char * data) {
             p += sizeof(int8_t) * adjust_length;
             memcpy((void *)&m_PandarAT_corrections.SHA256, p, sizeof(uint8_t) * 32);
             p += sizeof(uint8_t) * 32;
-
-            for (int i = 0; i < channel_num; i++) {
-                horizatal_azimuth_[i] = m_PandarAT_corrections.azimuth[i] / 25600.f;
-                elev_angle_[i] = m_PandarAT_corrections.elevation[i] / 100.f;
-                
+            ROS_WARN( "frame_num: %d" ,frame_num);
+            ROS_WARN( "start_frame, end_frame: ");
+            for (int i = 0; i < frame_num; ++i){
+              m_PandarAT_corrections.l.start_frame[i] = m_PandarAT_corrections.l.start_frame[i] * m_PandarAT_corrections.header.resolution;
+              m_PandarAT_corrections.l.end_frame[i] = m_PandarAT_corrections.l.end_frame[i] * m_PandarAT_corrections.header.resolution;
+              ROS_WARN("%lf,   %lf", m_PandarAT_corrections.l.start_frame[i] / 25600.f , m_PandarAT_corrections.l.end_frame[i] / 25600.f);
+            } 
+            for(int i = 0; i < PANDAR128_LASER_NUM; i++){
+              m_PandarAT_corrections.l.azimuth[i] = m_PandarAT_corrections.l.azimuth[i] * m_PandarAT_corrections.header.resolution;
+              m_PandarAT_corrections.l.elevation[i] = m_PandarAT_corrections.l.elevation[i] * m_PandarAT_corrections.header.resolution;
+            }
+            for(int i = 0; i < adjust_length; i++){
+              m_PandarAT_corrections.azimuth_offset[i] = m_PandarAT_corrections.azimuth_offset[i] * m_PandarAT_corrections.header.resolution;
+              m_PandarAT_corrections.elevation_offset[i] = m_PandarAT_corrections.elevation_offset[i] * m_PandarAT_corrections.header.resolution;
             }
             return 0;
           }  
@@ -713,7 +718,7 @@ void Convert::checkClockwise(int16_t lidarmotorspeed){
 void Convert::doTaskFlow(int cursor) {
   tf::Taskflow taskFlow;
   taskFlow.parallel_for(m_PacketsBuffer.getTaskBegin(),
-                        m_PacketsBuffer.getTaskEnd() - 1,
+                        m_PacketsBuffer.getTaskEnd(),
                         [this, &cursor](auto &taskpkt) {
                           calcPointXYZIT(taskpkt,cursor);
                         });
@@ -1064,14 +1069,14 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 				float distance =
 					static_cast<float>(u16Distance) * PANDAR128_DISTANCE_UNIT;
 				auto elevation = m_iViewMode == 0 ?
-							m_PandarAT_corrections.l.elevation[i] * m_PandarAT_corrections.header.resolution : 
-						(m_PandarAT_corrections.l.elevation[i] + m_PandarAT_corrections.getElevationAdjustV3(i, Azimuth) * LIDAR_AZIMUTH_UNIT) * m_PandarAT_corrections.header.resolution;
+							m_PandarAT_corrections.l.elevation[i] : 
+						(m_PandarAT_corrections.l.elevation[i] + m_PandarAT_corrections.getElevationAdjustV3(i, Azimuth) * LIDAR_AZIMUTH_UNIT);
 				elevation = (MAX_AZI_LEN + elevation) % MAX_AZI_LEN;      
 				auto azimuth = m_iViewMode == 0 ?
-					(Azimuth + MAX_AZI_LEN  - m_PandarAT_corrections.l.azimuth[i] / 2) % MAX_AZI_LEN  * m_PandarAT_corrections.header.resolution : 
+					(Azimuth + MAX_AZI_LEN  - m_PandarAT_corrections.l.azimuth[i] / 2) % MAX_AZI_LEN : 
 					((Azimuth + MAX_AZI_LEN  - m_PandarAT_corrections.l.start_frame[field]) * 2
 					- m_PandarAT_corrections.l.azimuth[i]
-					+ m_PandarAT_corrections.getAzimuthAdjustV3(i, Azimuth) * LIDAR_AZIMUTH_UNIT) * m_PandarAT_corrections.header.resolution;
+					+ m_PandarAT_corrections.getAzimuthAdjustV3(i, Azimuth) * LIDAR_AZIMUTH_UNIT);
 				azimuth = (MAX_AZI_LEN  + azimuth) % MAX_AZI_LEN ;
 				float xyDistance =
 					distance * m_PandarAT_corrections.cos_map[(elevation)];

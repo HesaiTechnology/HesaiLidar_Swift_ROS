@@ -312,7 +312,7 @@ int InputSocket::getPacket(PandarPacket *pkt, bool &isTimeout) {
     } else {
       uint32_t diff = seqnub - m_u32Sequencenum;
       if (diff > 1) {
-        ROS_WARN("seq diff: %x ", diff);
+        ROS_WARN("seq diff: %x  current seq: %x  last seq: %x\n", diff, seqnub, m_u32Sequencenum);
         dropped += diff - 1;
       }
     }
@@ -320,10 +320,9 @@ int InputSocket::getPacket(PandarPacket *pkt, bool &isTimeout) {
 
     uint32_t endTick = GetTickCount();
 
-    if (endTick - startTick >= 1000 && dropped > 0) {
-      ROS_WARN("!!!!!!!!!! dropped: %d, %d, percent, %f", dropped,
-              m_u32Sequencenum - u32StartSeq,
-              float(dropped) / float(m_u32Sequencenum - u32StartSeq) * 100.0);
+    if (endTick - startTick >= 1000 && dropped > 0 && (m_u32Sequencenum - u32StartSeq) > 0) {
+      ROS_WARN("dropped: %u, received: %u, percentage: %f\n", dropped, m_u32Sequencenum - u32StartSeq,
+					float(dropped) / float(m_u32Sequencenum - u32StartSeq) * 100.0);	
       dropped = 0;
       u32StartSeq = m_u32Sequencenum;
       startTick = endTick;

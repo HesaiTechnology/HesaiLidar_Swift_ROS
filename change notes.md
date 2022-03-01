@@ -154,3 +154,10 @@ PandarSwiftROS_1.0.27
 
 ##modify
 1. Support LTS lidar 
+
+Tuesday,March 1th, 2022 17:30
+##version
+PandarSwiftROS_1.0.28
+
+##modify
+1. Support to use diffrernt angle resolution

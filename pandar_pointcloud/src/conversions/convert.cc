@@ -223,8 +223,8 @@ Convert::Convert(rclcpp::Node::SharedPtr& private_nh,
   if (publishmodel == "both_point_raw" || publishmodel == "point" ||
       LIDAR_NODE_TYPE != node_type) {
     printf("node.advertise pandar_points\n");
-    auto default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
-    output_ = private_nh->create_publisher<sensor_msgs::msg::PointCloud2>("pandar_points", default_qos);
+    auto sensor_qos = rclcpp::QoS(rclcpp::SensorDataQoS());
+    output_ = private_nh->create_publisher<sensor_msgs::msg::PointCloud2>("pandar_points", sensor_qos);
     std::thread processThr(boost::bind(&Convert::processLiDARData, this));
   }
 

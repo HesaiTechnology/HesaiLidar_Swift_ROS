@@ -421,6 +421,7 @@ class Convert {
   std::string m_sDeviceIp;
   std::string m_sPcapFile;
   std::string m_sRosVersion;
+  uint16_t m_sPort;
 	uint8_t m_u8UdpVersionMajor;
 	uint8_t m_u8UdpVersionMinor;
   int m_iFirstAzimuthIndex;

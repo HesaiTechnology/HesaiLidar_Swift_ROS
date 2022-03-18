@@ -31,6 +31,7 @@
 #include <pcl/point_types.h>
 #include <boost/atomic.hpp>
 #include <boost/lockfree/queue.hpp>
+#include <boost/thread.hpp>
 #include "driver.h"
 #include "laser_ts.h"
 #include "tcp_command_client.h"

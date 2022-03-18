@@ -94,7 +94,6 @@ Convert::Convert(rclcpp::Node::SharedPtr& private_nh,
   }
 
   private_nh->get_parameter("device_ip", m_sDeviceIp);
-  private_nh->get_parameter("port", m_sPort);
   private_nh->get_parameter("frame_id", m_sFrameId);
   private_nh->get_parameter("firetime_file", lidarFiretimeFile);
   private_nh->get_parameter("calibration", lidarCorrectionFile);
@@ -159,7 +158,7 @@ Convert::Convert(rclcpp::Node::SharedPtr& private_nh,
   bool loadCorrectionFileSuccess = false;
   int ret;
   if(m_sPcapFile.empty()) {
-    m_pTcpCommandClient =TcpCommandClientNew(m_sDeviceIp.c_str(), m_sPort);
+    m_pTcpCommandClient =TcpCommandClientNew(m_sDeviceIp.c_str(), PANDARSDK_TCP_COMMAND_PORT);
     if(NULL != m_pTcpCommandClient) {
       char *buffer = NULL;
       uint32_t len = 0;
@@ -217,7 +216,7 @@ Convert::Convert(rclcpp::Node::SharedPtr& private_nh,
   SetEnvironmentVariableTZ();
 
   if (LIDAR_NODE_TYPE == node_type) {
-    std::thread thrd(boost::bind(&Convert::DriverReadThread, this));
+    boost::thread thrd(boost::bind(&Convert::DriverReadThread, this));
   }
 
   if (publishmodel == "both_point_raw" || publishmodel == "point" ||
@@ -225,17 +224,17 @@ Convert::Convert(rclcpp::Node::SharedPtr& private_nh,
     printf("node.advertise pandar_points\n");
     auto sensor_qos = rclcpp::QoS(rclcpp::SensorDataQoS());
     output_ = private_nh->create_publisher<sensor_msgs::msg::PointCloud2>("pandar_points", sensor_qos);
-    std::thread processThr(boost::bind(&Convert::processLiDARData, this));
+    boost::thread processThr(boost::bind(&Convert::processLiDARData, this));
   }
 
   m_iPublishPointsIndex = 0;
   m_bPublishPointsFlag = false;
-  std::thread publishPointsThr(
+  boost::thread publishPointsThr(
       boost::bind(&Convert::publishPointsThread, this));
 
   if ((publishmodel == "both_point_raw" || publishmodel == "raw") &&
       LIDAR_NODE_TYPE == node_type) {
-    std::thread processThr(boost::bind(&Convert::publishRawDataThread, this));
+    boost::thread processThr(boost::bind(&Convert::publishRawDataThread, this));
   }
 }
 

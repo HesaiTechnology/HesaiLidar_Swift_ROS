@@ -14,7 +14,7 @@ def generate_launch_description():
             parameters=[
                 {"pcap": ""},
                 {"device_ip"  : "192.168.1.201"},
-                {"port"  : 9347},
+                {"port"  : 2368},
                 {"start_angle"  : 0.0},
                 {"frame_id"  : "PandarSwift"},
                 {"publish_model"  : "both_point_raw"},

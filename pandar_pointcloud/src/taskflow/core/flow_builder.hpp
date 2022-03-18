@@ -512,7 +512,7 @@ std::pair<Task, Task> FlowBuilder::parallel_for(
   
   // default partition equals to the worker count
   if(p == 0) {
-    p = std::max(unsigned{1}, std::thread::hardware_concurrency());
+    p = std::max(unsigned{1}, boost::thread::hardware_concurrency());
   }
 
   size_t b = (D + p - 1) / p;           // block size
@@ -682,7 +682,7 @@ std::pair<Task, Task> FlowBuilder::transform_reduce(
   
   // Even partition
   size_t d = std::distance(beg, end);
-  size_t w = std::max(unsigned{1}, std::thread::hardware_concurrency());
+  size_t w = std::max(unsigned{1}, boost::thread::hardware_concurrency());
   size_t g = std::max((d + w - 1) / w, size_t{2});
 
   auto source = placeholder();
@@ -742,7 +742,7 @@ std::pair<Task, Task> FlowBuilder::transform_reduce(
   
   // Even partition
   size_t d = std::distance(beg, end);
-  size_t w = std::max(unsigned{1}, std::thread::hardware_concurrency());
+  size_t w = std::max(unsigned{1}, boost::thread::hardware_concurrency());
   size_t g = std::max((d + w - 1) / w, size_t{2});
 
   auto source = placeholder();
@@ -809,7 +809,7 @@ std::pair<Task, Task> FlowBuilder::transform_reduce(
 //
 //  using T = std::decay_t<I>;
 //      
-//  size_t w = std::max(unsigned{1}, std::thread::hardware_concurrency());
+//  size_t w = std::max(unsigned{1}, boost::thread::hardware_concurrency());
 //  size_t N = 0;
 //
 //  if constexpr(std::is_integral_v<T>) {
@@ -866,7 +866,7 @@ std::pair<Task, Task> FlowBuilder::reduce(I beg, I end, T& result, B&& op) {
   using category = typename std::iterator_traits<I>::iterator_category;
   
   size_t d = std::distance(beg, end);
-  size_t w = std::max(unsigned{1}, std::thread::hardware_concurrency());
+  size_t w = std::max(unsigned{1}, boost::thread::hardware_concurrency());
   size_t g = std::max((d + w - 1) / w, size_t{2});
 
   auto source = placeholder();

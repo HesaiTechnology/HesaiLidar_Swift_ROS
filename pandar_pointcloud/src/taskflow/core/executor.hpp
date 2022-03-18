@@ -50,7 +50,7 @@ class Executor {
     /**
     @brief constructs the executor with N worker threads
     */
-    explicit Executor(unsigned n = std::thread::hardware_concurrency());
+    explicit Executor(unsigned n = boost::thread::hardware_concurrency());
     
     /**
     @brief destructs the executor 
@@ -173,7 +173,7 @@ class Executor {
     // scheduler field
     std::vector<Worker> _workers;
     std::vector<Notifier::Waiter> _waiters;
-    std::vector<std::thread> _threads;
+    std::vector<boost::thread> _threads;
 
     WorkStealingQueue<Node*> _queue;
 

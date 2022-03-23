@@ -20,6 +20,7 @@ find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(image_transport REQUIRED)
 find_package(OpenSSL REQUIRED)
 message("OpenSSL include dir: ${OPENSSL_INCLUDE_DIR}")
 
@@ -46,6 +47,7 @@ set(dependencies
   "pcl_conversions"
   "rclcpp"
   "sensor_msgs"
+  "image_transport"
   "std_msgs"
   "rclcpp_action"
   "std_srvs"

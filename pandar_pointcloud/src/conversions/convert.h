@@ -374,6 +374,7 @@ class Convert {
   rclcpp::Subscription<pandar_pointcloud::msg::PandarScan>::SharedPtr pandar_scan_;
   rclcpp::Subscription<pandar_pointcloud::msg::PandarGps>::SharedPtr pandar_gps_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr output_;
+  rclcpp::Node::SharedPtr private_nh_;
 
   /// configuration parameters
   typedef struct {

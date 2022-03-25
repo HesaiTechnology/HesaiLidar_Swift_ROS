@@ -82,7 +82,7 @@ static const float azimuth_offset[] = {
 /** @brief Constructor. */
 Convert::Convert(rclcpp::Node::SharedPtr& private_nh,
                  std::string node_type)
-    : drv(private_nh, node_type, this) {
+    : drv(private_nh, node_type, this), private_nh_(private_nh) {
   m_sRosVersion = "PandarSwiftROS_1.0.19";
   printf("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
   if (LIDAR_NODE_TYPE == node_type) {
@@ -597,7 +597,8 @@ void Convert::init() {
 void Convert::publishPoints() {
   // uint32_t start = GetTickCount();
 
-  pcl_conversions::toPCL(rclcpp::Time(m_dTimestamp),
+  rclcpp::Time now = private_nh_->now();
+  pcl_conversions::toPCL(now,
                          m_OutMsgArray[m_iPublishPointsIndex]->header.stamp);
   sensor_msgs::msg::PointCloud2 output;
   pcl::toROSMsg(*m_OutMsgArray[m_iPublishPointsIndex], output);

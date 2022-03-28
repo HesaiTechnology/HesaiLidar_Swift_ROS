@@ -236,7 +236,7 @@ void PandarDriver::publishRawData() {
     // pandarScanArray[m_iScanPopIndex]->header.stamp =
     //     pandarScanArray[m_iScanPopIndex]->packets[m_iPandarScanArraySize - 1].stamp;
     // pandarScanArray[m_iScanPopIndex]->header.frame_id = config_.frame_id;
-    output_->publish(pandarScanArray[m_iScanPopIndex]);
+    output_->publish(*pandarScanArray[m_iScanPopIndex]);
     m_bNeedPublish = false;
   } else {
     usleep(1000);

@@ -31,6 +31,7 @@
 #include <pcl/point_types.h>
 #include <boost/atomic.hpp>
 #include <boost/lockfree/queue.hpp>
+#include <boost/thread.hpp>
 #include "driver.h"
 #include "laser_ts.h"
 #include "tcp_command_client.h"
@@ -373,6 +374,7 @@ class Convert {
   rclcpp::Subscription<pandar_pointcloud::msg::PandarScan>::SharedPtr pandar_scan_;
   rclcpp::Subscription<pandar_pointcloud::msg::PandarGps>::SharedPtr pandar_gps_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr output_;
+  rclcpp::Node::SharedPtr private_nh_;
 
   /// configuration parameters
   typedef struct {
@@ -421,6 +423,7 @@ class Convert {
   std::string m_sDeviceIp;
   std::string m_sPcapFile;
   std::string m_sRosVersion;
+  uint16_t m_sPort;
 	uint8_t m_u8UdpVersionMajor;
 	uint8_t m_u8UdpVersionMinor;
   int m_iFirstAzimuthIndex;

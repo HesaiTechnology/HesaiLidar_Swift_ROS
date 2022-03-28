@@ -17,7 +17,10 @@ find_package(rosidl_typesupport_c REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
+find_package(pcl_conversions REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(image_transport REQUIRED)
 find_package(OpenSSL REQUIRED)
 message("OpenSSL include dir: ${OPENSSL_INCLUDE_DIR}")
 
@@ -44,6 +47,7 @@ set(dependencies
   "pcl_conversions"
   "rclcpp"
   "sensor_msgs"
+  "image_transport"
   "std_msgs"
   "rclcpp_action"
   "std_srvs"
@@ -119,10 +123,19 @@ target_include_directories(pandar_transform_node PRIVATE
 					  
 ament_target_dependencies(pandar_transform_node ${dependencies})
 
+install(TARGETS PandarSwiftLib
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 install(TARGETS pandar_cloud_node pandar_transform_node
   DESTINATION lib/${PROJECT_NAME})
+
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME})  
+
+install(DIRECTORY params
+  DESTINATION share/${PROJECT_NAME})
+
+ament_export_include_directories(include)
 ament_package()
 

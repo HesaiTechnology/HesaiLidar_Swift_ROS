@@ -132,7 +132,7 @@ struct SingularMempoolManager {
 
   // Ctor 
   SingularMempoolManager() { 
-    pools.reserve(std::thread::hardware_concurrency()); 
+    pools.reserve(boost::thread::hardware_concurrency()); 
   }
 
   // Dtor

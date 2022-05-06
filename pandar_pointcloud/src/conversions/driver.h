@@ -24,6 +24,7 @@
 
 #include <pandar_pointcloud/CloudNodeConfig.h>
 #include <pandar_pointcloud/input.h>
+#include <pandar_pointcloud/fault_message.h>
 
 typedef struct PandarGPS_s PandarGPS;
 #define PANDAR128_READ_PACKET_SIZE (300)

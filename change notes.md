@@ -161,3 +161,12 @@ PandarSwiftROS_1.0.28
 
 ##modify
 1. Support to use diffrernt angle resolution
+
+
+Friday,May 6th, 2022 12:30
+##version
+PandarSwiftROS_1.0.29
+
+##modify
+1. Support to parser faultmessage
+2. Optimize calculation efficiency

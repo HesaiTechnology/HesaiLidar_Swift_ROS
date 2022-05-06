@@ -109,7 +109,7 @@ namespace pandar_pointcloud
         packet.stamp = raw_packet.stamp;
         packet.size = raw_packet.size;
         memcpy(&packet.data[0], &raw_packet.data[0], raw_packet.size);
-        if(m_input->checkPacket(&packet)){
+        if(m_input->checkPacketSize(&packet)){
           m_spConver->pushLiDARData(raw_packet);
         }
         

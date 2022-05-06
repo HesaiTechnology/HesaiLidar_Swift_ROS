@@ -77,27 +77,11 @@ PandarDriver::PandarDriver(ros::NodeHandle node, ros::NodeHandle private_nh,
   pandarScanArray[m_iScanPushIndex] = scan0;
   pandarScanArray[m_iScanPopIndex] = scan1;
 
-  // // Initialize dynamic reconfigure
-  // srv_ = boost::make_shared <dynamic_reconfigure::Server<pandar_pointcloud::
-  //   CloudNodeConfig> > (private_nh);
-  // dynamic_reconfigure::Server<pandar_pointcloud::CloudNodeConfig>::
-  //   CallbackType f;
-  // f = boost::bind (&PandarDriver::callback, this, _1, _2);
-  // srv_->setCallback (f); // Set callback function und call initially
-
   // initialize diagnostics
   diagnostics_.setHardwareID(deviceName);
   const double diag_freq = packet_rate / config_.npackets;
   diag_max_freq_ = diag_freq;
   diag_min_freq_ = diag_freq;
-  // ROS_INFO("expected frequency: %.3f (Hz)", diag_freq);
-
-  // using namespace diagnostic_updater;
-  // diag_topic_.reset(new TopicDiagnostic("pandar_packets", diagnostics_,
-  //                                       FrequencyStatusParam(&diag_min_freq_,
-  //                                                            &diag_max_freq_,
-  //                                                            0.1, 10),
-  //                                       TimeStampStatusParam()));
 
   // open Pandar input device or file
   if (dump_file != "")  // have PCAP file?
@@ -189,39 +173,34 @@ bool PandarDriver::poll(void) {
     pandarScanArray[m_iScanPopIndex]->packets.resize(m_iPandarScanArraySize);
     m_bGetScanArraySizeFlag = true;
   }
+  bool skipSleep = true;
   for (int i = 0; i < m_iPandarScanArraySize; ++i) {
-    // while (true)
-    // {
     // keep reading until full packet received
     PandarPacket packet;
     int rc = 0;
-    if (m_bPaserPacp)  // have PCAP file?
-    {
-      int count = 0;
-      while(convert->getIsSocketTimeout()&& count < 2000){
-        // ROS_WARN("timeout %d", convert->getIsSocketTimeout());
-        usleep(1000);
-        count++;
-      }
-    }
+    if(skipSleep){
+			usleep(3000);
+		}
+		if (m_bPaserPacp)  // have PCAP file?
+		{
+			int count = 0;
+			while(convert->getIsSocketTimeout()&& count < 2000){
+				// ROS_WARN("timeout %d", convert->getIsSocketTimeout());
+				usleep(1000);
+				count++;
+			}
+		}
     bool isSocketTimeout = convert->getIsSocketTimeout();
-    rc = input_->getPacket(&packet, isSocketTimeout);
+    rc = input_->getPacket(&packet, isSocketTimeout, skipSleep);
     convert->setIsSocketTimeout(isSocketTimeout);
     pandarScanArray[m_iScanPushIndex]->packets[i].stamp = packet.stamp;
     pandarScanArray[m_iScanPushIndex]->packets[i].size = packet.size;
     pandarScanArray[m_iScanPushIndex]->packets[i].data.resize(packet.size);
     memcpy(&pandarScanArray[m_iScanPushIndex]->packets[i].data[0], &packet.data[0], packet.size);
-    if(packet.size < 500)
-    {
-      i--;
-      continue;
-    }
 
-    // ROS_WARN("PandarDriver::poll(void),rc[%d]",rc);
-    // if (rc == 0) break;       // got a full packet?
-    if (rc == 2) {
-      // gps packet;
-      PandarGPS packet;
+    if(rc == GPS_PACKET) {
+			// gps packet;
+			PandarGPS packet;
       if (parseGPS(&packet,
                    &pandarScanArray[m_iScanPushIndex]->packets[i].data[0],
                    GPS_PACKET_SIZE) == 0) {
@@ -244,13 +223,31 @@ bool PandarDriver::poll(void) {
         convert->processGps(*gps);
         // gpsoutput_.publish(gps);
       }
-    }
-    if (rc == 3){
-      i--;
-      continue;
-    }
-    if (rc == 1) return false;  // end of file reached?
-    // }
+			i--;
+			continue;
+		}
+		if(rc == FAULT_MESSAGE_PACKET) {
+      // convert->processFaultMessage(packet);
+			i--;
+			continue;
+		}
+		if(rc == LOG_REPORT_PACKET) {
+			i--;
+			continue;
+		}
+		if(rc == ERROR_PACKET){    // error packet
+			i--;
+			continue;
+		} 
+		if(rc == PCAP_END_PACKET){
+			// convert->SetIsReadPcapOver(true);
+			return true;
+		}
+			
+		if(packet.size < 500){
+			i--;
+			continue;
+		}
 
     if (publishmodel == "both_point_raw" || publishmodel == "point") {
       convert->pushLiDARData(pandarScanArray[m_iScanPushIndex]->packets[i]);
@@ -304,7 +301,8 @@ int PandarDriver::getPandarScanArraySize(boost::shared_ptr<Input> input_){
   for (int i = 0; i < 256; ++i) {
     PandarPacket packet;
     bool isTimeout = false;
-    int rc = input_->getPacket(&packet, isTimeout);
+    bool isSkipSleep = true;
+    int rc = input_->getPacket(&packet, isTimeout, isSkipSleep);
     switch (packet.data[PANDAR_LASER_NUMBER_INDEX]){
     case PANDAR128_LASER_NUM:
       return PANDAR128_READ_PACKET_SIZE;

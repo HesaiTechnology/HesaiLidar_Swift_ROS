@@ -141,6 +141,8 @@
 #define PANDAR_AT128_PACKET_SEQ_NUM_SIZE \
   (PANDAR_AT128_PACKET_SIZE + PANDAR_AT128_SEQ_NUM_SIZE)
 #define PANDAR_AT128_WITHOUT_CONF_UNIT_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
+#define FAULT_MESSAGE_PCAKET_SIZE (99)
+#define LOG_REPORT_PCAKET_SIZE (273)
 /************************************* AT 128 *********************************************/
 enum enumIndex{
 	TIMESTAMP_INDEX,
@@ -169,6 +171,15 @@ typedef struct PandarPacket_s {
   uint32_t size;
 } PandarPacket;
 
+enum PacketType{
+	POINTCLOUD_PACKET,
+	ERROR_PACKET,
+	GPS_PACKET,
+	PCAP_END_PACKET,
+	FAULT_MESSAGE_PACKET,
+	LOG_REPORT_PACKET,
+};
+
 
 namespace pandar_pointcloud
 {
@@ -191,8 +202,8 @@ namespace pandar_pointcloud
      *          -1 if end of file
      *          > 0 if incomplete packet (is this possible?)
      */
-    virtual int getPacket(PandarPacket *pkt, bool &isTimeout) = 0;
-    bool checkPacket(PandarPacket *pkt);
+    virtual PacketType getPacket(PandarPacket *pkt, bool &isTimeout, bool& skipSleep) = 0;
+    bool checkPacketSize(PandarPacket *pkt);
     void setUdpVersion(uint8_t major, uint8_t minor);
     int m_iTimestampIndex;
     int m_iUtcIindex;
@@ -213,14 +224,16 @@ namespace pandar_pointcloud
     InputSocket(ros::NodeHandle private_nh,
                 uint16_t port = DATA_PORT_NUMBER);
     virtual ~InputSocket();
-
-    virtual int getPacket(PandarPacket *pkt, bool &isTimeout);
     void setDeviceIP( const std::string& ip );
+    virtual PacketType getPacket(PandarPacket *pkt, bool &isTimeout, bool& skipSleep);
+    void calcPacketLoss(PandarPacket *pkt);
   private:
-
-  private:
-    int sockfd_;
+    // int sockfd_;
     in_addr devip_;
+    // uint32_t m_u32Sequencenum;
+    int m_iSockfd;
+    int m_iSockGpsfd;
+    int m_iSocktNumber;
     uint32_t m_u32Sequencenum;
     uint8_t seqnub1;
     uint8_t seqnub2;
@@ -247,25 +260,26 @@ namespace pandar_pointcloud
               double repeat_delay=0.0);
     virtual ~InputPCAP();
 
-    virtual int getPacket(PandarPacket *pkt, bool &isTimeout);
+    virtual PacketType getPacket(PandarPacket *pkt, bool &isTimeout, bool& skipSleep);
+    void sleep(const uint8_t *packet, bool &isTimeout);
     void setDeviceIP( const std::string& ip );
 
   private:
     ros::Rate packet_rate_;
     std::string filename_;
-    pcap_t *pcap_;
+    pcap_t *m_pcapt;
     bpf_program pcap_packet_filter_;
     char errbuf_[PCAP_ERRBUF_SIZE];
     bool empty_;
     bool read_once_;
     bool read_fast_;
     double repeat_delay_;
-    int gap;
-    int64_t last_pkt_ts;
-    int count;
-    int64_t last_time;
-    int64_t current_time;
-    int64_t pkt_ts;
+    int m_iTimeGap;
+    int64_t m_i64LastPktTimestamp;
+    int m_iPktCount;
+    int64_t m_i64LastTime;
+    int64_t m_i64CurrentTime;
+    int64_t m_i64PktTimestamp;
   };
 
 } // pandar_driver namespace

@@ -41,6 +41,7 @@
 #include "laser_ts.h"
 #include "tcp_command_client.h"
 #include <vector>
+#include <pandar_pointcloud/fault_message.h>
 
 #ifndef CIRCLE
 #define CIRCLE (36000)
@@ -433,19 +434,7 @@ typedef struct PacketsBuffer_s {
             ((m_iterPush - m_buffers.begin()) > 2));
   }
   inline bool empty() {
-    // static int count = 0;
-    // if((abs(m_iterPush - m_iterTaskBegin) <= 1 || abs(m_iterTaskEnd - m_iterTaskBegin) <= 1)){
-    //   if(count > 0){
-    //     count = 0;
-    //     return true;
-    //   }
-    //   else{
-    //     count++;
-    //     return false;
-    //   }
-    // }
-    // return false;
-    return (abs(m_iterPush - m_iterTaskBegin) <= 1 || abs(m_iterTaskEnd - m_iterTaskBegin) <= 1);
+    return (abs(m_iterPush - m_iterTaskBegin) <= m_pcapFlag || abs(m_iterTaskEnd - m_iterTaskBegin) <= 1);
   }
   inline PktArray::iterator getTaskBegin() { return m_iterTaskBegin; }
   inline PktArray::iterator getTaskEnd() { return m_iterTaskEnd; }
@@ -496,6 +485,7 @@ class Convert {
   void publishPoints();
   void setIsSocketTimeout(bool isSocketTimeout);
   bool getIsSocketTimeout();
+  void processFaultMessage(PandarPacket &packet);
 
  private:
   void callback(pandar_pointcloud::CloudNodeConfig &config, uint32_t level);

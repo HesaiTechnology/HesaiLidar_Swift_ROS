@@ -10,7 +10,7 @@ set_target_properties(pandar_rawdata PROPERTIES
 	COMPILE_FLAGS -std=c++11)
 
 
-add_library(pandar_input input.cc platUtil.cc)
+add_library(pandar_input input.cc platUtil.cc fault_message.cc)
 target_link_libraries(pandar_input
   ${catkin_LIBRARIES}
   ${libpcap_LIBRARIES}

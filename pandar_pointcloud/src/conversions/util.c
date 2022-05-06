@@ -118,6 +118,11 @@ int tcp_open(const char* ipaddr, int port) {
     printf("socket errno:%d, %s\n",errno,strerror(errno));
     return -1;
   }
+  struct timeval timeout;
+  timeout.tv_sec = 0;
+  timeout.tv_usec = 500000;
+  setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const void *)&timeout, sizeof(struct timeval));
+  setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, (const void *)&timeout, sizeof(struct timeval));
 
   bzero(&servaddr, sizeof(servaddr));
   servaddr.sin_family = AF_INET;

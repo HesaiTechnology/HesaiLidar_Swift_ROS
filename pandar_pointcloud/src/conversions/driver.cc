@@ -179,7 +179,7 @@ bool PandarDriver::poll(void) {
     PandarPacket packet;
     int rc = 0;
     if(skipSleep){
-			usleep(3000);
+			usleep(1000);
 		}
 		if (m_bPaserPacp)  // have PCAP file?
 		{
@@ -193,6 +193,29 @@ bool PandarDriver::poll(void) {
     bool isSocketTimeout = convert->getIsSocketTimeout();
     rc = input_->getPacket(&packet, isSocketTimeout, skipSleep);
     convert->setIsSocketTimeout(isSocketTimeout);
+    if(rc == ERROR_PACKET){    // error packet
+			i--;
+			continue;
+		} 
+    if(rc == FAULT_MESSAGE_PACKET) {
+      // convert->processFaultMessage(packet);
+			i--;
+			continue;
+		}
+		if(rc == LOG_REPORT_PACKET) {
+			i--;
+			continue;
+		}
+		
+		if(rc == PCAP_END_PACKET){
+			// convert->SetIsReadPcapOver(true);
+			return true;
+		}
+			
+		if(packet.size < 500){
+			i--;
+			continue;
+		}
     pandarScanArray[m_iScanPushIndex]->packets[i].stamp = packet.stamp;
     pandarScanArray[m_iScanPushIndex]->packets[i].size = packet.size;
     pandarScanArray[m_iScanPushIndex]->packets[i].data.resize(packet.size);
@@ -225,29 +248,7 @@ bool PandarDriver::poll(void) {
       }
 			i--;
 			continue;
-		}
-		if(rc == FAULT_MESSAGE_PACKET) {
-      // convert->processFaultMessage(packet);
-			i--;
-			continue;
-		}
-		if(rc == LOG_REPORT_PACKET) {
-			i--;
-			continue;
-		}
-		if(rc == ERROR_PACKET){    // error packet
-			i--;
-			continue;
-		} 
-		if(rc == PCAP_END_PACKET){
-			// convert->SetIsReadPcapOver(true);
-			return true;
-		}
-			
-		if(packet.size < 500){
-			i--;
-			continue;
-		}
+		}	
 
     if (publishmodel == "both_point_raw" || publishmodel == "point") {
       convert->pushLiDARData(pandarScanArray[m_iScanPushIndex]->packets[i]);

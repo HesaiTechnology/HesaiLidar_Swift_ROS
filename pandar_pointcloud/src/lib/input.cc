@@ -275,6 +275,7 @@ PacketType InputSocket::getPacket(PandarPacket *pkt, bool &isTimeout, bool& skip
 			return ERROR_PACKET;
 		}
 		if(retval == 0) { // poll() timeout?
+			// printf("timeout\n");
 			isTimeout = true;
 			return ERROR_PACKET;
 		}
@@ -283,7 +284,6 @@ PacketType InputSocket::getPacket(PandarPacket *pkt, bool &isTimeout, bool& skip
 			return ERROR_PACKET;
 		}
 	}
-	isTimeout = false;
 	ssize_t nbytes;
 	nbytes = recvfrom(m_iSockfd, &pkt->data[0], 10000, 0, (sockaddr *)&sender_address, &sender_address_len);
 	pkt->size = nbytes;
@@ -308,6 +308,7 @@ PacketType InputSocket::getPacket(PandarPacket *pkt, bool &isTimeout, bool& skip
 	else if(!checkPacketSize(pkt)){
 		return ERROR_PACKET;  // Packet size not match
 	}
+	isTimeout = false;
 	calcPacketLoss(pkt);
 	return POINTCLOUD_PACKET;
 }

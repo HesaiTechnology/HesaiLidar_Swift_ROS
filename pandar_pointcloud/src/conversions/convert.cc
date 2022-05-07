@@ -1152,6 +1152,7 @@ bool Convert::isNeedPublish(){
 							if((float(float(endAzimuth) - (m_PandarAT_corrections.l.start_frame[i] + PANDAR_AT128_EDGE_AZIMUTH_OFFSET * LIDAR_AZIMUTH_UNIT) % MAX_AZI_LEN) <= m_iEdgeAzimuthSize * LIDAR_AZIMUTH_UNIT) && 
 							(float(float(endAzimuth) - (m_PandarAT_corrections.l.start_frame[i] + PANDAR_AT128_EDGE_AZIMUTH_OFFSET * LIDAR_AZIMUTH_UNIT - m_iEdgeAzimuthSize * LIDAR_AZIMUTH_UNIT) % MAX_AZI_LEN) > 0))
 							{
+                // ROS_WARN("%f %f %d %d %d %d",beginAzimuth/25600.0f, endAzimuth/25600.0f, m_PacketsBuffer.m_iterPush - m_PacketsBuffer.m_buffers.begin(), m_PacketsBuffer.getTaskEnd() - m_PacketsBuffer.m_buffers.begin(), m_PacketsBuffer.getTaskBegin() - m_PacketsBuffer.m_buffers.begin(), m_bIsSocketTimeout);
 								return true;
 							}
 						}

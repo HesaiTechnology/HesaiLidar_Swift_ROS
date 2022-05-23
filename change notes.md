@@ -123,5 +123,14 @@ PandarSwiftROS_1.0.25
 ##modify
 1. Support BD90 first time
 
+Sunday, May 22th, 2022 17:30
+##version
+PandarSwiftROS_1.0.30
+
+##modify
+1. Support self-define QT128 
+2. Support to parser weight factor and env light info in Udp4.1
+
+
 
 

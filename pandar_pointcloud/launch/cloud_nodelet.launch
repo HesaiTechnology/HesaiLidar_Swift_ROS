@@ -19,6 +19,7 @@
   <arg name="firetime_file"  default="$(find pandar_pointcloud)/params/Pandar128_Firetimes.csv"/>
   <arg name="namespace" default="hesai"/>
   <arg name="coordinate_correction_flag" default="false" />
+  <arg name="channel_config_file" default="$(find pandar_pointcloud)/params/QT128C2X_Channel_Cofig.csv" />
   <arg name="cert_file" default="" />
   <arg name="private_key_file" default="" />
   <arg name="ca_file" default="" />
@@ -42,6 +43,7 @@
     <param name="rpm" value="$(arg rpm)"/>
     <param name="firetime_file"  value="$(arg firetime_file)"/>
     <param name="coordinate_correction_flag" value="$(arg coordinate_correction_flag)"/>
+    <param name="channel_config_file" value="$(arg channel_config_file)"/>
     <param name="cert_file" value="$(arg cert_file)" />
     <param name="private_key_file" value="$(arg private_key_file)" />
     <param name="ca_file" value="$(arg ca_file)" />

@@ -116,7 +116,7 @@ $ roslaunch pandar_pointcloud PandarSwift_points.launch
 ```
 3. record raw data rosbag
 ```
-$rosbag record -b 4096 /pandar_packets
+$rosbag record -b 4096 /hesai/pandar_packets
 ```
 
 4. stop roslaunch and rosbag record by "Ctrl + C"
@@ -146,6 +146,7 @@ $ roslaunch pandar_pointcloud transform_nodelet.launch data_type:=rosbag
 |publish_model|default "points":publish point clouds "raw":publish raw UDP packets "both_point_raw":publish point clouds and UDP packets|
 |namespace|namesapce of the launching node|
 |coordinate_correction_flag|default "false":Disable coordinate correction "true":Enable coordinate correction|
+|channel_config_file|Path of channel config file, will be used when not able to get channel config file from a connected Liar|
 |cert_file|Path of the user's certificate|
 |private_key_file|Path of the user's private key|
 |ca_file|Path of the root certificate|

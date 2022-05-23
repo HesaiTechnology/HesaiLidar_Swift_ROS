@@ -93,6 +93,8 @@
 #define DISTANCE_SIZE (2)
 #define INTENSITY_SIZE (1)
 #define CONFIDENCE_SIZE (1)
+#define WEIGHT_FACTOR_SIZE (1)
+#define ENVLIGHT_SIZE (1)
 #define PANDAR128_UNIT_WITHOUT_CONFIDENCE_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
 #define PANDAR128_UNIT_WITH_CONFIDENCE_SIZE (DISTANCE_SIZE + INTENSITY_SIZE + CONFIDENCE_SIZE)
 #define PANDAR128_BLOCK_SIZE \
@@ -173,11 +175,17 @@ typedef struct __attribute__((__packed__)) Pandar128HeadVersion14_s {
   uint8_t u8DistUnit;
   uint8_t u8EchoNum;
   uint8_t u8Flags;
+  inline int unitSize() const { return PANDAR128_UNIT_WITHOUT_CONFIDENCE_SIZE + \
+                                (hasConfidence() ? CONFIDENCE_SIZE : 0) + \
+                                (hasWeightFactor() ? WEIGHT_FACTOR_SIZE: 0) + \
+                                (hasWeightFactor() ? ENVLIGHT_SIZE : 0);};
   inline bool hasSeqNum() const { return u8Flags & 1; }
   inline bool hasImu() const { return u8Flags & 2; }
   inline bool hasFunctionSafety() const { return u8Flags & 4; }
   inline bool hasSignature() const { return u8Flags & 8; }
   inline bool hasConfidence() const { return u8Flags & 0x10; }
+  inline bool hasWeightFactor() const { return u8Flags & 0x20; }
+  inline bool hasEnvLight() const { return u8Flags & 0x40; }
 
 } Pandar128HeadVersion14;
 
@@ -197,6 +205,8 @@ typedef struct __attribute__((__packed__)) PandarQT128Head_s {
   inline bool hasFunctionSafety() const { return u8Flags & 4; }
   inline bool hasSignature() const { return u8Flags & 8; }
   inline bool hasConfidence() const { return u8Flags & 0x10; }
+  inline bool hasWeightFactor() const { return u8Flags & 0x20; }
+  inline bool isSelfDefine() const { return u8Flags & 0x40; }
 
 } PandarQT128Head;
 
@@ -229,7 +239,8 @@ typedef struct __attribute__((__packed__)) Pandar128TailVersion14_s {
 
 typedef struct __attribute__((__packed__)) PandarQT128Tail_s {
   uint8_t nReserved1[3];
-  uint8_t nReserved2[3];
+  uint8_t nReserved2[2];
+  uint8_t nModeFlag;
   uint8_t nReserved3[3];
   uint16_t nAzimuthFlag;
   uint8_t nShutdownFlag;
@@ -256,6 +267,18 @@ struct PandarGPS_s {
   uint16_t minute;
   uint16_t hour;
   uint32_t fineTime;
+};
+
+struct PandarQTChannelConfig {
+public:
+    uint16_t m_u16Sob;
+    uint8_t m_u8MajorVersion;
+    uint8_t m_u8MinVersion;
+    uint8_t m_u8LaserNum;
+    uint8_t m_u8BlockNum;
+    std::vector<std::vector<int>> m_vChannelConfigTable;
+    std::string m_sHashValue;
+    bool m_bIsChannelConfigObtained;
 };
 
 typedef std::array<pandar_msgs::PandarPacket, 36000> PktArray;
@@ -366,6 +389,10 @@ class Convert {
   void doTaskFlow(int cursor);
   void loadOffsetFile(std::string file);
   int loadCorrectionFile(std::string correction_content);
+  int loadChannelConfigFile(std::string channel_config_content);
+  int loadFireTimeFile(std::string channel_config_content);
+  void loadChannelConfigFile();
+  void loadFireTimeFile();
   int checkLiadaMode();
   void changeAngleSize();
   void changeReturnBlockSize();
@@ -418,8 +445,9 @@ class Convert {
   LasersTSOffset m_objLaserOffset;
   int m_iTimeZoneSecond;
   std::string m_sFrameId;
-  std::string lidarFiretimeFile;
-  std::string lidarCorrectionFile;
+  std::string m_sLidarFiretimeFile;
+  std::string m_sLidarCorrectionFile;
+  std::string m_sLidarChannelConfigFile;
   std::string publishmodel;
   int m_iWorkMode;
   int m_iReturnMode;
@@ -441,6 +469,7 @@ class Convert {
   int m_iTotalPointsNum;
   bool m_bClockwise;
   bool m_bCoordinateCorrectionFlag;
+  PandarQTChannelConfig m_PandarQTChannelConfig;
 
 };
 

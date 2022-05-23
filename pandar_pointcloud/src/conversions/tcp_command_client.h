@@ -30,6 +30,15 @@ typedef enum {
   PTC_COMMAND_RESET_CALIBRATION,
   PTC_COMMAND_TEST,
   PTC_COMMAND_GET_LIDAR_CALIBRATION,
+  PTC_COMMAND_GET_LIDAR_CONFIG_INFO = 8,
+  PTC_COMMAND_GET_LIDAR_STATUS = 9,
+  PTC_COMMAND_SET_LIDAR_SPIN_RATE = 23,
+  PTC_COMMAND_SET_LIDAR_OPERATE_MODE = 28,
+  PTC_COMMAND_SET_LIDAR_RETURN_MODE = 30,
+  PTC_COMMAND_SET_LIDAR_LENS_HEAT_SWITCH = 147,
+  PTC_COMMAND_GET_LIDAR_LENS_HEAT_SWITCH = 148,
+  PTC_COMMAND_GET_LIDAR_CHANNEL_CONFIG = 168,
+  PTC_COMMAND_GET_LIDAR_FIRETIMES = 169,
 } PTC_COMMAND;
 
 typedef enum {
@@ -62,13 +71,31 @@ typedef struct TC_Command_s {
 } TC_Command;
 
 void* TcpCommandClientNew(const char* ip, const unsigned short port);
+void BuildCmd(TC_Command command, PTC_COMMAND cmd, unsigned char* data);
 PTC_ErrCode TcpCommandSetCalibration(const void* handle, const char* buffer,
                                      unsigned int len);
 PTC_ErrCode TcpCommandGetCalibration(const void* handle, char** buffer,
                                      unsigned int* len);
 PTC_ErrCode TcpCommandGetLidarCalibration(const void* handle, char** buffer,
                                           unsigned int* len);
+PTC_ErrCode TcpCommandGetLidarChannelConfig(const void* handle, char** buffer,
+                                          unsigned int* len);  
+PTC_ErrCode TcpCommandGetLidarFiretime(const void* handle, char** buffer,
+                                          unsigned int* len);                                                                                    
+PTC_ErrCode TcpCommandGetLidarLensHeatSwitch(const void* handle, unsigned char** buffer,
+                                          unsigned int* len); 
+PTC_ErrCode TcpCommandGetLidarStatus(const void* handle, unsigned char** buffer,
+                                          unsigned int* len);  
+PTC_ErrCode TcpCommandGetLidarConfigInfo(const void* handle, unsigned char** buffer,
+                                          unsigned int* len);                                                                                                                           
 PTC_ErrCode TcpCommandResetCalibration(const void* handle);
+PTC_ErrCode TcpCommandSetLidarStandbyMode(const void* handle);
+PTC_ErrCode TcpCommandSetLidarNormalMode(const void* handle);
+PTC_ErrCode TcpCommandSetLidarLensHeatSwitch(const void* handle, uint8_t heatSwitch);
+PTC_ErrCode TcpCommandSetLidarReturnMode(const void* handle, uint8_t mode);
+PTC_ErrCode TcpCommandSetLidarSpinRate(const void* handle, uint16_t spinRate);
+PTC_ErrCode TcpCommandSet(const void* handle, PTC_COMMAND cmd, unsigned char* data, uint32_t len);
+PTC_ErrCode TcpCommandGet(const void* handle, PTC_COMMAND cmd, unsigned char** buffer, unsigned int* len);
 void TcpCommandClientDestroy(const void* handle);
 SSL_CTX* initial_client_ssl(const char* cert, const char* private_key, const char* ca);
 void TcpCommandSetSsl(const char* cert, const char* private_key, const char* ca);

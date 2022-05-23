@@ -21,6 +21,7 @@
   <arg name="publish_model" default="both_point_raw" />
   <arg name="namespace" default="hesai"/>
   <arg name="coordinate_correction_flag" default="false" />
+  <arg name="channel_config_file" default="$(find pandar_pointcloud)/params/QT128C2X_Channel_Cofig.csv" />
   <!--"cert_file" represents the path of the user's certificate-->
   <arg name="cert_file" default="" />
   <!--"private_key_file" represents the path of the user's private key-->
@@ -50,6 +51,7 @@
     <arg name="firetime_file" value="$(arg firetime_file)"/>
     <arg name="namespace" value="$(arg namespace)"/>
     <arg name="coordinate_correction_flag" value="$(arg coordinate_correction_flag)"/>
+    <arg name="channel_config_file" value="$(arg channel_config_file)"/>
     <arg name="cert_file" value="$(arg cert_file)" />
     <arg name="private_key_file" value="$(arg private_key_file)" />
     <arg name="ca_file" value="$(arg ca_file)" />

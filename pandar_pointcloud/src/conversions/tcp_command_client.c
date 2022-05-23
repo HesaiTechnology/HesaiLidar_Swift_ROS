@@ -169,6 +169,14 @@ static int tcpCommandReadCommandBySSL(SSL *ssl, TC_Command* cmd) {
 	return 0;
 }
 
+void BuildCmd(TC_Command command, PTC_COMMAND cmd, unsigned char* data){;
+  // memset(&cmd, 0, sizeof(TC_Command));
+  command.header.cmd = cmd;
+  command.header.len = sizeof(data);
+  command.data = data;
+  return;
+}
+
 static int TcpCommand_buildHeader(char* buffer, TC_Command* cmd) {
   if (!buffer) {
     return -1;
@@ -362,6 +370,26 @@ static PTC_ErrCode tcpCommandClient_SendCmd(TcpCommandClient *client, TC_Command
   }
 }
 
+static PTC_ErrCode tcpCommandClient_RecieveCmd(TcpCommandClient *client, TC_Command *cmd, char** buffer,
+                                          unsigned int* len) {
+  PTC_ErrCode errorCode = tcpCommandClient_SendCmd(client, cmd);
+  if (errorCode != PTC_ERROR_NO_ERROR) {
+    printf("The client failed to send a command by TCP\n");
+    return errorCode;
+  }
+
+  char* ret_str = (char*)malloc(cmd->ret_size + 1);
+  memcpy(ret_str, cmd->ret_data, cmd->ret_size);
+  ret_str[cmd->ret_size] = '\0';
+
+  free(cmd->ret_data);
+
+  *buffer = ret_str;
+  *len = cmd->ret_size + 1;
+
+  return cmd->header.ret_code;
+}
+
 void* TcpCommandClientNew(const char* ip, const unsigned short port) {
   if (!ip) {
     printf("Bad Parameter\n");
@@ -446,6 +474,38 @@ PTC_ErrCode TcpCommandGetCalibration(const void* handle, char** buffer,
 }
 PTC_ErrCode TcpCommandGetLidarCalibration(const void* handle, char** buffer,
                                           unsigned int* len) {
+  return TcpCommandGet(handle, PTC_COMMAND_GET_LIDAR_CALIBRATION, buffer, len);
+}
+
+PTC_ErrCode TcpCommandGetLidarChannelConfig(const void* handle, char** buffer,
+                                          unsigned int* len) {
+  return TcpCommandGet(handle, PTC_COMMAND_GET_LIDAR_CHANNEL_CONFIG, buffer, len);
+}
+
+PTC_ErrCode TcpCommandGetLidarFiretime(const void* handle, char** buffer,
+                                          unsigned int* len) {
+  return TcpCommandGet(handle, PTC_COMMAND_GET_LIDAR_FIRETIMES, buffer, len);
+}
+
+PTC_ErrCode TcpCommandGetLidarLensHeatSwitch(const void* handle, unsigned char** buffer,
+                                          unsigned int* len){
+  PTC_ErrCode ret = TcpCommandGet(handle, PTC_COMMAND_GET_LIDAR_LENS_HEAT_SWITCH, buffer, len);
+  return ret;                                         
+}
+
+PTC_ErrCode TcpCommandGetLidarStatus(const void* handle, unsigned char** buffer,
+                                          unsigned int* len){
+  PTC_ErrCode ret = TcpCommandGet(handle, PTC_COMMAND_GET_LIDAR_STATUS, buffer, len);
+  return ret;                                         
+}
+
+PTC_ErrCode TcpCommandGetLidarConfigInfo(const void* handle, unsigned char** buffer,
+                                          unsigned int* len){
+  PTC_ErrCode ret = TcpCommandGet(handle, PTC_COMMAND_GET_LIDAR_CONFIG_INFO, buffer, len);
+  return ret;                                         
+}
+
+PTC_ErrCode TcpCommandGet(const void* handle, PTC_COMMAND command, unsigned char** buffer, unsigned int* len){
   if (!handle || !buffer || !len) {
     printf("Bad Parameter!!!\n");
     return PTC_ERROR_BAD_PARAMETER;
@@ -454,25 +514,53 @@ PTC_ErrCode TcpCommandGetLidarCalibration(const void* handle, char** buffer,
 
   TC_Command cmd;
   memset(&cmd, 0, sizeof(TC_Command));
-  cmd.header.cmd = PTC_COMMAND_GET_LIDAR_CALIBRATION;
+  cmd.header.cmd = command;
   cmd.header.len = 0;
   cmd.data = NULL;
-  PTC_ErrCode errorCode = tcpCommandClient_SendCmd(client, &cmd);
-  if (errorCode != PTC_ERROR_NO_ERROR) {
-    printf("The client failed to send a command by TCP\n");
-    return errorCode;
+  PTC_ErrCode errorCode = tcpCommandClient_RecieveCmd(client, &cmd, buffer, len);
+  return errorCode;
+}
+
+PTC_ErrCode TcpCommandSetLidarStandbyMode(const void* handle) {
+  uint8_t buff[] = {1};
+  return TcpCommandSet(handle, PTC_COMMAND_SET_LIDAR_OPERATE_MODE, buff, sizeof(buff));
+}
+
+PTC_ErrCode TcpCommandSetLidarNormalMode(const void* handle) {
+  uint8_t buff[] = {0};
+  return TcpCommandSet(handle, PTC_COMMAND_SET_LIDAR_OPERATE_MODE, buff, sizeof(buff));
+}
+
+PTC_ErrCode TcpCommandSetLidarReturnMode(const void* handle, uint8_t mode) {
+  uint8_t buff[] = {mode};
+  return TcpCommandSet(handle, PTC_COMMAND_SET_LIDAR_RETURN_MODE, buff, sizeof(buff));
+}
+
+PTC_ErrCode TcpCommandSetLidarSpinRate(const void* handle, uint16_t spinRate) {
+  uint8_t buff[2];
+  buff[0] = (uint8_t)(spinRate >> 8);
+  buff[1] = (uint8_t)(spinRate & 0xFF);
+  return TcpCommandSet(handle, PTC_COMMAND_SET_LIDAR_SPIN_RATE, buff, sizeof(buff));
+}
+
+PTC_ErrCode TcpCommandSetLidarLensHeatSwitch(const void* handle, uint8_t heatSwitch) {
+  uint8_t buff[] = {heatSwitch};
+  return TcpCommandSet(handle, PTC_COMMAND_SET_LIDAR_LENS_HEAT_SWITCH, buff, sizeof(buff));
+}
+
+PTC_ErrCode TcpCommandSet(const void* handle, PTC_COMMAND cmd, unsigned char* data, uint32_t len){
+  if (!handle) {
+    printf("Bad Parameter!!!\n");
+    return PTC_ERROR_BAD_PARAMETER;
   }
+  TcpCommandClient* client = (TcpCommandClient*)handle;
 
-  char* ret_str = (char*)malloc(cmd.ret_size + 1);
-  memcpy(ret_str, cmd.ret_data, cmd.ret_size);
-  ret_str[cmd.ret_size] = '\0';
-
-  free(cmd.ret_data);
-
-  *buffer = ret_str;
-  *len = cmd.ret_size + 1;
-
-  return cmd.header.ret_code;
+  TC_Command command;
+  memset(&command, 0, sizeof(TC_Command));
+  command.header.cmd = cmd;
+  command.header.len = len;
+  command.data = data;
+  return tcpCommandClient_SendCmd(client, &command);
 }
 
 PTC_ErrCode TcpCommandResetCalibration(const void* handle) {

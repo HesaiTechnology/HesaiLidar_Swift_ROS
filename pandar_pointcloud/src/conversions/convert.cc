@@ -234,7 +234,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     boost::thread thrd(boost::bind(&Convert::DriverReadThread, this));
   }
 
-  if (publishmodel == "both_point_raw" || publishmodel == "point" ||
+  if (publishmodel == "both_point_raw" || publishmodel == "points" ||
       LIDAR_NODE_TYPE != node_type) {
     ROS_WARN("node.advertise pandar_points");
     output_ = node.advertise<sensor_msgs::PointCloud2>("pandar_points", 10000);

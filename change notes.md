@@ -129,7 +129,7 @@ PandarSwiftROS_1.0.30
 
 ##modify
 1. Support self-define QT128 
-2. Support to parser weight factor and env light info in Udp4.1
+2. Support to parser weight factor and env light info in Udp1.4
 
 
 

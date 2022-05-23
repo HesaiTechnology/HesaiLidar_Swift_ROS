@@ -10,6 +10,7 @@
   <arg name="firetime_file" default="$(find pandar_pointcloud)/params/Pandar128_Firetimes.csv"/>
   <arg name="namespace" default="hesai"/>
   <arg name="coordinate_correction_flag" default="false" />
+  <arg name="channel_config_file" default="$(find pandar_pointcloud)/params/QT128C2X_Channel_Cofig.csv" />
 
   <group if="$(eval data_type=='rosbag')">
     <node pkg="nodelet" type="nodelet" ns="$(arg namespace)" name="$(arg manager)" args="manager" />
@@ -24,5 +25,6 @@
     <param name="firetime_file" value="$(arg firetime_file)"/>
     <param name="namespace" value="$(arg namespace)"/>
     <param name="coordinate_correction_flag" value="$(arg coordinate_correction_flag)"/>
+    <param name="channel_config_file" value="$(arg channel_config_file)"/>
   </node>
 </launch>

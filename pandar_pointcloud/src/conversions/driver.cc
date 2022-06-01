@@ -233,21 +233,25 @@ bool PandarDriver::poll(void) {
     if (rc > 0) return false;  // end of file reached?
     // }
 
-    if (publishmodel == "both_point_raw" || publishmodel == "point") {
+    if (publishmodel == "both_point_raw" || publishmodel == "points") {
       convert->pushLiDARData(pandarScanArray[m_iScanPushIndex]->packets[i]);
     }
   }
 
-  int temp;
-  temp = m_iScanPushIndex;
-  m_iScanPushIndex = m_iScanPopIndex;
-  m_iScanPopIndex = temp;
-  if (m_bNeedPublish == false)
-    m_bNeedPublish = true;
-  else
-    ROS_WARN(
-        "CPU not fast enough, data not published yet, new data "
-        "comming!!!!!!!!!!!!!!");
+  if (publishmodel == "both_point_raw" || publishmodel == "raw") {
+      int temp;
+      temp = m_iScanPushIndex;
+      m_iScanPushIndex = m_iScanPopIndex;
+      m_iScanPopIndex = temp;
+      if (m_bNeedPublish == false)
+        m_bNeedPublish = true;
+      else
+        ROS_WARN(
+            "CPU not fast enough, data not published yet, new data "
+            "comming!!!!!!!!!!!!!!");
+    }
+
+  
   return true;
 }
 

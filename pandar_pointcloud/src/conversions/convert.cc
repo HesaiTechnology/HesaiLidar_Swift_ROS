@@ -86,7 +86,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "PandarSwiftROS_1.0.30";
+  m_sRosVersion = "PandarSwiftROS_1.0.31";
   ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -1098,7 +1098,7 @@ void Convert::changeAngleSize() {
 }
 
 void Convert::changeReturnBlockSize() {
-  if (0x39 == m_iReturnMode || 0x3b == m_iReturnMode || 0x3c == m_iReturnMode) {
+  if (0x39 == m_iReturnMode || 0x3b == m_iReturnMode || 0x3c == m_iReturnMode || 0x3a == m_iReturnMode || 0x3e == m_iReturnMode) {
     m_iReturnBlockSize = LIDAR_RETURN_BLOCK_SIZE_2;
   } else {
     m_iReturnBlockSize = LIDAR_RETURN_BLOCK_SIZE_1;

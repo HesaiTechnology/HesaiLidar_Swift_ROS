@@ -131,6 +131,13 @@ PandarSwiftROS_1.0.30
 1. Support self-define QT128 
 2. Support to parser weight factor and env light info in Udp1.4
 
+Wednesday June 1th, 2022 17:30
+##version
+PandarSwiftROS_1.0.31
+
+##modify
+1. Fix bug in publish points mode
+2. Support 0x3a and 0x3e return mode of QT128
 
 
 

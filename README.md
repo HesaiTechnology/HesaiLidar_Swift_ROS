@@ -10,6 +10,7 @@ Developed based on [HesaiLidar_Swift_SDK](https://github.com/HesaiTechnology/Hes
 * master: Pandar LiDAR ROS driver for Ubuntu 18.04 and Ubuntu20.04 supports the latest UDP protocol v1.4 v1.3 and v3.2 
 * UDP1.4_ubuntu16.04: Pandar LiDAR ROS driver for Ubuntu 16.04 supports the latest UDP protocol v1.4
 * UDP1.3: Pandar LiDAR ROS driver for ubuntu16.04,ubuntu 18.04 and Ubuntu 20.04 supports UDP protocol v1.3 
+* UDP7.1: Pandar LiDAR ROS driver for ubuntu16.04,ubuntu 18.04 and Ubuntu 20.04 supports UDP protocol v7.1  
 
 To get the UDP protocol version number of your device,  check the UDP package header field.
 ```
@@ -145,8 +146,4 @@ $ roslaunch pandar_pointcloud transform_nodelet.launch data_type:=rosbag
 |start_angle|Driver will publish one frame point clouds data when azimuth angle step over start_angle, make sure set to within FOV|
 |publish_model|default "points":publish point clouds "raw":publish raw UDP packets "both_point_raw":publish point clouds and UDP packets|
 |namespace|namesapce of the launching node|
-|coordinate_correction_flag|default "false":Disable coordinate correction "true":Enable coordinate correction|
-|channel_config_file|Path of channel config file, will be used when not able to get channel config file from a connected Liar|
-|cert_file|Path of the user's certificate|
-|private_key_file|Path of the user's private key|
-|ca_file|Path of the root certificate|
+|multicast_ip|The multicast IP address of connected Lidar, will be used to get udp packets from multicast ip address|

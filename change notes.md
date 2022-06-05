@@ -139,5 +139,12 @@ PandarSwiftROS_1.0.31
 1. Fix bug in publish points mode
 2. Support 0x3a and 0x3e return mode of QT128
 
+Sunday, June 5th, 2022 17:30
+##version
+PandarSwiftROS_1.0.32
+
+##modify
+1. Support PandarFT
+
 
 

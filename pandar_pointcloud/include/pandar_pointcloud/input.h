@@ -43,12 +43,15 @@
 #include <pandar_msgs/PandarPacket.h>
 #define UDP_VERSION_MAJOR_1 (1)
 #define UDP_VERSION_MINOR_3 (3)
+#define UDP_VERSION_MAJOR_7 (7)
 #define UDP_VERSION_MINOR_4 (4)
 #define UDP_VERSION_MAJOR_3 (3)
 #define UDP_VERSION_MINOR_2 (2)
+#define UDP_VERSION_MINOR_1 (1)
 #define UDP_VERSION_1_3 "1.3"
 #define UDP_VERSION_1_4 "1.4"
 #define UDP_VERSION_3_2 "3.2"
+#define UDP_VERSION_7_1 "7.1"
 #define PANDAR128_SOB_SIZE (2)
 #define PANDAR128_VERSION_MAJOR_SIZE (1)
 #define PANDAR128_VERSION_MINOR_SIZE (1)
@@ -86,6 +89,51 @@
 #define PANDAR128_SIGNATURE_SIZE (32)
 #define PANDAR128_SEQ_NUM_SIZE (4)
 
+#define PANDARFT_DISTANCE_UNIT (0.001)
+#define PANDARFT_SOB_SIZE (2)
+#define PANDARFT_VERSION_MAJOR_SIZE (1)
+#define PANDARFT_VERSION_MINOR_SIZE (1)
+#define PANDARFT_VERSION_TDM_SIZE (1)
+#define PANDARFT_HEAD_RESERVED1_SIZE (1)
+#define PANDARFT_TOTAL_COLUMN_NUM_SIZE (2)
+#define PANDARFT_TOTAL_ROW_NUM_SIZE (2)
+#define PANDARFT_COLUMN_RESOLUTION_SIZE (1)
+#define PANDARFT_ROW_RESOLUTION_SIZE (1)
+#define PANDARFT_ECHO_COUNT_SIZE (1)
+#define PANDARFT_DISTANCE_UNIT_SIZE (1)
+#define PANDARFT_BLOCK_INDEX_SIZE (1)
+#define PANDARFT_CHANNEL_NUM_SIZE (2)
+#define PANDARFT_HEAD_RESERVED2_SIZE (8)
+#define PANDARFT_HEAD_SIZE     \
+  (PANDARFT_SOB_SIZE + PANDARFT_VERSION_MAJOR_SIZE + \
+   PANDARFT_VERSION_MINOR_SIZE + PANDARFT_VERSION_TDM_SIZE + \
+   PANDARFT_HEAD_RESERVED1_SIZE + PANDARFT_TOTAL_COLUMN_NUM_SIZE + \
+   PANDARFT_TOTAL_ROW_NUM_SIZE + PANDARFT_COLUMN_RESOLUTION_SIZE + \
+   PANDARFT_ROW_RESOLUTION_SIZE + PANDARFT_ECHO_COUNT_SIZE + \
+   PANDARFT_DISTANCE_UNIT_SIZE + PANDARFT_BLOCK_INDEX_SIZE + \
+   PANDARFT_CHANNEL_NUM_SIZE + PANDARFT_HEAD_RESERVED2_SIZE)
+#define DISTANCE_SIZE (2)
+#define INTENSITY_SIZE (1)
+#define ENV_LIGHT_SIZE (2)
+#define CONFIDENCE_SIZE (1)
+#define PANDARFT_UNIT_SIZE \
+        (CONFIDENCE_SIZE + \
+        ENV_LIGHT_SIZE + \
+        DISTANCE_SIZE + \
+        INTENSITY_SIZE)
+#define PANDARFT_TAIL_RESERVED1_SIZE (3)
+#define PANDARFT_TAIL_RESERVED2_SIZE (4)
+#define PANDARFT_TAIL_CLOUMN_ID_SIZE (2)
+#define PANDARFT_FRAME_FLAG_SIZE (1)
+#define PANDARFT_SHUTDOWN_FLAG_SIZE (1)
+#define PANDARFT_MOTOR_SPEED_SIZE (2)
+#define PANDARFT_TS_SIZE (4)
+#define PANDARFT_RETURN_MODE_SIZE (1)
+#define PANDARFT_FACTORY_INFO (1)
+#define PANDARFT_UTC_SIZE (6)
+#define PANDARFT_SEQ_NUM_SIZE (4)
+
+
 enum enumIndex{
 	TIMESTAMP_INDEX,
 	UTC_INDEX,
@@ -108,6 +156,13 @@ static std::map<enumIndex, int> udpVersion14 = {
 };
 
 static std::map<enumIndex, int> udpVersion32 = {
+	{TIMESTAMP_INDEX, 826},
+	{UTC_INDEX, 820},
+	{SEQUENCE_NUMBER_INDEX, 831},
+	{PACKET_SIZE, 893},
+};
+
+static std::map<enumIndex, int> udpVersion71 = {
 	{TIMESTAMP_INDEX, 826},
 	{UTC_INDEX, 820},
 	{SEQUENCE_NUMBER_INDEX, 831},
@@ -163,8 +218,7 @@ namespace pandar_pointcloud
   class InputSocket: public Input
   {
   public:
-    InputSocket(ros::NodeHandle private_nh,
-                uint16_t port = DATA_PORT_NUMBER);
+    InputSocket(ros::NodeHandle private_nh, uint16_t port = DATA_PORT_NUMBER, std::string multicast_ip = "");
     virtual ~InputSocket();
 
     virtual int getPacket(PandarPacket *pkt);

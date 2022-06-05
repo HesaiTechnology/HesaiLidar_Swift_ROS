@@ -52,64 +52,16 @@ LasersTSOffset::LasersTSOffset() {
   }
 
   for (int j = 0; j < PAI_ANGLE; j++) {
-    mArcSin[j] = asinf(float(j - HALF_PAI_ANGLE) / HALF_PAI_ANGLE) * 180 / M_PI;
+    mArcSin[j] = asinf(float(j - HALF_PAI_ANGLE) / HALF_PAI_ANGLE);
   }
 
   mShortOffsetIndex.resize(100);
   mLongOffsetIndex.resize(100);
   m_fArctanHB = atanf(PANDAR128_COORDINATE_CORRECTION_B / PANDAR128_COORDINATE_CORRECTION_H) + 0.5f;
-  m_vQT128Firetime[0].fill(0);
-  m_vQT128Firetime[1].fill(0);
-  m_vQT128Firetime[2].fill(0);
-  m_vQT128Firetime[3].fill(0);
 }
 
 LasersTSOffset::~LasersTSOffset() {
 
-}
-
-int LasersTSOffset::ParserFiretimeData(std::string firetime_content){
-  std::istringstream fin(firetime_content);
-  std::string line;
-  if (std::getline(fin, line)) { //first line sequence,chn id,firetime/us
-    // printf("Parse Lidar firetime now...\n");
-  }
-  std::vector<std::string>  firstLine;
-  boost::split(firstLine, line, boost::is_any_of(","));
-  if(firstLine[0] == "EEFF" || firstLine[0] == "eeff"){
-    std::array<std::array<float, 128>, 4> firetimes;
-    firetimes[0].fill(0);
-    firetimes[1].fill(0);
-    firetimes[2].fill(0);
-    firetimes[3].fill(0);
-    std::getline(fin, line);
-    std::vector<std::string>  loopNumLine;
-    boost::split(loopNumLine, line, boost::is_any_of(","));
-    int loopNum = atoi(loopNumLine[3].c_str());
-    std::getline(fin, line);
-    for(int i = 0; i < PANDAR128_LIDAR_NUM; i++){
-      std::getline(fin, line);
-      std::vector<std::string> ChannelLine;
-      boost::split(ChannelLine, line, boost::is_any_of(","));
-      for(int j = 0; j < loopNum; j++){
-        if(ChannelLine.size() == loopNum * 2){
-          int laserId = atoi(ChannelLine[j* 2].c_str()) - 1;
-          firetimes[j][laserId] = std::stof(ChannelLine[j* 2 + 1].c_str());
-        }
-        else{
-          std::cout << "loop num is not equal to the first channel line" << std::endl;
-          return -1;
-        }       
-      }
-    }
-    m_vQT128Firetime = firetimes;
-
-  }
-  else{
-    std::cout << "firetime file delimiter is wrong " << firstLine[0] << std::endl;
-    return -1;
-  }
-  return 0;
 }
 
 void LasersTSOffset::setFilePath(std::string file) {
@@ -121,9 +73,6 @@ void LasersTSOffset::setFilePath(std::string file) {
   }
   std::vector<std::string>  firstLine;
   boost::split(firstLine, line, boost::is_any_of(","));
-  if(firstLine[0] == "EEFF" || firstLine[0] == "eeff"){
-    return;
-  }
   if (firstLine.size() == 2){
     while (std::getline(fin, line)) {
       int sequence = 0;
@@ -262,7 +211,12 @@ float LasersTSOffset::getTSOffset(int nLaser, int nMode, int nState, float fDist
         return mVLasers[nLaser][mShortOffsetIndex[nMode * 10 + nState]];
       }
     case 3:
-      return m_vQT128Firetime[nMode][nLaser];
+      switch (nMode){
+        case 0:
+          return m_fCDAAzimuthOffset[nLaser];
+        case 1:
+          return m_fCDBAzimuthOffset[nLaser];
+      }
     default:
       return 0;
   }

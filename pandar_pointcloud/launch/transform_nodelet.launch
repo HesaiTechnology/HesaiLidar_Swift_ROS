@@ -1,16 +1,15 @@
 <!-- -*- mode: XML -*- -->
 
 <launch>
-  <arg name="calibration" default="$(find pandar_pointcloud)/params/Pandar128_Correction.csv"/>
+  <arg name="calibration" default="$(find pandar_pointcloud)/params/PandarFT_Correction.csv"/>
   <arg name="frame_id" default="PandarSwift" />
   <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
   <arg name="max_range" default="130.0" />
   <arg name="min_range" default="0.9" />
   <arg name="data_type" default="lidar" />
-  <arg name="firetime_file" default="$(find pandar_pointcloud)/params/Pandar128_Firetimes.csv"/>
+  <arg name="firetime_file" default=""/>
   <arg name="namespace" default="hesai"/>
   <arg name="coordinate_correction_flag" default="false" />
-  <arg name="channel_config_file" default="$(find pandar_pointcloud)/params/QT128C2X_Channel_Cofig.csv" />
 
   <group if="$(eval data_type=='rosbag')">
     <node pkg="nodelet" type="nodelet" ns="$(arg namespace)" name="$(arg manager)" args="manager" />
@@ -25,6 +24,5 @@
     <param name="firetime_file" value="$(arg firetime_file)"/>
     <param name="namespace" value="$(arg namespace)"/>
     <param name="coordinate_correction_flag" value="$(arg coordinate_correction_flag)"/>
-    <param name="channel_config_file" value="$(arg channel_config_file)"/>
   </node>
 </launch>

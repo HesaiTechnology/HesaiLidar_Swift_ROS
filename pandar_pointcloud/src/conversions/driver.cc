@@ -61,6 +61,8 @@ PandarDriver::PandarDriver(ros::NodeHandle node, ros::NodeHandle private_nh,
 
   int udp_port;
   private_nh.param("port", udp_port, (int)DATA_PORT_NUMBER);
+  std::string multicast_ip;
+  private_nh.param("multicast_ip", multicast_ip, std::string(""));
 
   pthread_mutex_init(&piclock, NULL);
 
@@ -107,7 +109,7 @@ PandarDriver::PandarDriver(ros::NodeHandle node, ros::NodeHandle private_nh,
                                                   packet_rate, dump_file));
   } else {
     // read data from live socket
-    m_spInput.reset(new pandar_pointcloud::InputSocket(private_nh, udp_port));
+    m_spInput.reset(new pandar_pointcloud::InputSocket(private_nh, udp_port, multicast_ip));
   }
   // ROS_WARN("drive nodeType[%s]", nodeType.c_str());
   // ROS_WARN("drive publishmodel[%s]", publishmodel.c_str());
@@ -193,6 +195,7 @@ bool PandarDriver::poll(void) {
     // keep reading until full packet received
     PandarPacket packet;
     int rc = m_spInput->getPacket(&packet);
+    // ROS_WARN("hello");
     if(rc == 0){
       pandarScanArray[m_iScanPushIndex]->packets[i].stamp = packet.stamp;
       pandarScanArray[m_iScanPushIndex]->packets[i].size = packet.size;
@@ -204,19 +207,20 @@ bool PandarDriver::poll(void) {
     // if (rc == 0) break;       // got a full packet?
     if (rc == 2) {
       // gps packet;
-      PandarGPS packet;
-      if (parseGPS(&packet,
-                   &pandarScanArray[m_iScanPushIndex]->packets[i].data[0],
+      i--;
+      PandarGPS gpsPacket;
+      if (parseGPS(&gpsPacket,
+                   &packet.data[0],
                    GPS_PACKET_SIZE) == 0) {
         pandar_msgs::PandarGpsPtr gps(new pandar_msgs::PandarGps);
         gps->stamp = ros::Time::now();
 
-        gps->year = packet.year;
-        gps->month = packet.month;
-        gps->day = packet.day;
-        gps->hour = packet.hour;
-        gps->minute = packet.minute;
-        gps->second = packet.second;
+        gps->year = gpsPacket.year;
+        gps->month = gpsPacket.month;
+        gps->day = gpsPacket.day;
+        gps->hour = gpsPacket.hour;
+        gps->minute = gpsPacket.minute;
+        gps->second = gpsPacket.second;
 
         gps->used = 0;
         if (gps->year > 30 || gps->year < 17) {
@@ -227,8 +231,6 @@ bool PandarDriver::poll(void) {
         convert->processGps(*gps);
         // gpsoutput_.publish(gps);
       }
-      i--;
-      continue;
     }
     if (rc > 0) return false;  // end of file reached?
     // }
@@ -237,21 +239,14 @@ bool PandarDriver::poll(void) {
       convert->pushLiDARData(pandarScanArray[m_iScanPushIndex]->packets[i]);
     }
   }
-
   if (publishmodel == "both_point_raw" || publishmodel == "raw") {
-      int temp;
-      temp = m_iScanPushIndex;
-      m_iScanPushIndex = m_iScanPopIndex;
-      m_iScanPopIndex = temp;
-      if (m_bNeedPublish == false)
-        m_bNeedPublish = true;
-      else
-        ROS_WARN(
-            "CPU not fast enough, data not published yet, new data "
-            "comming!!!!!!!!!!!!!!");
-    }
-
-  
+    int temp;
+    temp = m_iScanPushIndex;
+    m_iScanPushIndex = m_iScanPopIndex;
+    m_iScanPopIndex = temp;
+    if (m_bNeedPublish == false)
+      m_bNeedPublish = true;
+  }
   return true;
 }
 
@@ -301,13 +296,13 @@ int PandarDriver::getPandarScanArraySize(boost::shared_ptr<Input> m_spInput){
           return PANDAR64S_READ_PACKET_SIZE;
         case PANDAR40S_LASER_NUM:
           return PANDAR40S_READ_PACKET_SIZE;
-        case PANDAR90_LASER_NUM:
-          return PANDAR90_READ_PACKET_SIZE;
         default:
           break;
       }
     case UDP_VERSION_MAJOR_3:
     return PANDARQT128_READ_PACKET_SIZE;
+    case UDP_VERSION_MAJOR_7:
+    return PANDARFT_READ_PACKET_SIZE;
     default:
       break;
     }

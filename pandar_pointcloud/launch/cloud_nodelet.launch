@@ -1,7 +1,7 @@
 <!-- -*- mode: XML -*- -->
 
 <launch>
-  <arg name="calibration" default="$(find pandar_pointcloud)/params/Pandar128_Correction.csv" />
+  <arg name="calibration" default="$(find pandar_pointcloud)/params/PandarFT_Correction.csv" />
   <arg name="manager" default="pandar_nodelet_manager" />
   <arg name="max_range" default="130.0" />
   <arg name="min_range" default="0.9" />
@@ -16,13 +16,9 @@
   <arg name="read_once" default="false" />
   <arg name="repeat_delay" default="0.0" />
   <arg name="rpm" default="600.0" />
-  <arg name="firetime_file"  default="$(find pandar_pointcloud)/params/Pandar128_Firetimes.csv"/>
+  <arg name="firetime_file"  default=""/>
   <arg name="namespace" default="hesai"/>
-  <arg name="coordinate_correction_flag" default="false" />
-  <arg name="channel_config_file" default="$(find pandar_pointcloud)/params/QT128C2X_Channel_Cofig.csv" />
-  <arg name="cert_file" default="" />
-  <arg name="private_key_file" default="" />
-  <arg name="ca_file" default="" />
+  <arg name="multicast_ip" default=""/>
 
   <node pkg="nodelet" type="nodelet" ns="$(arg namespace)" name="$(arg manager)_cloud"
         args="load pandar_pointcloud/CloudNodelet $(arg manager)"
@@ -42,11 +38,7 @@
     <param name="repeat_delay" value="$(arg repeat_delay)"/>
     <param name="rpm" value="$(arg rpm)"/>
     <param name="firetime_file"  value="$(arg firetime_file)"/>
-    <param name="coordinate_correction_flag" value="$(arg coordinate_correction_flag)"/>
-    <param name="channel_config_file" value="$(arg channel_config_file)"/>
-    <param name="cert_file" value="$(arg cert_file)" />
-    <param name="private_key_file" value="$(arg private_key_file)" />
-    <param name="ca_file" value="$(arg ca_file)" />
+    <param name="multicast_ip"  value="$(arg multicast_ip)"/>
   </node>
 
   <!--node pkg="nodelet" type="nodelet" name="$(arg manager)_color"

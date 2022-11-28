@@ -18,6 +18,7 @@
   <arg name="rpm" default="600.0" />
   <arg name="view_mode" default="0" />
   <arg name="namespace" default="hesai"/>
+  <arg name="multicast_ip"  default=""/>
   <node pkg="nodelet" type="nodelet" ns="$(arg namespace)" name="$(arg manager)_cloud"
         args="load pandar_pointcloud/CloudNodelet $(arg manager)"
 		output="screen">

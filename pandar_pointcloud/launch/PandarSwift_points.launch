@@ -19,6 +19,7 @@
   <arg name="publish_model" default="both_point_raw" />
   <arg name="view_mode" default="1" />
   <arg name="namespace" default="hesai"/>
+  <arg name="multicast_ip"  default=""/>
 
   <!-- start nodelet manager -->
   <node pkg="nodelet" type="nodelet" ns="$(arg namespace)" name="$(arg manager)" args="manager" output="screen" />

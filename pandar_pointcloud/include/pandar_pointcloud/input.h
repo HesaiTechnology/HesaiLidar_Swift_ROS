@@ -183,9 +183,10 @@ enum PacketType{
 
 namespace pandar_pointcloud
 {
-  static uint16_t DATA_PORT_NUMBER = 8080;     // default data port
   static uint16_t POSITION_PORT_NUMBER = 8308; // default position port
-
+  static uint16_t DATA_PORT_NUMBER = 2368;  // default data port
+  static uint16_t GPS_PORT_NUMBER = 10110;  // default gps port
+  
   #define PANDAR128_SEQUENCE_NUMBER_OFFSET (831) 
   /** @brief pandar input base class */
   class Input
@@ -222,7 +223,8 @@ namespace pandar_pointcloud
   {
   public:
     InputSocket(ros::NodeHandle private_nh,
-                uint16_t port = DATA_PORT_NUMBER);
+                uint16_t port = DATA_PORT_NUMBER,
+                uint16_t gpsport = GPS_PORT_NUMBER, std::string multicast_ip = "");
     virtual ~InputSocket();
     void setDeviceIP( const std::string& ip );
     virtual PacketType getPacket(PandarPacket *pkt, bool &isTimeout, bool& skipSleep);

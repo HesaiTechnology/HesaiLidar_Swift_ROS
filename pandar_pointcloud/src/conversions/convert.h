@@ -583,6 +583,20 @@ class Convert {
   std::string m_sNodeType;
   int m_iField;
   int m_iEdgeAzimuthSize;
+  double m_dAzimuthInterval;
+  double m_dAzimuthRange;
+  float m_fTxTemperature;
+  float m_fRxTemperature;
+  float m_fMbTemperature;
+  float m_fPbTemperature;
+  bool m_bGetCorrectionSuccess;
+  int m_iGetCorrectionCount;
+  int m_iWithoutDataWarningTime;
+  uint32_t m_u32SequenceNum;
+  int m_iLastPushIndex;
+  uint32_t m_u32LastTaskEndAzimuth;
+  bool m_bIsSwitchFrameFail;
+  double m_dSystemTime;
 
 };
 

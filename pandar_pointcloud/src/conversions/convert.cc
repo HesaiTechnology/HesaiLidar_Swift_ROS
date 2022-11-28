@@ -223,7 +223,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
 }
 
 bool Convert::loadCorrectionFile() {
-  printf("Load correction file, count:%d\n", m_iGetCorrectionCount);
+  ROS_WARN("Load correction file, count:%d", m_iGetCorrectionCount);
   m_iGetCorrectionCount++;
   bool loadCorrectionFileSuccess = false;
   int ret = 0;
@@ -600,7 +600,7 @@ void Convert::moveTaskEndToStartAngle() {
     return;
   }
 
-  if (m_sPcapFile != "" ) {
+  if (m_sPcapFile != "" || m_sNodeType != LIDAR_NODE_TYPE) {
     if ((m_PacketsBuffer.m_iterPush - m_PacketsBuffer.m_buffers.begin()) > 2) m_PacketsBuffer.moveTaskEnd(m_PacketsBuffer.m_iterPush - 1);
     else m_PacketsBuffer.moveTaskEnd(m_PacketsBuffer.m_buffers.end());
   } else {
@@ -1133,7 +1133,7 @@ bool Convert::isNeedPublish(){
       // m_PacketsBuffer.getTaskBegin() - m_PacketsBuffer.m_buffers.begin(), m_iLastPushIndex,
       // m_bIsSocketTimeout, !m_PacketsBuffer.hasEnoughPackets(), !m_PacketsBuffer.empty());          
       if ((((m_PacketsBuffer.m_iterPush - m_PacketsBuffer.m_buffers.begin()) - m_iLastPushIndex + m_PacketsBuffer.m_buffers.size()) % m_PacketsBuffer.m_buffers.size()) > (PACKET_NUM_PER_FRAME * m_iReturnBlockSize / (m_iMotorSpeed / MOTOR_SPEED_200))) {
-        printf("switch frame fail %d %d\n", m_PacketsBuffer.m_iterPush - m_PacketsBuffer.m_buffers.begin(), m_iLastPushIndex);
+        // printf("switch frame fail %d %d\n", m_PacketsBuffer.m_iterPush - m_PacketsBuffer.m_buffers.begin(), m_iLastPushIndex);
         m_bIsSwitchFrameFail = true;
         return true;
       }
@@ -1142,7 +1142,7 @@ bool Convert::isNeedPublish(){
         return false;
       }
       
-      // printf("azi:%f %f \nindex:%d %d %d \nflag:%d %d %d \n",beginAzimuth/25600.0f, endAzimuth/25600.0f,
+      // ROS_WARN("azi:%f %f \nindex:%d %d %d \nflag:%d %d %d \n",beginAzimuth/25600.0f, endAzimuth/25600.0f,
       // m_PacketsBuffer.m_iterPush - m_PacketsBuffer.m_buffers.begin(),
       // m_PacketsBuffer.getTaskEnd() - m_PacketsBuffer.m_buffers.begin(),
       // m_PacketsBuffer.getTaskBegin() - m_PacketsBuffer.m_buffers.begin(), 

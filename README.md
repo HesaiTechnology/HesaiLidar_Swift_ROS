@@ -143,6 +143,7 @@ $ roslaunch pandar_pointcloud transform_nodelet.launch data_type:=rosbag
 |port|The destination port of Lidar, driver will monitor this port to get point cloud packets from Lidar|
 |publish_model|default "points":publish point clouds "raw":publish raw UDP packets "both_point_raw":publish point clouds and UDP packets|
 |view_mode|default "1": one frame publish point clouds once "0": 360 degree publish point clouds once|
+|multicast_ip|The multicast IP address of connected Lidar, will be used to get udp packets from multicast ip address|
 
 ## More functions
 check the documents in '/docs' folder.

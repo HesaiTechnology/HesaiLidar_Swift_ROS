@@ -84,7 +84,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "PandarSwiftROS_1.0.29";
+  m_sRosVersion = "PandarSwiftROS_1.0.35";
   ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
   system("echo 562144000 > /proc/sys/net/core/rmem_max");
   publishmodel = "";
@@ -193,6 +193,40 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     m_iEdgeAzimuthSize = 200;
 
   }
+  loadCorrectionFile();
+
+  loadOffsetFile(
+      lidarFiretimeFile);  // parameter is the path of lidarFiretimeFil
+  ROS_WARN("node_type[%s]", node_type.c_str());
+
+
+  if (LIDAR_NODE_TYPE == node_type) {
+    boost::thread thrd(boost::bind(&Convert::DriverReadThread, this));
+  }
+
+  if (publishmodel == "both_point_raw" || publishmodel == "point" ||
+      LIDAR_NODE_TYPE != node_type) {
+    ROS_WARN("node.advertise pandar_points");
+    output_ = node.advertise<sensor_msgs::PointCloud2>("pandar_points", 10000);
+    boost::thread processThr(boost::bind(&Convert::processLiDARData, this));
+  }
+
+  m_iPublishPointsIndex = 0;
+  // m_bPublishPointsFlag = false;
+  // boost::thread publishPointsThr(
+  //     boost::bind(&Convert::publishPointsThread, this));
+
+  if ((publishmodel == "both_point_raw" || publishmodel == "raw") &&
+      LIDAR_NODE_TYPE == node_type) {
+    boost::thread processThr(boost::bind(&Convert::publishRawDataThread, this));
+  }
+}
+
+bool Convert::loadCorrectionFile() {
+  printf("Load correction file, count:%d\n", m_iGetCorrectionCount);
+  m_iGetCorrectionCount++;
+  bool loadCorrectionFileSuccess = false;
+  int ret = 0;
   if(m_sPcapFile.empty()) {
     m_pTcpCommandClient =TcpCommandClientNew(m_sDeviceIp.c_str(), PANDARSDK_TCP_COMMAND_PORT);
     if(NULL != m_pTcpCommandClient) {
@@ -210,6 +244,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
             loadCorrectionFileSuccess = true;
             m_bGetCorrectionSuccess = true;
             ROS_WARN("Parse Lidar Correction Success!!!");
+            return true;
           }
         free(buffer);
       }
@@ -239,39 +274,17 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
       else {
         m_bGetCorrectionSuccess = true;
         ROS_WARN("Parse local Correction file Success!!!");
+        return true;
       }
     }
     else{
       ROS_WARN("Open correction file failed\n");
     }
   }
+  return false;
 
-  loadOffsetFile(
-      lidarFiretimeFile);  // parameter is the path of lidarFiretimeFil
-  ROS_WARN("node_type[%s]", node_type.c_str());
-
-
-  if (LIDAR_NODE_TYPE == node_type) {
-    boost::thread thrd(boost::bind(&Convert::DriverReadThread, this));
-  }
-
-  if (publishmodel == "both_point_raw" || publishmodel == "point" ||
-      LIDAR_NODE_TYPE != node_type) {
-    ROS_WARN("node.advertise pandar_points");
-    output_ = node.advertise<sensor_msgs::PointCloud2>("pandar_points", 10000);
-    boost::thread processThr(boost::bind(&Convert::processLiDARData, this));
-  }
-
-  m_iPublishPointsIndex = 0;
-  // m_bPublishPointsFlag = false;
-  // boost::thread publishPointsThr(
-  //     boost::bind(&Convert::publishPointsThread, this));
-
-  if ((publishmodel == "both_point_raw" || publishmodel == "raw") &&
-      LIDAR_NODE_TYPE == node_type) {
-    boost::thread processThr(boost::bind(&Convert::publishRawDataThread, this));
-  }
 }
+
 
 int Convert::loadCorrectionFile(char * data) {
   try
@@ -958,8 +971,6 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
                           PANDAR_AT128_CRC_SIZE +
                           PANDAR_AT128_AZIMUTH_SIZE * header->u8BlockNum +
                           PANDAR_AT128_FINE_AZIMUTH_SIZE * header->u8BlockNum);
-      updateMoniterInfo(tail->nReserved2[2],
-                        *(uint16_t *)(&tail->nReserved2[0]));
       uint32_t sequenceNum = *((uint32_t
                        *)(&(packet.data[0]) + PANDAR_AT128_HEAD_SIZE +
                           (header->hasConfidence()
@@ -970,46 +981,7 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
                           PANDAR_AT128_CRC_SIZE +
                           PANDAR_AT128_AZIMUTH_SIZE * header->u8BlockNum +
                           PANDAR_AT128_FINE_AZIMUTH_SIZE * header->u8BlockNum + sizeof(PandarAT128TailVersion43)));                   
-      if (m_dAzimuthInterval != 0) {
-        uint16_t beginAzimuth =
-            *(uint16_t *)(&((m_PacketsBuffer.getTaskBegin())->data[0]) +
-                          m_iLastAzimuthIndex);
-        uint16_t endAzimuth =
-            *(uint16_t *)(&((m_PacketsBuffer.getTaskEnd() - 2)->data[0]) +
-                          m_iFirstAzimuthIndex);
-        uint16_t azimuth =
-            *(uint16_t *)(&(packet.data[0]) + m_iLastAzimuthIndex);
-        if (endAzimuth < beginAzimuth) {
-          endAzimuth += CIRCLE_ANGLE;
-        }
-        if (azimuth < beginAzimuth) {
-          azimuth += CIRCLE_ANGLE;
-        }
-        int timeStampIndex = (azimuth - beginAzimuth + m_dAzimuthInterval / 2) /
-                             m_dAzimuthInterval;
-        float taskFlowTimestampNum =
-            (endAzimuth - beginAzimuth) / m_dAzimuthInterval;
-        float taskFlowPacketNum =
-            m_PacketsBuffer.getTaskEnd() - m_PacketsBuffer.getTaskBegin();
-        int packetIndex =
-            timeStampIndex * taskFlowPacketNum / taskFlowTimestampNum;
 
-        if ((packetIndex >= taskFlowPacketNum))
-          packetIndex = taskFlowPacketNum - 1;
-        if (taskFlowTimestampNum < 5) packetIndex = 0;
-        tail =
-            (PandarAT128TailVersion43
-                 *)(&((m_PacketsBuffer.getTaskBegin() + packetIndex)->data[0]) +
-                    PANDAR_AT128_HEAD_SIZE +
-                    (header->hasConfidence()
-                         ? PANDAR_AT128_UNIT_WITH_CONFIDENCE_SIZE *
-                               header->u8LaserNum * header->u8BlockNum
-                         : PANDAR_AT128_UNIT_WITHOUT_CONFIDENCE_SIZE *
-                               header->u8LaserNum * header->u8BlockNum) +
-                    PANDAR_AT128_CRC_SIZE +
-                    PANDAR_AT128_AZIMUTH_SIZE * header->u8BlockNum +
-                    PANDAR_AT128_FINE_AZIMUTH_SIZE * header->u8BlockNum);
-      }
       double unix_second = 0;
       if (tail->nUTCTime[0] != 0) {
         struct tm t = {0};
@@ -1086,7 +1058,6 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
                m_PandarAT_corrections.l.azimuth[i] +
                m_PandarAT_corrections.getAzimuthAdjustV3(i, Azimuth) * 256);
 #ifdef ENABLE_FIRETIME_CORRECTION
-          if (m_dAzimuthInterval == 0) {
             float offset = m_objLaserOffset.getTSOffset(i, 0, 0, distance,
                                                         header->u8VersionMajor);
             azimuth += m_objLaserOffset.getAngleOffset(
@@ -1098,7 +1069,6 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
                                                 header->u8VersionMajor) +
                     offset) /
                 1000000.0;
-          }
 #endif
           azimuth = (MAX_AZI_LEN + azimuth) % MAX_AZI_LEN;
           float xyDistance =
@@ -1117,11 +1087,11 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
             if (0 == m_dTimestamp) {
               m_dTimestamp = point.timestamp;
               m_u32SequenceNum = sequenceNum;
-              m_dSystemTime = packet.stamp;
+              // m_dSystemTime = packet.stamp;
             } else if (m_dTimestamp > point.timestamp) {
               m_dTimestamp = point.timestamp;
               m_u32SequenceNum = sequenceNum;
-              m_dSystemTime = packet.stamp;
+              // m_dSystemTime = packet.stamp;
             }
           }
           // else{
@@ -1157,7 +1127,7 @@ bool Convert::isNeedPublish(){
         endAzimuth = *(uint16_t *)(&((m_PacketsBuffer.m_buffers.end() - 2)->data[0]) +
                           m_iFirstAzimuthIndex) *
                 LIDAR_AZIMUTH_UNIT;
-      // printf("%f %f \n%d %d %d %d\n%d %d %d \n",beginAzimuth/25600.0f, endAzimuth/25600.0f,
+      // ROS_WARN("%f %f \n%d %d %d %d\n%d %d %d \n",beginAzimuth/25600.0f, endAzimuth/25600.0f,
       // m_PacketsBuffer.m_iterPush - m_PacketsBuffer.m_buffers.begin(),
       // m_PacketsBuffer.getTaskEnd() - m_PacketsBuffer.m_buffers.begin(),
       // m_PacketsBuffer.getTaskBegin() - m_PacketsBuffer.m_buffers.begin(), m_iLastPushIndex,

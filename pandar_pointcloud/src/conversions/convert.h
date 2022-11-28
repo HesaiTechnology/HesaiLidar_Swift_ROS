@@ -196,12 +196,22 @@
   (PANDAR_AT128_PACKET_SIZE + PANDAR_AT128_SEQ_NUM_SIZE)
 #define PANDAR_AT128_WITHOUT_CONF_UNIT_SIZE (DISTANCE_SIZE + INTENSITY_SIZE)
 #define PANDAR_AT128_FRAME_ANGLE_SIZE (6800)
+
+#define PANDAR_AT128_FRAME_ANGLE_SIZE (6250)
+#define PANDAR_AT128_FRAME_BUFFER_SIZE (7500)
 #define PANDAR_AT128_FRAME_ANGLE_INTERVAL_SIZE (5600)
-#define PANDAR_AT128_EDGE_AZIMUTH_OFFSET (7500)
-#define PANDAR_AT128_EDGE_AZIMUTH_SIZE (400)
-#define PANDAR_AT128_CRC_SIZE (4)  
-#define PANDAR_AT128_FUNCTION_SAFETY_SIZE (17)  
+#define PANDAR_AT128_EDGE_AZIMUTH_OFFSET (4500)
+#define PANDAR_AT128_EDGE_AZIMUTH_SIZE (1200)
+#define PANDAR_AT128_CRC_SIZE (4)
+#define PANDAR_AT128_FUNCTION_SAFETY_SIZE (17)
 #define PANDAR_AT128_SIGNATURE_SIZE (32)
+#define MIN_POINT_NUM (30000)
+#define MAX_POINT_NUM (360000)
+#define TX_TDM_ID (25)
+#define RX_TDM_ID (26)
+#define MB_TDM_ID (27)
+#define PB_TDM_ID (28)
+#define PACKET_NUM_PER_FRAME (630)
 /************************************* AT 128 *********************************************/
 
 typedef struct __attribute__((__packed__)) Pandar128Unit_s {
@@ -507,6 +517,7 @@ class Convert {
   int calculatePointIndex(uint16_t azimuth, int blockId, int laserId, int field);
   int calculatePointBufferSize();
   void SetEnvironmentVariableTZ();
+  bool loadCorrectionFile();
 
   /// Pointer to dynamic reconfigure service srv_
   boost::shared_ptr<

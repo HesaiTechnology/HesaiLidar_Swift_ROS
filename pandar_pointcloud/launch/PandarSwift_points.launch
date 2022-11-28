@@ -42,6 +42,7 @@
     <arg name="rpm" value="$(arg rpm)"/>
     <arg name="view_mode" value="$(arg view_mode)"/>
     <arg name="namespace" value="$(arg namespace)"/>
+    <arg name="multicast_ip" value="$(arg multicast_ip)"/>
   </include>
   <!--
   -->

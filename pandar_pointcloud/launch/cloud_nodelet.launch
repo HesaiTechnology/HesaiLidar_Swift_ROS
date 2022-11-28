@@ -37,6 +37,7 @@
     <param name="repeat_delay" value="$(arg repeat_delay)"/>
     <param name="rpm" value="$(arg rpm)"/>
     <param name="view_mode"  value="$(arg view_mode)"/>
+    <param name="multicast_ip" value="$(arg multicast_ip)"/>
   </node>
 
   <!--node pkg="nodelet" type="nodelet" name="$(arg manager)_color"

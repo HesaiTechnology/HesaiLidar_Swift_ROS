@@ -170,3 +170,11 @@ PandarSwiftROS_1.0.29
 ##modify
 1. Support to parser faultmessage
 2. Optimize calculation efficiency
+
+Monday,November 28th, 2022 19:30
+##version
+PandarSwiftROS_1.0.35
+
+##modify
+1. Support multcast
+2. Fix bug in change frame

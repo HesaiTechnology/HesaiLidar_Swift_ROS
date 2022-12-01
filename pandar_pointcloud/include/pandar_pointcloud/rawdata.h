@@ -10,15 +10,7 @@
  *  $Id$
  */
 
-/** @file
- *
- *  @brief Interfaces for interpreting raw packets from the Pandar128 3D LIDAR.
- *
- *  @author Yaxin Liu
- *  @author Patrick Beeson
- *  @author Jack O'Quin
- *  @author Yang Sheng
- */
+
 
 #ifndef __PANDAR_RAWDATA_H
 #define __PANDAR_RAWDATA_H

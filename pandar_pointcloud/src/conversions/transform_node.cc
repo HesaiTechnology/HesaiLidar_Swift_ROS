@@ -9,7 +9,7 @@
 
 /** \file
 
-    This ROS node transforms raw Pandar128 LIDAR packets to PointCloud2
+    This ROS node transforms raw LIDAR packets to PointCloud2
     in the /odom frame of reference.
 
 */

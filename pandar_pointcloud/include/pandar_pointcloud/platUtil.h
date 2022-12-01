@@ -12,6 +12,10 @@
 #define SHED_FIFO_PRIORITY_MEDIUM    70
 #define SHED_FIFO_PRIORITY_LOW        1
 
+/** @file
+    This file contain fuction to set thread priority and get system time
+ */
+
 extern void ShowThreadPriorityMaxMin (int policy);
 extern void SetThreadPriority (int policy, int priority);
 

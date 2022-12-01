@@ -14,6 +14,12 @@
  * limitations under the License.
  *****************************************************************************/
 
+/** @file
+
+    This file contain :
+    The class LasersTSOffset to do firetime correction
+*/
+
 #ifndef LASER_TS_H_
 #define LASER_TS_H_
 

@@ -12,7 +12,7 @@
 
 /** @file
 
-    This class transforms raw Pandar128 3D LIDAR packets to PointCloud2
+    This class transforms raw 3D LIDAR packets to PointCloud2
     in the /odom frame of reference.
 
 */

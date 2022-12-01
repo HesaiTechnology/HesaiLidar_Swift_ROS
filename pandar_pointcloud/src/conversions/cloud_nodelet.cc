@@ -9,7 +9,7 @@
 
 /** @file
 
-    This ROS nodelet converts raw Pandar128 3D LIDAR packets to a
+    This ROS nodelet converts raw 3D LIDAR packets to a
     PointCloud2.
 
 */

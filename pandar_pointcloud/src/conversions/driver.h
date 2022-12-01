@@ -9,8 +9,8 @@
  */
 
 /** \file
- *
- *  ROS driver interface for the pandar 3D LIDARs
+    This file contain :
+    The class driver to get raw 3D LIDAR packets from socket or pcap, and publish raw packet to ros
  */
 
 #ifndef _PANDAR_DRIVER_H_
@@ -42,14 +42,14 @@ class PandarDriver {
                std::string nodetype, pandar_pointcloud::Convert *convert);
   ~PandarDriver() {}
 
-  bool poll(void);
-  void publishRawData();
+  bool poll(void); // get  raw AT128E2X 3D LIDAR packets from socket or pcap
+  void publishRawData(); // publish raw data to ros
   void setUdpVersion(uint8_t major, uint8_t minor);
   int getPandarScanArraySize(boost::shared_ptr<Input>);
 
  private:
   /// Callback for dynamic reconfigure
-  void callback(pandar_pointcloud::CloudNodeConfig &config, uint32_t level);
+  void callback(pandar_pointcloud::CloudNodeConfig &config, uint32_t level);  //no use
 
   /// Pointer to dynamic reconfigure service srv_
   boost::shared_ptr<

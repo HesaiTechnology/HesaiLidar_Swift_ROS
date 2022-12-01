@@ -9,7 +9,7 @@
 
 /** \file
 
-    This ROS node converts raw Pandar128 LIDAR packets to PointCloud2.
+    This ROS node converts raw LIDAR packets to PointCloud2.
 
 */
 #include <ros/ros.h>

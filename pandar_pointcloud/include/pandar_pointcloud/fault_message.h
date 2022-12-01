@@ -13,6 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *****************************************************************************/
+
+/** @file
+
+    This file contain :
+    The faultmessage raw data struct 
+
+*/
 #ifndef FAULT_MESSAGE_H
 #define FAULT_MESSAGE_H
 

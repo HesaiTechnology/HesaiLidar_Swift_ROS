@@ -13,6 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *****************************************************************************/
+
+/** @file
+
+    This file contain :
+    The function to ptc or ptc connect with lidar
+
+*/
 #include "openssl/ssl.h"
 #include "openssl/err.h"
 

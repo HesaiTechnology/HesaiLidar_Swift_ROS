@@ -13,9 +13,9 @@
 
 /** @file
  *
- *  Pandar128 3D LIDAR data input classes
+ *   3D LIDAR data input classes
  *
- *    These classes provide raw Pandar128 LIDAR input packets from
+ *    These classes provide raw  LIDAR input packets from
  *    either a live socket interface or a previously-saved PCAP dump
  *    file.
  *

@@ -12,7 +12,10 @@
 
 /** @file
 
-    This class converts raw Pandar128 3D LIDAR packets to PointCloud2.
+    This file contain :
+    The class convert raw AT128E2X 3D LIDAR packets to PointCloud2. 
+    The header and tail struct of raw data. 
+    The correction file struct
 
 */
 
@@ -340,7 +343,7 @@ struct PandarATFrameInfo {
     std::array<float, MAX_AZI_LEN> cos_map;
 };
 
-struct PandarATCorrections {
+struct PandarATCorrections { // At128 correction file struct
 public:
     PandarATCorrectionsHeader header;
     uint16_t start_frame[8];
@@ -486,16 +489,16 @@ class Convert {
           std::string nod_typee = LIDAR_NODE_TYPE);
   ~Convert() {}
 
-  void DriverReadThread();
-  void publishRawDataThread();
-  void processGps(pandar_msgs::PandarGps &gpsMsg);
-  void pushLiDARData(pandar_msgs::PandarPacket packet);
-  int processLiDARData();
-  void publishPointsThread();
-  void publishPoints();
-  void setIsSocketTimeout(bool isSocketTimeout);
+  void DriverReadThread();  //  driver read thread can get raw data from socket or pcap
+  void publishRawDataThread(); // publish rawdata thread can publish rawdata message to ros 
+  void processGps(pandar_msgs::PandarGps &gpsMsg); // parser gps packet 
+  void pushLiDARData(pandar_msgs::PandarPacket packet); // push raw data to packet buffer
+  int processLiDARData(); // process raw data thread can get raw data from driver read thread, parser pointcloud raw data to pointcloud2, publish pointcloud2 message to ros
+  void publishPointsThread(); // no use
+  void publishPoints(); // publish pointcloud2 message to ros
+  void setIsSocketTimeout(bool isSocketTimeout); 
   bool getIsSocketTimeout();
-  void processFaultMessage(PandarPacket &packet);
+  void processFaultMessage(PandarPacket &packet); // parser faultmessage raw data packet
 
  private:
   void callback(pandar_pointcloud::CloudNodeConfig &config, uint32_t level);
@@ -503,20 +506,20 @@ class Convert {
   void processGps(const pandar_msgs::PandarGps::ConstPtr &gpsMsg);
   void checkClockwise(int16_t lidarmotorspeed);
 
-  int parseData(Pandar128Packet &pkt, const uint8_t *buf, const int len);
-  void calcPointXYZIT(pandar_msgs::PandarPacket &pkt, int cursor);
-  void doTaskFlow(int cursor);
-  void loadOffsetFile(std::string file);
-  int loadCorrectionFile(char * data);
+  int parseData(Pandar128Packet &pkt, const uint8_t *buf, const int len);// no use
+  void calcPointXYZIT(pandar_msgs::PandarPacket &pkt, int cursor); // parser one raw data packet to pointxyzi 
+  void doTaskFlow(int cursor); // parser one raw data packet to pointxyzi use mult-thread
+  void loadOffsetFile(std::string file);// load correction file from file 
+  int loadCorrectionFile(char * data); // load correction file from char*
   int checkLiadaMode();
   void changeAngleSize();
   void changeReturnBlockSize();
-  void moveTaskEndToStartAngle();
-  void init();
-  bool isNeedPublish();
-  int calculatePointIndex(uint16_t azimuth, int blockId, int laserId, int field);
-  int calculatePointBufferSize();
-  void SetEnvironmentVariableTZ();
+  void moveTaskEndToStartAngle(); // ensure parallel computation within a frame of the point cloud
+  void init(); // init
+  bool isNeedPublish(); // if a frame is end ,publish pointcloud to ros
+  int calculatePointIndex(uint16_t azimuth, int blockId, int laserId, int field); // calculate point index to save packet in pointcloud
+  int calculatePointBufferSize(); // calculate theoretical number of points in one frame,and resize the pointcloud size to this nubber
+  void SetEnvironmentVariableTZ(); // set system environment variable TZ to reduce cpu consumption of mktime()
   bool loadCorrectionFile();
 
   /// Pointer to dynamic reconfigure service srv_

@@ -223,6 +223,7 @@ namespace pandar_pointcloud
   {
   public:
     InputSocket(ros::NodeHandle private_nh,
+                std::string host_ip = "",
                 uint16_t port = DATA_PORT_NUMBER,
                 uint16_t gpsport = GPS_PORT_NUMBER, std::string multicast_ip = "");
     virtual ~InputSocket();

@@ -182,7 +182,7 @@ void Input::setUdpVersion(uint8_t major, uint8_t minor) {
  *  @param private_nh ROS private handle for calling node.
  *  @param port UDP port number
  */
-InputSocket::InputSocket(ros::NodeHandle private_nh, uint16_t port, uint16_t gpsport, std::string multicast_ip)
+InputSocket::InputSocket(ros::NodeHandle private_nh, std::string host_ip, uint16_t port, uint16_t gpsport, std::string multicast_ip)
     : Input(private_nh, port) {
 	m_iSockfd = -1;
 	m_u32Sequencenum = 0;
@@ -240,10 +240,10 @@ InputSocket::InputSocket(ros::NodeHandle private_nh, uint16_t port, uint16_t gps
 	if(multicast_ip != ""){
     struct ip_mreq mreq;                    
     mreq.imr_multiaddr.s_addr=inet_addr(multicast_ip.c_str());
-    mreq.imr_interface.s_addr = htonl(INADDR_ANY); 
+    mreq.imr_interface.s_addr = inet_addr(host_ip.c_str());
     int ret = setsockopt(m_iSockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq));
     if (ret < 0) {
-      perror("Multicast IP error,set correct multicast ip address or keep it empty\n");
+      printf("Multicast IP error,set correct multicast ip address or keep it empty %s %s\n", multicast_ip.c_str(), host_ip.c_str());
     } 
     else {
       printf("Recive data from multicast ip address %s\n", multicast_ip.c_str());

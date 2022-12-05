@@ -138,6 +138,7 @@ $ roslaunch pandar_pointcloud transform_nodelet.launch data_type:=rosbag
 |---------|---------------|
 |calibration|Path of correction file, will be used when not able to get correction file from a connected Liar|
 |device_ip_ip|The IP address of connected Lidar, will be used to get correction file|
+|host_ip|The IP address of host pc, will be used to get udp data from lidar|
 |frame_id|frame id of published messages|
 |firetime_file|Path of firetime files|
 |pcap|Path of the pcap file, once not empty, driver will get data from pcap file instead of a connected Lidar|
@@ -150,3 +151,4 @@ $ roslaunch pandar_pointcloud transform_nodelet.launch data_type:=rosbag
 |cert_file|Path of the user's certificate|
 |private_key_file|Path of the user's private key|
 |ca_file|Path of the root certificate|
+|multicast_ip|The multicast IP address of connected Lidar, will be used to get udp packets from multicast ip address|

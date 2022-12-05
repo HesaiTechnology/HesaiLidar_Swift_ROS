@@ -8,6 +8,7 @@
   <arg name="start_angle" default="0" />
 
   <arg name="device_ip" default="" />
+  <arg name="host_ip" default="" />
   <arg name="frame_id" default="Pandar128" />
   <arg name="publish_model" default="both_point_raw" />
   <arg name="pcap" default="" />
@@ -33,6 +34,7 @@
     <param name="start_angle" value="$(arg start_angle)"/>
 
     <param name="device_ip" value="$(arg device_ip)" />
+    <param name="host_ip" value="$(arg host_ip)" />
     <param name="frame_id" value="$(arg frame_id)"/>
     <param name="publish_model" value="$(arg publish_model)"/>
     <param name="pcap" value="$(arg pcap)"/>

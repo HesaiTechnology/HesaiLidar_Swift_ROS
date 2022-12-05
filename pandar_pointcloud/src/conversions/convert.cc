@@ -86,7 +86,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "PandarSwiftROS_1.0.31";
+  m_sRosVersion = "PandarSwiftROS_1.0.36";
   ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -1307,7 +1307,8 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
         }
         else{
           pthread_mutex_lock(&m_RedundantPointLock);
-          m_RedundantPointBuffer.push_back(RedundantPoint{point_index, point});
+          if (fabs(point.timestamp - m_OutMsgArray[cursor]->points[point_index].timestamp) > 0.01)
+						m_RedundantPointBuffer.push_back(RedundantPoint{point_index, point});
           pthread_mutex_unlock(&m_RedundantPointLock);
         }
       }
@@ -1483,7 +1484,8 @@ void Convert::calcQT128PointXYZIT(pandar_msgs::PandarPacket &packet, int cursor)
       }
       else{
         pthread_mutex_lock(&m_RedundantPointLock);
-        m_RedundantPointBuffer.push_back(RedundantPoint{point_index, point});
+        if (fabs(point.timestamp - m_OutMsgArray[cursor]->points[point_index].timestamp) > 0.01)
+						m_RedundantPointBuffer.push_back(RedundantPoint{point_index, point});
         pthread_mutex_unlock(&m_RedundantPointLock);
       }
     }

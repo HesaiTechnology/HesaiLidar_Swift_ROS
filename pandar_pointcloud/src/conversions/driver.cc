@@ -62,6 +62,12 @@ PandarDriver::PandarDriver(ros::NodeHandle node, ros::NodeHandle private_nh,
   int udp_port;
   private_nh.param("port", udp_port, (int)DATA_PORT_NUMBER);
 
+  std::string multicast_ip;
+  private_nh.param("multicast_ip", multicast_ip, std::string(""));
+
+  std::string host_ip;
+  private_nh.param("host_ip", host_ip, std::string(""));
+
   pthread_mutex_init(&piclock, NULL);
 
   m_bNeedPublish = false;
@@ -107,7 +113,7 @@ PandarDriver::PandarDriver(ros::NodeHandle node, ros::NodeHandle private_nh,
                                                   packet_rate, dump_file));
   } else {
     // read data from live socket
-    m_spInput.reset(new pandar_pointcloud::InputSocket(private_nh, udp_port));
+    m_spInput.reset(new pandar_pointcloud::InputSocket(private_nh, host_ip, udp_port, 10010, multicast_ip));
   }
   // ROS_WARN("drive nodeType[%s]", nodeType.c_str());
   // ROS_WARN("drive publishmodel[%s]", publishmodel.c_str());

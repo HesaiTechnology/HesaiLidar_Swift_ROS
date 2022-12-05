@@ -240,13 +240,13 @@ InputSocket::InputSocket(ros::NodeHandle private_nh, std::string host_ip, uint16
 	if(multicast_ip != ""){
     struct ip_mreq mreq;                    
     mreq.imr_multiaddr.s_addr=inet_addr(multicast_ip.c_str());
-    mreq.imr_interface.s_addr = inet_addr(host_ip.c_str());
+    mreq.imr_interface.s_addr = host_ip == "" ? htons(INADDR_ANY) : inet_addr(host_ip.c_str());
     int ret = setsockopt(m_iSockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq));
     if (ret < 0) {
       printf("Multicast IP error,set correct multicast ip address or keep it empty %s %s\n", multicast_ip.c_str(), host_ip.c_str());
     } 
     else {
-      printf("Recive data from multicast ip address %s\n", multicast_ip.c_str());
+      printf("Recive data from multicast ip address %s %s\n", multicast_ip.c_str(), host_ip.c_str());
     }
   }
 }

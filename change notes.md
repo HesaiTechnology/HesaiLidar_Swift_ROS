@@ -178,3 +178,10 @@ PandarSwiftROS_1.0.35
 ##modify
 1. Support multcast
 2. Fix bug in change frame
+
+Monday December 5th, 2022 17:30
+##version
+PandarSwiftROS_1.0.36
+
+##modify
+1. Optimize multicast

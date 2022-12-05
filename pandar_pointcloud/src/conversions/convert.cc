@@ -1307,7 +1307,7 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
         }
         else{
           pthread_mutex_lock(&m_RedundantPointLock);
-          if (fabs(point.timestamp - m_OutMsgArray[cursor]->points[point_index].timestamp) > 0.01)
+          if (point.timestamp - m_OutMsgArray[cursor]->points[point_index].timestamp  > 0.01 && point.timestamp - m_OutMsgArray[cursor]->points[point_index].timestamp  < 0.11)
 						m_RedundantPointBuffer.push_back(RedundantPoint{point_index, point});
           pthread_mutex_unlock(&m_RedundantPointLock);
         }
@@ -1484,7 +1484,7 @@ void Convert::calcQT128PointXYZIT(pandar_msgs::PandarPacket &packet, int cursor)
       }
       else{
         pthread_mutex_lock(&m_RedundantPointLock);
-        if (fabs(point.timestamp - m_OutMsgArray[cursor]->points[point_index].timestamp) > 0.01)
+        if (point.timestamp - m_OutMsgArray[cursor]->points[point_index].timestamp  > 0.01 && point.timestamp - m_OutMsgArray[cursor]->points[point_index].timestamp  < 0.11)
 						m_RedundantPointBuffer.push_back(RedundantPoint{point_index, point});
         pthread_mutex_unlock(&m_RedundantPointLock);
       }

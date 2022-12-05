@@ -21,7 +21,7 @@
   <arg name="start_angle" default="0.0" />
   <arg name="publish_model" default="both_point_raw" />
   <arg name="namespace" default="hesai"/>
-  <arg name="multicast_ip"  default="239.0.0.2"/>
+  <arg name="multicast_ip"  default=""/>
   <arg name="coordinate_correction_flag" default="false" />
   <arg name="channel_config_file" default="$(find pandar_pointcloud)/params/QT128C2X_Channel_Cofig.csv" />
   <!--"cert_file" represents the path of the user's certificate-->

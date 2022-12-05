@@ -8,6 +8,7 @@
   <arg name="start_angle" default="0" />
 
   <arg name="device_ip" default="" />
+  <arg name="host_ip" default="" />
   <arg name="frame_id" default="Pandar128" />
   <arg name="publish_model" default="both_point_raw" />
   <arg name="pcap" default="" />
@@ -19,6 +20,7 @@
   <arg name="firetime_file"  default="$(find pandar_pointcloud)/params/Pandar128_Firetimes.csv"/>
   <arg name="namespace" default="hesai"/>
   <arg name="coordinate_correction_flag" default="false" />
+  <arg name="multicast_ip"  default=""/>
   <arg name="channel_config_file" default="$(find pandar_pointcloud)/params/QT128C2X_Channel_Cofig.csv" />
   <arg name="cert_file" default="" />
   <arg name="private_key_file" default="" />
@@ -33,6 +35,7 @@
     <param name="start_angle" value="$(arg start_angle)"/>
 
     <param name="device_ip" value="$(arg device_ip)" />
+    <param name="host_ip" value="$(arg host_ip)" />
     <param name="frame_id" value="$(arg frame_id)"/>
     <param name="publish_model" value="$(arg publish_model)"/>
     <param name="pcap" value="$(arg pcap)"/>
@@ -47,6 +50,7 @@
     <param name="cert_file" value="$(arg cert_file)" />
     <param name="private_key_file" value="$(arg private_key_file)" />
     <param name="ca_file" value="$(arg ca_file)" />
+    <param name="multicast_ip" value="$(arg multicast_ip)"/>
   </node>
 
   <!--node pkg="nodelet" type="nodelet" name="$(arg manager)_color"

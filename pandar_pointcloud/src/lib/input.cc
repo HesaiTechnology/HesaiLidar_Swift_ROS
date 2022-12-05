@@ -187,7 +187,7 @@ std::string Input::getUdpVersion() {
  *  @param private_nh ROS private handle for calling node.
  *  @param port UDP port number
  */
-InputSocket::InputSocket(ros::NodeHandle private_nh, uint16_t port)
+InputSocket::InputSocket(ros::NodeHandle private_nh, std::string host_ip, uint16_t port, uint16_t gpsport, std::string multicast_ip)
     : Input(private_nh, port) {
   sockfd_ = -1;
   m_u32Sequencenum = 0;
@@ -234,6 +234,18 @@ InputSocket::InputSocket(ros::NodeHandle private_nh, uint16_t port)
   ROS_DEBUG("Pandar socket fd is %d\n", sockfd_);
   int nRecvBuf = 26214400;
 	setsockopt(sockfd_, SOL_SOCKET, SO_RCVBUF, (const char*)&nRecvBuf, sizeof(int));
+  if(multicast_ip != ""){
+    struct ip_mreq mreq;                    
+    mreq.imr_multiaddr.s_addr=inet_addr(multicast_ip.c_str());
+    mreq.imr_interface.s_addr = host_ip == "" ? htons(INADDR_ANY) : inet_addr(host_ip.c_str());
+    int ret = setsockopt(sockfd_, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq));
+    if (ret < 0) {
+      printf("Multicast IP error,set correct multicast ip address or keep it empty %s %s\n", multicast_ip.c_str(), host_ip.c_str());
+    } 
+    else {
+      printf("Recive data from multicast ip address %s %s\n", multicast_ip.c_str(), host_ip.c_str());
+    }
+  }
 }
 
 /** @brief destructor */

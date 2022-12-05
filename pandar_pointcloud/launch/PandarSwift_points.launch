@@ -6,6 +6,7 @@
   <!-- declare arguments with default values -->
   <arg name="calibration" default="$(find pandar_pointcloud)/params/Pandar128_Correction.csv"/>
   <arg name="device_ip" default="192.168.1.201" />
+  <arg name="host_ip" default="" />
   <arg name="frame_id" default="PandarSwift" />
   <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
   <arg name="max_range" default="130.0" />
@@ -20,6 +21,7 @@
   <arg name="start_angle" default="0.0" />
   <arg name="publish_model" default="both_point_raw" />
   <arg name="namespace" default="hesai"/>
+  <arg name="multicast_ip"  default=""/>
   <arg name="coordinate_correction_flag" default="false" />
   <arg name="channel_config_file" default="$(find pandar_pointcloud)/params/QT128C2X_Channel_Cofig.csv" />
   <!--"cert_file" represents the path of the user's certificate-->
@@ -40,6 +42,7 @@
     <arg name="min_range" value="$(arg min_range)"/>
     <arg name="start_angle" value="$(arg start_angle)"/>
     <arg name="device_ip" value="$(arg device_ip)" />
+    <arg name="host_ip" value="$(arg host_ip)" />
     <arg name="frame_id" value="$(arg frame_id)"/>
     <arg name="publish_model" value="$(arg publish_model)"/>
     <arg name="pcap" value="$(arg pcap)"/>
@@ -50,6 +53,7 @@
     <arg name="rpm" value="$(arg rpm)"/>
     <arg name="firetime_file" value="$(arg firetime_file)"/>
     <arg name="namespace" value="$(arg namespace)"/>
+    <arg name="multicast_ip" value="$(arg multicast_ip)"/>
     <arg name="coordinate_correction_flag" value="$(arg coordinate_correction_flag)"/>
     <arg name="channel_config_file" value="$(arg channel_config_file)"/>
     <arg name="cert_file" value="$(arg cert_file)" />

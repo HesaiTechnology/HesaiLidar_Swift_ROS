@@ -45,7 +45,7 @@ $ sudo apt-get install python-catkin-tools
 ```
 $ mkdir -p rosworkspace/src
 $ cd rosworkspace/src
-$ git clone https://github.com/HesaiTechnology/HesaiLidar_Swift_ROS.git --recursive
+$ git clone -b UDP4.3 https://github.com/HesaiTechnology/HesaiLidar_Swift_ROS.git --recursive
 ```
 **Install required dependencies with the help of `rosdep`**
 ```

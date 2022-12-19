@@ -86,7 +86,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "PandarSwiftROS_1.0.36";
+  m_sRosVersion = "PandarSwiftROS_1.0.37";
   ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -344,7 +344,7 @@ int Convert::loadChannelConfigFile(std::string channel_config_content){
       m_PandarQTChannelConfig.m_u8MinVersion = std::stoi(versionLine[2].c_str());
   }
   else{
-      std::cout << "channel config file delimiter is wrong" << versionLine[0];
+      std::cout << "channel config file delimiter is wrong" << versionLine[0] << std::endl;
       return -1;
   }
   std::getline(ifs, line);
@@ -366,13 +366,17 @@ int Convert::loadChannelConfigFile(std::string channel_config_content){
     std::getline(ifs, line);
     std::vector<std::string> ChannelLine;
     boost::split(ChannelLine, line, boost::is_any_of(","));
+    if (ChannelLine.size() != loop_num) {
+      std::cout << "channel config file format is wrong" << std::endl;
+      return -1;
+    }
     for(int j = 0; j < loop_num; j++){
       if(ChannelLine.size() == loop_num){
         m_PandarQTChannelConfig.m_vChannelConfigTable[j][i] = std::stoi(ChannelLine[j].c_str());
         // printf("%d  %d  \n",i, m_PandarQTChannelConfig.m_vChannelConfigTable[j][i]);
       }
       else{
-        std::cout << "loop num is not equal to the first channel line";
+        std::cout << "loop num is not equal to the first channel line" << std::endl;
         return -1;
       }
         
@@ -772,7 +776,7 @@ void Convert::init() {
                   PANDAR128_AZIMUTH_SIZE * header->u8BlockNum + 
                   PANDAR128_CRC_SIZE + 
                   (header->hasFunctionSafety()? PANDAR128_FUNCTION_SAFETY_SIZE : 0));
-            m_iWorkMode = tail->nShutdownFlag & 0x03;
+            m_iWorkMode = tail->getOperationMode();
             m_iReturnMode = tail->nReturnMode;
             drv.setUdpVersion(m_u8UdpVersionMajor, m_u8UdpVersionMinor);
             lidarmotorspeed = tail->nMotorSpeed;
@@ -953,7 +957,7 @@ int Convert::checkLiadaMode() {
                   PANDAR128_AZIMUTH_SIZE * header->u8BlockNum + 
                   PANDAR128_CRC_SIZE + 
                   (header->hasFunctionSafety()? PANDAR128_FUNCTION_SAFETY_SIZE : 0));
-                lidarworkmode = tail->nShutdownFlag & 0x03;
+                lidarworkmode = tail->getOperationMode();
                 lidarreturnmode = tail->nReturnMode;
                 lidarmotorspeed = tail->nMotorSpeed;
                 laserNum = header->u8LaserNum;
@@ -1221,9 +1225,8 @@ void Convert::calcPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
       // ROS_WARN("#####block.fAzimuth[%u]",u16Azimuth);
       index += PANDAR128_AZIMUTH_SIZE;
 
-      int mode = tail->nShutdownFlag & 0x03;
-      int state = (tail->nShutdownFlag & 0xF0) >> 4;
-
+      int mode = tail->getOperationMode();
+      int state = tail->getAngleState(blockid);
       for (int i = 0; i < header->u8LaserNum; i++) {
         /* for all the units in a block */
         uint16_t u16Distance = *(uint16_t*)(&packet.data[0] + index);
@@ -1343,7 +1346,7 @@ void Convert::calcQT128PointXYZIT(pandar_msgs::PandarPacket &packet, int cursor)
   int index = 0;
   index += PANDAR128_HEAD_SIZE;
   for (int blockid = 0; blockid < header->u8BlockNum; blockid++) {
-    int loopIndex = blockid;
+    int loopIndex = (tail->nModeFlag + (blockid / ((tail->nReturnMode < 0x39) ? 1 : 2)) + 1) % header->u8BlockNum;
     if((isSelfDefine && m_PandarQTChannelConfig.m_bIsChannelConfigObtained)){
         loopIndex = (tail->nModeFlag + (blockid / ((tail->nReturnMode < 0x39) ? 1 : 2)) + 1) % m_PandarQTChannelConfig.m_vChannelConfigTable.size();
     }

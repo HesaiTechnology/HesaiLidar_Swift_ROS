@@ -146,5 +146,12 @@ PandarSwiftROS_1.0.32
 ##modify
 1. Support PandarFT
 
+Tuesday, February 28th, 2023 17:30
+##version
+PandarSwiftROS_1.0.38
+
+##modify
+1. Support FT A3
+
 
 

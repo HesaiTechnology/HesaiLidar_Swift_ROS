@@ -254,7 +254,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
 }
 
 int Convert::LoadCorrectionString(char *data) {
-  if (LoadCorrectionDatData(data)) {
+  if (LoadCorrectionDatData(data) == 0) {
     return 0;
   }
   return LoadCorrectionCsvData(data);
@@ -264,12 +264,15 @@ int Convert::LoadCorrectionString(char *data) {
 int Convert::LoadCorrectionCsvData(char *correction_string) {
   std::istringstream ifs(correction_string);
 	std::string line;
-	if(std::getline(ifs, line)) {  // first line "Laser id,Elevation,Azimuth"
+	if(std::getline(ifs, line)) {  // first line 
 		printf("Parse Lidar Correction...\n");
 	}
 	int lineCounter = 0;
 	std::vector<std::string>  firstLine;
 	boost::split(firstLine, line, boost::is_any_of(","));
+  if(firstLine[0] == "EE" || firstLine[0] == "ee" || firstLine[0] == "0xee" || firstLine[0] == "0xEE") {
+		std::getline(ifs, line);
+	}
   while (std::getline(ifs, line)) {
     if(line.length() < strlen("1,1,1,1")) {
       return -1;

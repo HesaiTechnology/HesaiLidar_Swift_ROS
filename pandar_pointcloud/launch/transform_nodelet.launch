@@ -1,7 +1,7 @@
 <!-- -*- mode: XML -*- -->
 
 <launch>
-  <arg name="calibration" default="$(find pandar_pointcloud)/params/PandarFT_Correction.csv"/>
+  <arg name="calibration" default="$(find pandar_pointcloud)/params/PandarFT_Correction.dat"/>
   <arg name="frame_id" default="PandarSwift" />
   <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
   <arg name="max_range" default="130.0" />

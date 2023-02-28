@@ -4,7 +4,7 @@
 <launch>
 
   <!-- declare arguments with default values -->
-  <arg name="calibration" default="$(find pandar_pointcloud)/params/PandarFT_Correction.csv"/>
+  <arg name="calibration" default="$(find pandar_pointcloud)/params/PandarFT_Correction.dat"/>
   <arg name="device_ip" default="192.168.1.201" />
   <arg name="host_ip" default="" />
   <arg name="frame_id" default="PandarSwift" />
@@ -13,7 +13,7 @@
   <arg name="firetime_file" default=""/>
   <arg name="min_range" default="0.5" />
   <arg name="pcap" default="" />
-  <arg name="port" default="51221" />
+  <arg name="port" default="2368" />
   <arg name="read_fast" default="false" />
   <arg name="read_once" default="false" />
   <arg name="repeat_delay" default="0.0" />
@@ -21,7 +21,7 @@
   <arg name="start_angle" default="0.0" />
   <arg name="publish_model" default="both_point_raw" />
   <arg name="namespace" default="hesai"/>
-  <arg name="multicast_ip" default="239.127.3.1"/>
+  <arg name="multicast_ip" default=""/>
 
   <!-- start nodelet manager -->
   <node pkg="nodelet" type="nodelet" ns="$(arg namespace)" name="$(arg manager)" args="manager" output="screen" />

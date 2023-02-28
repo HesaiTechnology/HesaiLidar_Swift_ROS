@@ -86,6 +86,7 @@ bool Input::checkPacket(PandarPacket *pkt) {
   a++;
   // printf("a= %d index %d\n",a ,flags1);
   uint8_t majorVersion = pkt->data[2];
+  uint8_t minorVersion = pkt->data[3];
 
   bool hasSeqNum = (flags & 1); 
   bool hasImu = (flags & 2);
@@ -94,6 +95,7 @@ bool Input::checkPacket(PandarPacket *pkt) {
   bool hasConfidence = (flags & 0x10);
   uint32_t cac_size = 0;
   int channelNum = 0;
+  int unitSize = PANDARFT_UNIT_SIZE;  
   switch(majorVersion){
     case 1:
     case 3:
@@ -119,10 +121,12 @@ bool Input::checkPacket(PandarPacket *pkt) {
                       (hasSignature ? PANDAR128_SIGNATURE_SIZE : 0);
     break;
     case 7:
-	  channelNum = pkt->data[PANDARFT_SOB_SIZE + PANDARFT_VERSION_MAJOR_SIZE + \
+      channelNum = pkt->data[PANDARFT_SOB_SIZE + PANDARFT_VERSION_MAJOR_SIZE + \
 							PANDARFT_VERSION_MINOR_SIZE + PANDARFT_VERSION_TDM_SIZE + \
 							PANDARFT_HEAD_RESERVED1_SIZE + PANDARFT_TOTAL_COLUMN_NUM_SIZE];
-      m_iUtcIindex = PANDARFT_HEAD_SIZE + channelNum * PANDARFT_UNIT_SIZE + 
+            
+      if (minorVersion == 2) unitSize = PANDARFT_UNIT_V2_SIZE;
+      m_iUtcIindex = PANDARFT_HEAD_SIZE + channelNum * unitSize + 
               PANDARFT_TAIL_RESERVED1_SIZE + 
               PANDARFT_TAIL_RESERVED2_SIZE +
               PANDARFT_TAIL_CLOUMN_ID_SIZE +
@@ -135,7 +139,8 @@ bool Input::checkPacket(PandarPacket *pkt) {
                 PANDARFT_TS_SIZE +
                  PANDARFT_FACTORY_INFO;
 
-      cac_size = m_iSequenceNumberIndex + PANDARFT_SEQ_NUM_SIZE;   
+      cac_size = m_iSequenceNumberIndex + PANDARFT_SEQ_NUM_SIZE; 
+      if (minorVersion == 2) cac_size += PANDARFT_SAFETY_SECURITY_SIZE;
     break;
     default:
     break;                                              
@@ -212,6 +217,14 @@ void Input::setUdpVersion(uint8_t major, uint8_t minor) {
         m_iPacketSize = udpVersion71[PACKET_SIZE];
         m_bGetUdpVersion = true;
         break;
+      case UDP_VERSION_MINOR_2:
+        m_sUdpVresion = UDP_VERSION_7_2;
+        m_iTimestampIndex = udpVersion72[TIMESTAMP_INDEX];
+        m_iUtcIindex = udpVersion72[UTC_INDEX];
+        m_iSequenceNumberIndex = udpVersion72[SEQUENCE_NUMBER_INDEX];
+        m_iPacketSize = udpVersion72[PACKET_SIZE];
+        m_bGetUdpVersion = true;
+        break;  
 
       default:
         printf("error udp version minor: %d\n", minor);
@@ -238,7 +251,7 @@ std::string Input::getUdpVersion() {
  *  @param private_nh ROS private handle for calling node.
  *  @param port UDP port number
  */
-InputSocket::InputSocket(ros::NodeHandle private_nh, uint16_t port, std::string multicast_ip)
+InputSocket::InputSocket(ros::NodeHandle private_nh, std::string host_ip, uint16_t port, std::string multicast_ip)
     : Input(private_nh, port) {
   sockfd_ = -1;
   m_u32Sequencenum = 0;
@@ -289,7 +302,7 @@ InputSocket::InputSocket(ros::NodeHandle private_nh, uint16_t port, std::string 
     if(multicast_ip != ""){
       struct ip_mreq mreq;                      
       mreq.imr_multiaddr.s_addr=inet_addr(multicast_ip.c_str());
-      mreq.imr_interface.s_addr = htonl(INADDR_ANY); 
+      mreq.imr_interface.s_addr = host_ip == "" ? htons(INADDR_ANY) : inet_addr(host_ip.c_str());
       int ret = setsockopt(sockfd_, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq));
       if (ret < 0) {
         perror("Multicast IP error,set correct multicast ip address or keep it empty\n");
@@ -450,7 +463,7 @@ InputPCAP::InputPCAP(ros::NodeHandle private_nh, uint16_t port,
   filter << "udp dst port " << port;
   pcap_compile(pcap_, &pcap_packet_filter_, filter.str().c_str(), 1,
                PCAP_NETMASK_UNKNOWN);
-  gap = 100;
+  gap = 10;
   last_pkt_ts = 0;
   count;
   last_time = 0;

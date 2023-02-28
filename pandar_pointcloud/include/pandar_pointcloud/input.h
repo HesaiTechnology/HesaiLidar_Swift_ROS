@@ -52,6 +52,7 @@
 #define UDP_VERSION_1_4 "1.4"
 #define UDP_VERSION_3_2 "3.2"
 #define UDP_VERSION_7_1 "7.1"
+#define UDP_VERSION_7_2 "7.2"
 #define PANDAR128_SOB_SIZE (2)
 #define PANDAR128_VERSION_MAJOR_SIZE (1)
 #define PANDAR128_VERSION_MINOR_SIZE (1)
@@ -115,10 +116,16 @@
 #define DISTANCE_SIZE (2)
 #define INTENSITY_SIZE (1)
 #define ENV_LIGHT_SIZE (2)
+#define ENV_LIGHT_V2_SIZE (1)
 #define CONFIDENCE_SIZE (1)
 #define PANDARFT_UNIT_SIZE \
         (CONFIDENCE_SIZE + \
         ENV_LIGHT_SIZE + \
+        DISTANCE_SIZE + \
+        INTENSITY_SIZE)
+#define PANDARFT_UNIT_V2_SIZE \
+        (CONFIDENCE_SIZE + \
+        ENV_LIGHT_V2_SIZE + \
         DISTANCE_SIZE + \
         INTENSITY_SIZE)
 #define PANDARFT_TAIL_RESERVED1_SIZE (3)
@@ -132,6 +139,7 @@
 #define PANDARFT_FACTORY_INFO (1)
 #define PANDARFT_UTC_SIZE (6)
 #define PANDARFT_SEQ_NUM_SIZE (4)
+#define PANDARFT_SAFETY_SECURITY_SIZE (20)
 
 
 enum enumIndex{
@@ -169,6 +177,13 @@ static std::map<enumIndex, int> udpVersion71 = {
 	{PACKET_SIZE, 893},
 };
 
+static std::map<enumIndex, int> udpVersion72 = {
+	{TIMESTAMP_INDEX, 826},
+	{UTC_INDEX, 820},
+	{SEQUENCE_NUMBER_INDEX, 831},
+	{PACKET_SIZE, 893},
+};
+
 typedef struct PandarPacket_s {
   ros::Time stamp;
   uint8_t data[1500];
@@ -178,7 +193,7 @@ typedef struct PandarPacket_s {
 
 namespace pandar_pointcloud
 {
-  static uint16_t DATA_PORT_NUMBER = 8080;     // default data port
+  static uint16_t DATA_PORT_NUMBER = 2368;     // default data port
   static uint16_t POSITION_PORT_NUMBER = 8308; // default position port
 
   #define PANDAR128_SEQUENCE_NUMBER_OFFSET (831) 
@@ -218,7 +233,7 @@ namespace pandar_pointcloud
   class InputSocket: public Input
   {
   public:
-    InputSocket(ros::NodeHandle private_nh, uint16_t port = DATA_PORT_NUMBER, std::string multicast_ip = "");
+    InputSocket(ros::NodeHandle private_nh, std::string host_ip = "", uint16_t port = DATA_PORT_NUMBER, std::string multicast_ip = "");
     virtual ~InputSocket();
 
     virtual int getPacket(PandarPacket *pkt);

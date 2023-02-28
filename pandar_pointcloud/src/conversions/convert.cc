@@ -85,7 +85,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
     : data_(new pandar_rawdata::RawData()),
       drv(node, private_nh, node_type, this) {
   
-  m_sRosVersion = "PandarSwiftROS_1.0.32";
+  m_sRosVersion = "PandarSwiftROS_1.0.38";
   ROS_WARN("--------PandarSwift ROS version: %s--------\n\n",m_sRosVersion.c_str());
 
   publishmodel = "";
@@ -183,7 +183,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
       if (ret == 0 && buffer) {
         ROS_WARN("Load correction file from lidar now!");
         correntionString = std::string(buffer);
-        ret = loadCorrectionFile(correntionString);
+        ret = LoadCorrectionString(buffer);
           if (ret != 0) {
             ROS_WARN("Parse Lidar Correction Error");
           } 
@@ -212,7 +212,7 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
       fin.read(buffer, length);
       fin.close();
       strlidarCalibration = buffer;
-      ret = loadCorrectionFile(strlidarCalibration);
+      ret = LoadCorrectionString(buffer);
       if (ret != 0) {
         ROS_WARN("Parse local Correction file Error");
       } 
@@ -253,77 +253,124 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh,
   }
 }
 
-int Convert::loadCorrectionFile(std::string correction_content) {
-  std::istringstream ifs(correction_content);
-
-  std::string line;
-  if (std::getline(ifs, line)) {  // first line "Laser id,Elevation,Azimuth"
-    ROS_WARN("Parse Lidar Correction...");
+int Convert::LoadCorrectionString(char *data) {
+  if (LoadCorrectionDatData(data)) {
+    return 0;
   }
+  return LoadCorrectionCsvData(data);
+}
 
-  float pitchList[PANDAR128_LASER_NUM * 4];
-	float azimuthList[PANDAR128_LASER_NUM * 4];
 
+int Convert::LoadCorrectionCsvData(char *correction_string) {
+  std::istringstream ifs(correction_string);
+	std::string line;
+	if(std::getline(ifs, line)) {  // first line "Laser id,Elevation,Azimuth"
+		printf("Parse Lidar Correction...\n");
+	}
 	int lineCounter = 0;
 	std::vector<std::string>  firstLine;
 	boost::split(firstLine, line, boost::is_any_of(","));
-	if(firstLine.size() == 3){
-		while (std::getline(ifs, line)) {
-			if(line.length() < strlen("1,1,1")) {
-				return -1;
-			} 
-			else {
-				lineCounter++;
-			}
-			float elev, azimuth;
-			int lineId = 0;
-			std::stringstream ss(line);
-			std::string subline;
-			std::getline(ss, subline, ',');
-			std::stringstream(subline) >> lineId;
-			std::getline(ss, subline, ',');
-			std::stringstream(subline) >> elev;
-			std::getline(ss, subline, ',');
-			std::stringstream(subline) >> azimuth;
-			if(lineId != lineCounter) {
-				ROS_WARN("laser id error %d %d", lineId, lineCounter);
-				return -1;
-			}
-			pitchList[lineId - 1] = elev;
-			azimuthList[lineId - 1] = azimuth;
-		}
-		for (int i = 0; i < lineCounter; ++i) {
-			m_fElevAngle[i] = pitchList[i];
-			m_fHorizatalAzimuth[i] = azimuthList[i];
-		}
-	}
-	else{
-		while (std::getline(ifs, line)) {
-			if(line.length() < strlen("1,1,1,1")) {
-				return -1;
-			} 
-			else {
-				lineCounter++;
-			}
-			float elev, azimuth;
-			int lineId = 0;
-			int cloumnId = 0;
-			std::stringstream ss(line);
-			std::string subline;
-			std::getline(ss, subline, ',');
-			std::stringstream(subline) >> lineId;
-			std::getline(ss, subline, ',');
-			std::stringstream(subline) >> cloumnId;
-			std::getline(ss, subline, ',');
-			std::stringstream(subline) >> elev;
-			std::getline(ss, subline, ',');
-			std::stringstream(subline) >> azimuth;
-			m_fPandarFTElevAngle[lineId - 1][cloumnId - 1] = elev;
-			m_fPandarFTAzimuth[lineId - 1][cloumnId - 1] = azimuth;
-		}
+  while (std::getline(ifs, line)) {
+    if(line.length() < strlen("1,1,1,1")) {
+      return -1;
+    } 
+    else {
+      lineCounter++;
+    }
+    float elev, azimuth;
+    int lineId = 0;
+    int cloumnId = 0;
+    std::stringstream ss(line);
+    std::string subline;
+    std::getline(ss, subline, ',');
+    std::stringstream(subline) >> lineId;
+    std::getline(ss, subline, ',');
+    std::stringstream(subline) >> cloumnId;
+    std::getline(ss, subline, ',');
+    std::stringstream(subline) >> elev;
+    std::getline(ss, subline, ',');
+    std::stringstream(subline) >> azimuth;
+    m_fPandarFTElevAngle[lineId - 1][cloumnId - 1] = elev;
+    m_fPandarFTAzimuth[lineId - 1][cloumnId - 1] = azimuth;
+  }
+	return 0;
+}
 
-	}
-  return 0;
+int Convert::LoadCorrectionDatData(char *correction_string) {
+
+  try {
+    char *p = correction_string;
+    PandarFTCorrectionsHeader header = *(PandarFTCorrectionsHeader *)p;
+    if (0xee == header.pilot[0] && 0xff == header.pilot[1]) {
+      switch (header.version[1]) {
+        case 0: {
+          int column_num = header.column_number;
+          int channel_num = header.channel_number;
+          int resolution = header.resolution;
+          float fResolution = float(resolution);
+          int angleNum = column_num * channel_num;
+          int doubleAngleNum = angleNum * 2;
+          int16_t* angles = new int16_t[doubleAngleNum]{0};
+          int readLen = sizeof(int16_t) * doubleAngleNum;
+          memcpy((void*)angles, correction_string, readLen);
+          int hashLen = 32;
+          uint8_t* hashValue = new uint8_t[hashLen];
+          memcpy((void*)hashValue, correction_string + readLen, hashLen);
+          for (int row = 0; row < column_num; row++) {
+            for (int col = 0; col < channel_num; col++) {
+              int idx = row * channel_num + col;
+              m_fPandarFTAzimuth[row][col] = angles[idx] * fResolution / 100.0f;
+            }
+          }
+
+          for (int row = 0; row < column_num; row++) {
+            for (int col = 0; col < channel_num; col++) {
+              int idx = angleNum + row * channel_num + col;
+              m_fPandarFTElevAngle[row][col] = angles[idx] * fResolution / 100.0f;
+            }
+          }
+          return 0;
+        } break;
+        case 1: {
+          int column_num = header.column_number;
+          int channel_num = header.channel_number;
+          int resolution = header.resolution;
+          float fResolution = float(resolution);
+          int angleNum = column_num * channel_num;
+          int doubleAngleNum = angleNum * 2;
+          int32_t* angles = new int32_t[doubleAngleNum]{0};
+          int readLen = sizeof(int32_t) * doubleAngleNum;
+          memcpy((void*)angles, correction_string + sizeof(PandarFTCorrectionsHeader), readLen);
+          int hashLen = 32;
+          uint8_t* hashValue = new uint8_t[hashLen];
+          memcpy((void*)hashValue, correction_string + readLen + sizeof(PandarFTCorrectionsHeader), hashLen);
+          for (int row = 0; row < column_num; row++) {
+            for (int col = 0; col < channel_num; col++) {
+              int idx = row * channel_num + col;
+              m_fPandarFTAzimuth[col][row] = angles[idx] * fResolution / 100.0f;
+            }
+          }
+
+          for (int row = 0; row < column_num; row++) {
+            for (int col = 0; col < channel_num; col++) {
+              int idx = angleNum + row * channel_num + col;
+              m_fPandarFTElevAngle[col][row] = angles[idx] * fResolution / 100.0f;
+            }
+          }
+          return 0;
+        } break;
+        default:
+          break;
+      }
+    }
+
+    return -1;
+  } catch (const std::exception &e) {
+    std::cerr << e.what() << '\n';
+    return -1;
+  }
+  return -1;
+
 }
 
 void Convert::DriverReadThread() {
@@ -656,18 +703,21 @@ void Convert::init() {
         switch (m_u8UdpVersionMinor)
         {
           case 1:
+          case 2:
           {
+            int unitSize = PANDARFT_UNIT_SIZE; 
             auto header = (PandarFTHead*)(&((m_PacketsBuffer.getTaskEnd() - 1)->data[0]));
-            auto tail = (PandarFTTail*)(&((m_PacketsBuffer.getTaskEnd() - 1)->data[0]) + PANDARFT_HEAD_SIZE + (PANDARFT_UNIT_SIZE * header->u8ChannelNum));
-              drv.setUdpVersion(m_u8UdpVersionMajor, m_u8UdpVersionMinor);
-              m_iReturnMode = tail->nReturnMode;;
-              lidarmotorspeed = tail->nMotorSpeed;
-              // m_iLaserNum = header->u8LaserNum;
-              // m_iEchoNum = header->u8EchoNum;
-              // blockNum = header->u8BlockNum;
-              m_iPandarFTCloumnNum = header->u16TotalColumnNum;
-              m_iPandarFTRowNum = header->u16TotalRowNum;
-              m_iCloumnIdIndex = PANDARFT_HEAD_SIZE + (PANDARFT_UNIT_SIZE * header->u8ChannelNum) + PANDARFT_TAIL_RESERVED1_SIZE +  PANDARFT_TAIL_RESERVED2_SIZE;
+            if (header->u8VersionMinor == 2) unitSize = PANDARFT_UNIT_V2_SIZE;
+            auto tail = (PandarFTTail*)(&((m_PacketsBuffer.getTaskEnd() - 1)->data[0]) + PANDARFT_HEAD_SIZE + (unitSize * header->u8ChannelNum));
+            drv.setUdpVersion(m_u8UdpVersionMajor, m_u8UdpVersionMinor);
+            m_iReturnMode = tail->nReturnMode;
+            lidarmotorspeed = tail->nMotorSpeed;
+            // m_iLaserNum = header->u8LaserNum;
+            // m_iEchoNum = header->u8EchoNum;
+            // blockNum = header->u8BlockNum;
+            m_iPandarFTCloumnNum = header->u16TotalColumnNum;
+            m_iPandarFTRowNum = header->u16TotalRowNum;
+            m_iCloumnIdIndex = PANDARFT_HEAD_SIZE + (unitSize * header->u8ChannelNum) + PANDARFT_TAIL_RESERVED1_SIZE +  PANDARFT_TAIL_RESERVED2_SIZE;
           }
           break;
           default:
@@ -867,15 +917,17 @@ int Convert::checkLiadaMode() {
       switch (m_u8UdpVersionMinor)
       {
         case 1:
+        case 2:
         {
+          int unitSize = PANDARFT_UNIT_SIZE; 
           auto header = (PandarFTHead*)(&((m_PacketsBuffer.getTaskEnd() - 1)->data[0]));
-          auto tail = (PandarFTTail*)(&((m_PacketsBuffer.getTaskEnd() - 1)->data[0]) + PANDARFT_HEAD_SIZE + (PANDARFT_UNIT_SIZE * header->u8ChannelNum));
-              // lidarworkmode = tail->nShutdownFlag & 0x03;
-              lidarreturnmode = tail->nReturnMode;
-              lidarmotorspeed = tail->nMotorSpeed;
-              m_iPandarFTCloumnNum = header->u16TotalColumnNum;
-              m_iPandarFTRowNum = header->u16TotalRowNum;
-              m_iCloumnIdIndex = PANDARFT_HEAD_SIZE + (PANDARFT_UNIT_SIZE * header->u8ChannelNum) + PANDARFT_TAIL_RESERVED1_SIZE +  PANDARFT_TAIL_RESERVED2_SIZE;
+          if (header->u8VersionMinor == 2) unitSize = PANDARFT_UNIT_V2_SIZE;
+          auto tail = (PandarFTTail*)(&((m_PacketsBuffer.getTaskEnd() - 1)->data[0]) + PANDARFT_HEAD_SIZE + (unitSize * header->u8ChannelNum));
+          lidarreturnmode = tail->nReturnMode;
+          lidarmotorspeed = tail->nMotorSpeed;
+          m_iPandarFTCloumnNum = header->u16TotalColumnNum;
+          m_iPandarFTRowNum = header->u16TotalRowNum;
+          m_iCloumnIdIndex = PANDARFT_HEAD_SIZE + (unitSize * header->u8ChannelNum) + PANDARFT_TAIL_RESERVED1_SIZE +  PANDARFT_TAIL_RESERVED2_SIZE;
         }
         break;
         default:
@@ -1324,43 +1376,48 @@ void Convert::calcQT128PointXYZIT(pandar_msgs::PandarPacket &packet, int cursor)
 
 void Convert::calcFTPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
   auto header = (PandarFTHead*)(&packet.data[0]);
-	auto tail = (PandarFTTail*)(&packet.data[0] + PANDARFT_HEAD_SIZE  + \
-				(PANDARFT_UNIT_SIZE * header->u8ChannelNum));
-	if (packet.data[0] != 0xEE && packet.data[1] != 0xFF) {    
-		return ;
-	}
-	struct tm t = {0};
-
-	t.tm_year = tail->nUTCTime[0] + 100;
-	if (t.tm_year >= 200) {
-		t.tm_year -= 100;
-	}
-	t.tm_mon = tail->nUTCTime[1] - 1;
-	t.tm_mday = tail->nUTCTime[2];
-	t.tm_hour = tail->nUTCTime[3];
-	t.tm_min = tail->nUTCTime[4];
-	t.tm_sec = tail->nUTCTime[5];
-	t.tm_isdst = 0;
-	// printf("%d\n", tail->nCloumnIndex);
-
-	double unix_second = static_cast<double>(mktime(&t) + m_iTimeZoneSecond);
-	// ROS_WARN("#####block.fAzimuth[%u][%u]",pkt.blocks[0].fAzimuth,pkt.blocks[1].fAzimuth);
+  int unitSize = PANDARFT_UNIT_SIZE; 
+  if (header->u8VersionMinor == 2) unitSize = PANDARFT_UNIT_V2_SIZE;
+	auto tail = (PandarFTTail*)(&packet.data[0] + PANDARFT_HEAD_SIZE  + (unitSize * header->u8ChannelNum));
+	if (packet.data[0] != 0xEE && packet.data[1] != 0xFF) return;
+  double unix_second = 0;
+  if (tail->nUTCTime[0] != 0) {
+    struct tm t = {0};
+    t.tm_year = tail->nUTCTime[0] + 100;
+    if (t.tm_year >= 200) {
+      t.tm_year -= 100;
+    }
+    t.tm_mon = tail->nUTCTime[1] - 1;
+    t.tm_mday = tail->nUTCTime[2];
+    t.tm_hour = tail->nUTCTime[3];
+    t.tm_min = tail->nUTCTime[4];
+    t.tm_sec = tail->nUTCTime[5];
+    t.tm_isdst = 0;
+    unix_second = static_cast<double>(mktime(&t) + m_iTimeZoneSecond);
+  }
+  else {
+    uint32_t utc_time_big = *(uint32_t*)(&tail->nUTCTime[0] + 2);
+    unix_second = ((utc_time_big >> 24) & 0xff) |
+            ((utc_time_big >> 8) & 0xff00) |
+            ((utc_time_big << 8) & 0xff0000) |
+            ((utc_time_big << 24)) + m_iTimeZoneSecond;
+  }
+  // printf("%d %d %lf %x %x %x\n",header->u8ChannelNum, header->u8VersionMinor, unix_second, tail->nUTCTime[0], tail->nCloumnIndex, tail->nReturnMode);
+	// // ROS_WARN("#####block.fAzimuth[%u][%u]",pkt.blocks[0].fAzimuth,pkt.blocks[1].fAzimuth);
 	int index = 0;
 	index += PANDARFT_HEAD_SIZE;
 	int point_index = 0;
 	for (int i = 0; i < header->u8ChannelNum; i++) {
-			/* for all the units in a block */
 		uint16_t u16Distance = *(uint16_t*)(&packet.data[0] + index);
 		index += DISTANCE_SIZE;
 		uint8_t u8Intensity = *(uint8_t*)(&packet.data[0] + index);
 		index += INTENSITY_SIZE;
-		index += ENV_LIGHT_SIZE;
+    if (header->u8VersionMinor == 1) index += ENV_LIGHT_SIZE;
+    if (header->u8VersionMinor == 2) index += ENV_LIGHT_V2_SIZE;
 		index += CONFIDENCE_SIZE;
 		PPoint point;
-
-		float distance =
-			static_cast<float>(u16Distance) * PANDARFT_DISTANCE_UNIT * header->u8DistUnit;
-        
+		
+    float distance = static_cast<float>(u16Distance) * PANDARFT_DISTANCE_UNIT * header->u8DistUnit; 
 		float azimuth = m_fPandarFTAzimuth[i][tail->nCloumnIndex];
 		float pitch = m_fPandarFTElevAngle[i][tail->nCloumnIndex];
 		int pitchIdx = static_cast<int>(pitch * 100 + 0.5);
@@ -1371,7 +1428,6 @@ void Convert::calcFTPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 		}
 
 		float xyDistance = distance * m_fCosAllAngle[pitchIdx];
-
 		int azimuthIdx = static_cast<int>(azimuth * 100 + 0.5);
 		if (azimuthIdx >= CIRCLE) {
 			azimuthIdx -= CIRCLE;
@@ -1387,9 +1443,9 @@ void Convert::calcFTPointXYZIT(pandar_msgs::PandarPacket &packet, int cursor) {
 		point.timestamp = unix_second + (static_cast<double>(tail->nTimestamp)) / 1000000.0;
 
 		if (0 == m_dTimestamp) {
-		m_dTimestamp = point.timestamp;
+      m_dTimestamp = point.timestamp;
 		} else if (m_dTimestamp > point.timestamp) {
-		m_dTimestamp = point.timestamp;
+      m_dTimestamp = point.timestamp;
 		}
 
 		point.ring = i + 1;	

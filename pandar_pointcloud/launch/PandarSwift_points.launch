@@ -6,6 +6,7 @@
   <!-- declare arguments with default values -->
   <arg name="calibration" default="$(find pandar_pointcloud)/params/PandarFT_Correction.csv"/>
   <arg name="device_ip" default="192.168.1.201" />
+  <arg name="host_ip" default="" />
   <arg name="frame_id" default="PandarSwift" />
   <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
   <arg name="max_range" default="130.0" />
@@ -33,6 +34,7 @@
     <arg name="min_range" value="$(arg min_range)"/>
     <arg name="start_angle" value="$(arg start_angle)"/>
     <arg name="device_ip" value="$(arg device_ip)" />
+    <arg name="host_ip" value="$(arg host_ip)" />
     <arg name="frame_id" value="$(arg frame_id)"/>
     <arg name="publish_model" value="$(arg publish_model)"/>
     <arg name="pcap" value="$(arg pcap)"/>

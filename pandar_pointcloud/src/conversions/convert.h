@@ -153,10 +153,16 @@
 #define DISTANCE_SIZE (2)
 #define INTENSITY_SIZE (1)
 #define ENV_LIGHT_SIZE (2)
+#define ENV_LIGHT_V2_SIZE (1)
 #define CONFIDENCE_SIZE (1)
 #define PANDARFT_UNIT_SIZE \
         (CONFIDENCE_SIZE + \
         ENV_LIGHT_SIZE + \
+        DISTANCE_SIZE + \
+        INTENSITY_SIZE)
+#define PANDARFT_UNIT_V2_SIZE \
+        (CONFIDENCE_SIZE + \
+        ENV_LIGHT_V2_SIZE + \
         DISTANCE_SIZE + \
         INTENSITY_SIZE)
 #define PANDARFT_TAIL_RESERVED1_SIZE (3)
@@ -335,6 +341,32 @@ struct PandarGPS_s {
   uint32_t fineTime;
 };
 
+constexpr int CHANNEL_MAX = 256;
+constexpr int COLUMN_MAX = 384;
+constexpr int HASH_BYTES_LENGTH = 64;
+
+struct PandarFTCorrectionsHeader {
+    uint8_t pilot[2];
+    uint8_t version[2];
+    uint8_t reversed[2];
+    uint8_t column_number;
+    uint8_t channel_number;
+    uint8_t resolution;
+    PandarFTCorrectionsHeader() 
+    : resolution(1)
+    {}
+};
+struct PandarFTCorrections {
+public:
+    using ColumnFloatArray = std::array<float, COLUMN_MAX>;
+    using CorrectionMatrix = std::array<ColumnFloatArray, CHANNEL_MAX>;
+public:
+    std::array<ColumnFloatArray, CHANNEL_MAX> elevations, azimuths;
+    uint8_t major_version;
+    uint8_t min_version;
+    std::string hash_value;
+};
+
 typedef std::array<pandar_msgs::PandarPacket, 36000> PktArray;
 
 typedef struct PacketsBuffer_s {
@@ -376,6 +408,13 @@ typedef struct PacketsBuffer_s {
       if (lastOverflowed) {
         lastOverflowed = false;
         ROS_WARN("buffer recovered");
+      }
+      if(((m_iterPush > m_iterTaskEnd) && (m_iterPush - m_iterTaskEnd) > 4 * m_stepSize) ||
+      ((m_iterPush < m_iterTaskBegin) && (m_iterTaskBegin - m_iterPush) < CIRCLE - 4 * m_stepSize)){
+
+        while((((m_iterPush > m_iterTaskEnd) && (m_iterPush - m_iterTaskEnd) > 4 * m_stepSize) ||
+        ((m_iterPush < m_iterTaskBegin) && (m_iterTaskBegin - m_iterPush) < CIRCLE - 4 * m_stepSize)))
+          usleep(1000);
       }
       *(m_iterPush++) = pkt;
       return 1;
@@ -443,7 +482,9 @@ class Convert {
   void calcFTPointXYZIT(pandar_msgs::PandarPacket &pkt, int cursor);
   void doTaskFlow(int cursor);
   void loadOffsetFile(std::string file);
-  int loadCorrectionFile(std::string correction_content);
+  int LoadCorrectionString(char *correction_string);
+  int LoadCorrectionDatData(char *correction_string);
+  int LoadCorrectionCsvData(char *correction_string);
   int checkLiadaMode();
   void changeAngleSize();
   void changeReturnBlockSize();
